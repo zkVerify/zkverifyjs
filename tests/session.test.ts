@@ -76,22 +76,23 @@ describe('zkVerifySession class', () => {
         session.addAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-        session.removeAccount();
+        session.removeAccount(0);
         expect(session.readOnly).toBe(true);
 
         session.addAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-        session.removeAccount();
+        session.removeAccount(0);
         expect(session.readOnly).toBe(true);
     });
 
-    it('should throw an error when adding an account to a session that already has one', async () => {
+    it('should throw an error when adding an account to a session that already has been added', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
-        expect(session.readOnly).toBe(false);
 
-        expect(() => session.addAccount('random-seed-phrase')).toThrow('An account is already active in this session.');
+        expect(session.readOnly).toBe(false);
+        expect(() => session.addAccount(wallet!))
+            .toThrow(/^Account \w+ is already active\.$/);
     });
 
     it('should allow verification when an account is active', async () => {
@@ -126,12 +127,12 @@ describe('zkVerifySession class', () => {
 
 
         const accountInfo = await session.accountInfo;
-        expect(accountInfo).toMatchObject({
+        expect(accountInfo).toMatchObject([{
             address: expect.any(String),
             nonce: expect.any(Number),
             freeBalance: expect.any(String),
             reservedBalance: expect.any(String),
-        });
+        }]);
     });
 
     it('should handle multiple verify calls concurrently', async () => {

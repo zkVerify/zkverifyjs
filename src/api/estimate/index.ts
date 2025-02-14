@@ -31,12 +31,6 @@ export async function estimateCost(
   extrinsic: SubmittableExtrinsic<'promise'>,
   account: KeyringPair,
 ): Promise<ExtrinsicCostEstimate> {
-  if (!account) {
-    throw new Error(
-      'A session with a connected account is required to estimate extrinsic cost.',
-    );
-  }
-
   const paymentInfo = await extrinsic.paymentInfo(account);
   const tokenDecimals = api.registry.chainDecimals[0];
   const estimatedFeeInTokens = convertFeeToToken(

@@ -86,13 +86,7 @@ export class ExtrinsicManager {
     if (accountIdentifier !== undefined) {
       selectedAccount = this.connectionManager.getAccount(accountIdentifier);
     } else {
-      const accountsArray = Array.from(
-        this.connectionManager.accounts.values(),
-      );
-      if (accountsArray.length === 0) {
-        throw new Error('No accounts available for cost estimation.');
-      }
-      selectedAccount = accountsArray[0];
+      selectedAccount = this.connectionManager.getAccount(0);
     }
 
     return estimateCost(this.connectionManager.api, extrinsic, selectedAccount);

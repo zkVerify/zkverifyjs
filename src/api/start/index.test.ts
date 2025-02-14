@@ -46,7 +46,7 @@ describe('startSession', () => {
   });
 
   it('should return an AccountConnection when a seedPhrase is provided', async () => {
-    const mockAccount: Partial<KeyringPair> = {
+    const mockAccount: jest.Mocked<Partial<KeyringPair>> = {
       address: 'mockAddress',
       meta: { name: 'mockName' },
       isLocked: true,
@@ -57,9 +57,12 @@ describe('startSession', () => {
 
     mockOptions = {
       host: SupportedNetwork.Testnet,
-      seedPhrase: 'testSeedPhrase',
+      seedPhrases: ['testSeedPhrase'],
       customWsUrl: 'ws://custom-url',
     };
+
+    const mockAccounts = new Map<string, KeyringPair>();
+    mockAccounts.set(mockAccount.address!, mockAccount as KeyringPair);
 
     const result = await startSession(mockOptions);
 
@@ -67,11 +70,11 @@ describe('startSession', () => {
       mockOptions.host,
       mockOptions.customWsUrl,
     );
-    expect(setupAccount).toHaveBeenCalledWith(mockOptions.seedPhrase);
+    expect(setupAccount).toHaveBeenCalledWith(mockOptions.seedPhrases![0]);
     expect(result).toEqual({
       api: mockApi,
       provider: mockProvider,
-      account: mockAccount,
+      accounts: mockAccounts,
     } as AccountConnection);
   });
 

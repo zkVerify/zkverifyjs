@@ -1,6 +1,10 @@
-import { WsProvider } from '@polkadot/api';
+import { WsProvider, ApiPromise } from '@polkadot/api';
 
 export async function closeSession(provider: WsProvider): Promise<void> {
+  if (!provider) {
+    return;
+  }
+
   const disconnectWithRetries = async (
     name: string,
     disconnectFn: () => Promise<void>,
@@ -8,19 +12,43 @@ export async function closeSession(provider: WsProvider): Promise<void> {
   ) => {
     let retries = 5;
     while (retries > 0) {
-      await disconnectFn();
-      if (!isConnectedFn()) {
-        return;
+      try {
+        await disconnectFn();
+        if (!isConnectedFn()) return;
+      } catch (error) {
+        console.debug(`Retrying ${name} disconnect due to error:`, error);
       }
       retries--;
-      if (retries === 0) {
-        throw new Error(`Failed to disconnect ${name} after 5 attempts.`);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
+    throw new Error(`Failed to disconnect ${name} after 5 attempts.`);
   };
 
-  const errors: string[] = [];
+  try {
+    const apiInstances = (provider as unknown as { _apis?: ApiPromise[] })
+      ._apis;
+    if (apiInstances?.length) {
+      await Promise.all(
+        apiInstances.map(async (api) => {
+          if (api?.isConnected) {
+            await api.disconnect();
+          }
+        }),
+      );
+    }
+  } catch (error) {
+    console.debug('Error while unsubscribing API instances:', error);
+  }
+
+  try {
+    if ('removeAllListeners' in provider) {
+      (
+        provider as unknown as { removeAllListeners: () => void }
+      ).removeAllListeners();
+    }
+  } catch (error) {
+    console.debug('Error while removing event listeners:', error);
+  }
 
   if (provider.isConnected) {
     try {
@@ -30,11 +58,8 @@ export async function closeSession(provider: WsProvider): Promise<void> {
         () => provider.isConnected,
       );
     } catch (error) {
-      errors.push((error as Error).message);
+      console.debug('Provider disconnection failed:', error);
+      throw error;
     }
-  }
-
-  if (errors.length > 0) {
-    throw new Error(errors.join(' and '));
   }
 }

@@ -104,7 +104,11 @@ export function getProofPallet(proofType: ProofType): string {
 export function checkReadOnly(
   connection: AccountConnection | WalletConnection | EstablishedConnection,
 ): void {
-  if (!('accounts' in connection) && !('injector' in connection)) {
+  if (
+    (!('accounts' in connection) ||
+      ('accounts' in connection && connection.accounts.size === 0)) &&
+    !('injector' in connection)
+  ) {
     throw new Error(
       'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.',
     );

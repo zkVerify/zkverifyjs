@@ -36,12 +36,14 @@ describe('estimateCost', () => {
     connection = {
       api: mockApi,
       provider: {} as jest.Mocked<any>,
-      account: mockKeyringPair,
+      accounts: new Map([
+        ['mockAddress', { address: 'mockAddress' } as KeyringPair],
+      ]),
     };
   });
 
   it('should estimate the cost of an extrinsic successfully', async () => {
-    const result = await estimateCost(mockApi, mockExtrinsic, connection);
+    const result = await estimateCost(mockApi, mockExtrinsic, mockKeyringPair);
 
     expect(result).toEqual({
       partialFee: '1000000000000000000',
@@ -50,16 +52,6 @@ describe('estimateCost', () => {
       length: 100,
     });
     expect(mockExtrinsic.paymentInfo).toHaveBeenCalledWith(mockKeyringPair);
-  });
-
-  it('should throw an error if account information is missing', async () => {
-    connection.account = undefined as unknown as typeof connection.account;
-
-    await expect(
-      estimateCost(mockApi, mockExtrinsic, connection),
-    ).rejects.toThrow(
-      'Account information is required to estimate extrinsic cost.',
-    );
   });
 });
 

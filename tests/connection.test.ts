@@ -23,23 +23,23 @@ describe('zkVerifySession - accountInfo', () => {
             [envVar, wallet] = await walletPool.acquireWallet();
             session = await zkVerifySession.start().Testnet().withAccount(wallet);
 
-            const accountInfo: AccountInfo = await session.accountInfo;
+            const accountInfo: AccountInfo[] = await session.accountInfo;
             expect(accountInfo).toBeDefined();
 
-            expect(accountInfo.address).toBeDefined();
-            expect(typeof accountInfo.address).toBe('string');
+            expect(accountInfo[0].address).toBeDefined();
+            expect(typeof accountInfo[0].address).toBe('string');
 
-            expect(accountInfo.nonce).toBeDefined();
-            expect(typeof accountInfo.nonce).toBe('number');
-            expect(accountInfo.nonce).toBeGreaterThanOrEqual(0);
+            expect(accountInfo[0].nonce).toBeDefined();
+            expect(typeof accountInfo[0].nonce).toBe('number');
+            expect(accountInfo[0].nonce).toBeGreaterThanOrEqual(0);
 
-            expect(accountInfo.freeBalance).toBeDefined();
-            expect(typeof accountInfo.freeBalance).toBe('string');
-            expect(parseFloat(accountInfo.freeBalance)).toBeGreaterThanOrEqual(0);
+            expect(accountInfo[0].freeBalance).toBeDefined();
+            expect(typeof accountInfo[0].freeBalance).toBe('string');
+            expect(parseFloat(accountInfo[0].freeBalance)).toBeGreaterThanOrEqual(0);
 
-            expect(accountInfo.reservedBalance).toBeDefined();
-            expect(typeof accountInfo.reservedBalance).toBe('string');
-            expect(parseFloat(accountInfo.reservedBalance)).toBeGreaterThanOrEqual(0);
+            expect(accountInfo[0].reservedBalance).toBeDefined();
+            expect(typeof accountInfo[0].reservedBalance).toBe('string');
+            expect(parseFloat(accountInfo[0].reservedBalance)).toBeGreaterThanOrEqual(0);
         } catch (error) {
             console.error('Error fetching account info:', error);
             throw error;
@@ -60,16 +60,35 @@ describe('zkVerifySession - accountInfo', () => {
                 'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
             );
 
-            session.addAccount(wallet);
-            const accountInfo = await session.accountInfo;
-            expect(accountInfo).toBeDefined();
-            expect(accountInfo.address).toBeDefined();
-            expect(typeof accountInfo.address).toBe('string');
+            let accountInfo: AccountInfo[];
 
-            session.removeAccount();
+            await session.addAccount(wallet);
+            accountInfo = await session.accountInfo;
+            expect(accountInfo).toBeDefined();
+            expect(accountInfo[0].address).toBeDefined();
+            expect(typeof accountInfo[0].address).toBe('string');
+            expect(session.readOnly).toBeFalsy()
+
+            session.removeAccount(0);
+            await expect(session.readOnly).toBeTruthy()
             await expect(session.accountInfo).rejects.toThrow(
                 'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
             );
+
+            session.addAccount(wallet);
+            accountInfo = await session.accountInfo;
+            expect(accountInfo).toBeDefined();
+            expect(accountInfo[0].address).toBeDefined();
+            expect(typeof accountInfo[0].address).toBe('string');
+            expect(session.readOnly).toBeFalsy()
+
+            const address = accountInfo[0].address
+
+            session.removeAccount(address);
+            await expect(session.accountInfo).rejects.toThrow(
+                'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
+            );
+            await expect(session.readOnly).toBeTruthy()
 
         } finally {
             if (session) await session.close();

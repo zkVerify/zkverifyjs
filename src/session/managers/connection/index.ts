@@ -14,11 +14,10 @@ import { checkReadOnly } from '../../../utils/helpers';
 import { AccountInfo } from '../../../types';
 
 export class ConnectionManager {
-  private readonly connection:
+  private connection:
     | AccountConnection
     | WalletConnection
     | EstablishedConnection;
-  public accounts: Map<string, KeyringPair> = new Map();
   public customNetwork: boolean;
   public readOnly: boolean;
 
@@ -27,7 +26,6 @@ export class ConnectionManager {
     customNetwork?: string,
   ) {
     this.connection = connection;
-    this.accounts = 'accounts' in connection ? connection.accounts : new Map();
     this.customNetwork = !!customNetwork;
     this.readOnly =
       !('accounts' in connection) &&
@@ -72,12 +70,10 @@ export class ConnectionManager {
   ): Promise<AccountInfo | AccountInfo[]> {
     checkReadOnly(this.connection);
 
-    const accountList = Array.from(this.accounts.values());
+    const accountConnection = this.connection as AccountConnection;
+    const accountList = Array.from(accountConnection.accounts.values());
 
     if (identifier === undefined) {
-      if (accountList.length === 0) {
-        throw new Error('No accounts found in this session.');
-      }
       return Promise.all(
         accountList.map((account) => accountInfo(this.api, account)),
       );
@@ -93,8 +89,8 @@ export class ConnectionManager {
       return accountInfo(this.api, account);
     }
 
-    if (this.accounts.has(identifier)) {
-      return accountInfo(this.api, this.accounts.get(identifier)!);
+    if (accountConnection.accounts.has(identifier)) {
+      return accountInfo(this.api, accountConnection.accounts.get(identifier)!);
     }
 
     throw new Error(`Account ${identifier} not found in this session.`);
@@ -107,10 +103,22 @@ export class ConnectionManager {
    */
   addAccount(seedPhrase: string): void {
     const account = setupAccount(seedPhrase);
-    if (this.accounts.has(account.address)) {
+
+    if (!('accounts' in this.connection)) {
+      this.connection = {
+        api: this.api,
+        provider: this.provider,
+        accounts: new Map(),
+      } as AccountConnection;
+    }
+
+    const accountConnection = this.connection as AccountConnection;
+
+    if (accountConnection.accounts.has(account.address)) {
       throw new Error(`Account ${account.address} is already active.`);
     }
-    this.accounts.set(account.address, account);
+
+    accountConnection.accounts.set(account.address, account);
     this.readOnly = false;
   }
 
@@ -124,15 +132,43 @@ export class ConnectionManager {
 
   /**
    * Removes an account from the session.
-   * @param {string} address - The address of the account to remove.
+   * @param {string | number} identifier - The address or index position of the account to remove.
    * @throws Will throw an error if the account is not found.
    */
-  removeAccount(address: string): void {
-    if (!this.accounts.has(address)) {
-      throw new Error(`Account ${address} not found.`);
+  removeAccount(identifier: string | number): void {
+    if (!('accounts' in this.connection)) {
+      throw new Error('This connection type does not support accounts.');
     }
-    this.accounts.delete(address);
-    this.readOnly = this.accounts.size === 0;
+
+    const accountConnection = this.connection as AccountConnection;
+    let accountAddress: string | undefined;
+
+    if (typeof identifier === 'number') {
+      const accountsArray = Array.from(accountConnection.accounts.keys());
+      accountAddress = accountsArray[identifier];
+
+      if (!accountAddress) {
+        throw new Error(`Account at index ${identifier} not found.`);
+      }
+    } else {
+      accountAddress = identifier;
+    }
+
+    if (!accountConnection.accounts.has(accountAddress)) {
+      throw new Error(`Account ${accountAddress} not found.`);
+    }
+
+    accountConnection.accounts.delete(accountAddress);
+
+    if (accountConnection.accounts.size === 0) {
+      this.connection = {
+        api: this.api,
+        provider: this.provider,
+      } as EstablishedConnection;
+      this.readOnly = true;
+    } else {
+      this.readOnly = false;
+    }
   }
 
   /**
@@ -158,17 +194,28 @@ export class ConnectionManager {
    * @throws {Error} If the account is not found.
    */
   getAccount(identifier: string | number): KeyringPair {
+    if (!('accounts' in this.connection)) {
+      throw new Error('This connection type does not support accounts.');
+    }
+
+    const accountConnection = this.connection as AccountConnection;
+
+    if (accountConnection.accounts.size === 0) {
+      throw new Error('No accounts have been added to this session.');
+    }
+
     let account: KeyringPair | undefined;
 
     if (typeof identifier === 'number') {
-      account = Array.from(this.accounts.values())[identifier];
+      const accountsArray = Array.from(accountConnection.accounts.values());
+      account = accountsArray[identifier];
     } else {
-      account = this.accounts.get(identifier);
+      account = accountConnection.accounts.get(identifier);
     }
 
     if (!account) {
       throw new Error(
-        `Account with ${typeof identifier === 'number' ? 'index' : 'address'} '${identifier}' not found.`,
+        `Account with ${typeof identifier === 'number' ? 'index' : 'address'} '${identifier}' not found in the session.`,
       );
     }
 
