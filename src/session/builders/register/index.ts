@@ -11,7 +11,7 @@ export type RegisterKeyMethodMap = {
 };
 
 export class RegisterKeyBuilder {
-  private options: VerifyOptions;
+  private readonly options: VerifyOptions;
   private nonceSet = false;
 
   constructor(
@@ -23,8 +23,9 @@ export class RegisterKeyBuilder {
       transactionResult: Promise<VKRegistrationTransactionInfo>;
     }>,
     proofOptions: ProofOptions,
+    accountIdentifier?: string | number,
   ) {
-    this.options = { proofOptions };
+    this.options = { proofOptions, accountIdentifier };
   }
 
   nonce(nonce: number): this {

@@ -8,9 +8,9 @@ import { checkReadOnly } from '../../../utils/helpers';
 import { ConnectionManager } from '../connection';
 import { FormattedProofData } from '../../../api/format/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { AccountConnection } from '../../../api/connection/types';
 import { ProofType } from '../../../config';
 import { ExtrinsicCostEstimate } from '../../../api/estimate/types';
+import { KeyringPair } from '@polkadot/keyring/types';
 
 export class ExtrinsicManager {
   private readonly connectionManager: ConnectionManager;
@@ -70,18 +70,31 @@ export class ExtrinsicManager {
    * Estimates the cost of a given extrinsic.
    *
    * @param {SubmittableExtrinsic<'promise'>} extrinsic - The extrinsic to estimate.
+   * @param {string | number} [accountIdentifier] - The account identifier (either an address or an index) to use for estimation.
+   * If not provided, the first available account will be used.
    * @returns {Promise<ExtrinsicCostEstimate>} A promise that resolves to an object containing the estimated fee and extrinsic details.
-   * @throws {Error} - Throws an error if the session is in read-only mode or account information is missing.
+   * @throws {Error} If the session is in read-only mode or no account is available.
    */
   async estimateCost(
     extrinsic: SubmittableExtrinsic<'promise'>,
+    accountIdentifier?: string | number,
   ): Promise<ExtrinsicCostEstimate> {
     checkReadOnly(this.connectionManager.connectionDetails);
 
-    return estimateCost(
-      this.connectionManager.api,
-      extrinsic,
-      this.connectionManager.connectionDetails as AccountConnection,
-    );
+    let selectedAccount: KeyringPair;
+
+    if (accountIdentifier !== undefined) {
+      selectedAccount = this.connectionManager.getAccount(accountIdentifier);
+    } else {
+      const accountsArray = Array.from(
+        this.connectionManager.accounts.values(),
+      );
+      if (accountsArray.length === 0) {
+        throw new Error('No accounts available for cost estimation.');
+      }
+      selectedAccount = accountsArray[0];
+    }
+
+    return estimateCost(this.connectionManager.api, extrinsic, selectedAccount);
   }
 }

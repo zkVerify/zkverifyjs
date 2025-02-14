@@ -14,10 +14,11 @@ import { checkReadOnly } from '../../../utils/helpers';
 import { AccountInfo } from '../../../types';
 
 export class ConnectionManager {
-  private connection:
+  private readonly connection:
     | AccountConnection
     | WalletConnection
     | EstablishedConnection;
+  public accounts: Map<string, KeyringPair> = new Map();
   public customNetwork: boolean;
   public readOnly: boolean;
 
@@ -33,6 +34,12 @@ export class ConnectionManager {
       !('signer' in connection);
   }
 
+  /**
+   * Creates a new session with a connection to the specified network.
+   * Supports multiple accounts for startSession if provided in options.
+   * @param {zkVerifySessionOptions} options - The session configuration options.
+   * @returns {Promise<ConnectionManager>} A promise resolving to a ConnectionManager instance.
+   */
   static async createSession(
     options: zkVerifySessionOptions,
   ): Promise<ConnectionManager> {
@@ -52,54 +59,79 @@ export class ConnectionManager {
   }
 
   /**
-   * Retrieves account information for the active account in the session.
-   * @returns {Promise<AccountInfo>} A promise that resolves to the account information.
-   * @throws Will throw an error if the session is in read-only mode.
+   * Retrieves account information for a specified address, index, or all accounts.
+   * If no identifier is provided, it returns a list of AccountInfo objects in the order they exist.
+   *
+   * @param {string | number} [identifier] - The address or index of the account to fetch info for. If undefined, returns all accounts.
+   * @returns {Promise<AccountInfo | AccountInfo[]>} A promise resolving to either a single account's info or an array of all accounts.
+   * @throws Will throw an error if the account is not found.
    */
-  async getAccountInfo(): Promise<AccountInfo> {
+  async getAccountInfo(
+    identifier?: string | number,
+  ): Promise<AccountInfo | AccountInfo[]> {
     checkReadOnly(this.connection);
 
-    if ('account' in this.connection) {
-      return accountInfo(this.api, this.connection.account);
+    const accountList = Array.from(this.accounts.values());
+
+    if (identifier === undefined) {
+      if (accountList.length === 0) {
+        throw new Error('No accounts found in this session.');
+      }
+      return Promise.all(
+        accountList.map((account) => accountInfo(this.api, account)),
+      );
     }
 
-    throw new Error('No account available in this session.');
+    if (typeof identifier === 'number') {
+      const account = accountList[identifier];
+      if (!account) {
+        throw new Error(
+          `Account at index ${identifier} not found in this session.`,
+        );
+      }
+      return accountInfo(this.api, account);
+    }
+
+    if (this.accounts.has(identifier)) {
+      return accountInfo(this.api, this.accounts.get(identifier)!);
+    }
+
+    throw new Error(`Account ${identifier} not found in this session.`);
   }
 
   /**
-   * Allows the user to add an account to the session if one is not already active.
-   * @param {string} seedPhrase - The seed phrase for the account to add.
-   * @returns {void}
-   * @throws Will throw an error if an account is already active in the session.
+   * Adds a single account to the session.
+   * @param {string} seedPhrase - The seed phrase for the new account.
+   * @throws Will throw an error if the account is already added.
    */
   addAccount(seedPhrase: string): void {
-    if ('account' in this.connection) {
-      throw new Error('An account is already active in this session.');
+    const account = setupAccount(seedPhrase);
+    if (this.accounts.has(account.address)) {
+      throw new Error(`Account ${account.address} is already active.`);
     }
-
-    this.connection = {
-      api: this.api,
-      provider: this.provider,
-      account: setupAccount(seedPhrase),
-    };
+    this.accounts.set(account.address, account);
     this.readOnly = false;
   }
 
   /**
-   * Allows the user to remove the active account from the session, making it read-only.
-   * If no account is active, the method simply ensures the session is in read-only mode.
-   * @returns {void}
+   * Adds multiple accounts to the session.
+   * @param {string[]} seedPhrases - An array of seed phrases for accounts to add.
    */
-  removeAccount(): void {
-    if ('account' in this.connection) {
-      this.connection = {
-        api: this.api,
-        provider: this.provider,
-      };
-      this.readOnly = true;
-    } else {
-      throw new Error('No account to remove.');
+  addAccounts(seedPhrases: string[]): void {
+    seedPhrases.forEach((seedPhrase) => this.addAccount(seedPhrase));
+  }
+
+  /**
+   * Removes an account from the session.
+   * @param {string} address - The address of the account to remove.
+   * @throws Will throw an error if the account is not found.
+   */
+  removeAccount(address: string): void {
+    if (!this.accounts.has(address)) {
+      throw new Error(`Account ${address} not found.`);
     }
+    this.accounts.delete(address);
+    this.readOnly = this.accounts.size === 0;
   }
 
   /**
@@ -119,11 +151,27 @@ export class ConnectionManager {
   }
 
   /**
-   * Getter for the account, if available.
-   * @returns {KeyringPair | undefined} The active account, or undefined if in read-only mode.
+   * Retrieves the account associated with the given address or position.
+   * @param {string | number} identifier - The address or index position of the account.
+   * @returns {KeyringPair} The associated KeyringPair.
+   * @throws {Error} If the account is not found.
    */
-  get account(): KeyringPair | undefined {
-    return 'account' in this.connection ? this.connection.account : undefined;
+  getAccount(identifier: string | number): KeyringPair {
+    let account: KeyringPair | undefined;
+
+    if (typeof identifier === 'number') {
+      account = Array.from(this.accounts.values())[identifier];
+    } else {
+      account = this.accounts.get(identifier);
+    }
+
+    if (!account) {
+      throw new Error(
+        `Account with ${typeof identifier === 'number' ? 'index' : 'address'} '${identifier}' not found.`,
+      );
+    }
+
+    return account;
   }
 
   get connectionDetails():

@@ -33,7 +33,10 @@ export class zkVerifySession {
   declare createExtrinsicFromHex: ExtrinsicManager['createExtrinsicFromHex'];
   declare close: ConnectionManager['close'];
   declare addAccount: ConnectionManager['addAccount'];
+  declare addAccounts: ConnectionManager['addAccounts'];
   declare removeAccount: ConnectionManager['removeAccount'];
+  declare getAccount: ConnectionManager['getAccount'];
+  declare getAccountInfo: ConnectionManager['getAccountInfo'];
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
@@ -51,6 +54,10 @@ export class zkVerifySession {
     managers.forEach((manager) => bindMethods(this, manager));
   }
 
+  /**
+   * Starts a session for the specified network.
+   * @returns {SupportedNetworkMap} A map of supported networks.
+   */
   static start(): SupportedNetworkMap {
     return Object.fromEntries(
       Object.entries(SupportedNetwork).map(([networkKey, networkValue]) => [
@@ -65,18 +72,39 @@ export class zkVerifySession {
     ) as SupportedNetworkMap;
   }
 
+  /**
+   * Getter for the Polkadot.js API instance.
+   * @returns {ApiPromise} The API instance.
+   */
   get api(): ApiPromise {
     return this.connectionManager.api;
   }
 
+  /**
+   * Getter for the WebSocket provider.
+   * @returns {WsProvider} The WebSocket provider.
+   */
   get provider(): WsProvider {
     return this.connectionManager.provider;
   }
 
-  get accountInfo(): Promise<AccountInfo> {
-    return this.connectionManager.getAccountInfo();
+  /**
+   * Retrieves information for all active accounts in the current session.
+   *
+   * @returns {Promise<AccountInfo[]>} A promise that resolves to an array of AccountInfo objects,
+   * representing all accounts in the session. As no accountIdentifier is provided for the call, all accounts are returned.
+   * @throws {Error} If no accounts are found in the session.
+   */
+  get accountInfo(): Promise<AccountInfo[]> {
+    return this.connectionManager
+      .getAccountInfo()
+      .then((result) => (Array.isArray(result) ? result : [result]));
   }
 
+  /**
+   * Getter for connection details.
+   * @returns {AccountConnection | WalletConnection | EstablishedConnection} The connection details.
+   */
   get connection():
     | AccountConnection
     | WalletConnection
@@ -84,10 +112,19 @@ export class zkVerifySession {
     return this.connectionManager;
   }
 
+  /**
+   * Checks if the session is in read-only mode.
+   * @returns {boolean} True if read-only, otherwise false.
+   */
   get readOnly(): boolean {
     return this.connectionManager.readOnly;
   }
 
+  /**
+   * Initializes a new zkVerifySession instance.
+   * @param {zkVerifySessionOptions} options - The session configuration options.
+   * @returns {Promise<zkVerifySession>} A promise resolving to the zkVerifySession instance.
+   */
   private static async _startSession(
     options: zkVerifySessionOptions,
   ): Promise<zkVerifySession> {

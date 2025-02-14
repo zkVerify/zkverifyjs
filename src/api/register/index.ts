@@ -6,6 +6,7 @@ import { VKRegistrationTransactionInfo } from '../../types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { AccountConnection } from '../connection/types';
 import { VerifyOptions } from '../../session/types';
+import { KeyringPair } from '@polkadot/keyring/types';
 
 export async function registerVk(
   connection: AccountConnection,
@@ -15,14 +16,14 @@ export async function registerVk(
   events: EventEmitter;
   transactionResult: Promise<VKRegistrationTransactionInfo>;
 }> {
-  const { proofOptions } = options;
+  const { proofOptions, accountIdentifier } = options;
   const emitter = new EventEmitter();
 
   const processor = await getProofProcessor(proofOptions.proofType);
-
   if (!processor) {
     throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);
   }
+
   if (verificationKey == null || verificationKey === '') {
     throw new Error(
       'verificationKey cannot be null, undefined, or an empty string',
@@ -35,6 +36,26 @@ export async function registerVk(
     throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);
   }
 
+  let selectedAccount: KeyringPair | undefined;
+
+  if ('accounts' in connection) {
+    if (accountIdentifier !== undefined) {
+      if (typeof accountIdentifier === 'number') {
+        selectedAccount = Array.from(connection.accounts.values())[
+          accountIdentifier
+        ];
+      } else {
+        selectedAccount = connection.accounts.get(accountIdentifier);
+      }
+    } else {
+      selectedAccount = Array.from(connection.accounts.values())[0];
+    }
+
+    if (!selectedAccount) {
+      throw new Error(`Account ${accountIdentifier ?? '0'} not found.`);
+    }
+  }
+
   const registerExtrinsic: SubmittableExtrinsic<'promise'> =
     connection.api.tx[pallet].registerVk(formattedVk);
 
@@ -43,7 +64,7 @@ export async function registerVk(
       handleTransaction(
         connection.api,
         registerExtrinsic,
-        connection.account,
+        selectedAccount as KeyringPair,
         undefined,
         emitter,
         options,

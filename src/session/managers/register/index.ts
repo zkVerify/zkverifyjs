@@ -25,7 +25,9 @@ export class VerificationKeyRegistrationManager {
    *
    * @returns {RegisterKeyMethodMap} A map of proof types to their corresponding builder methods.
    */
-  registerVerificationKey(): RegisterKeyMethodMap {
+  registerVerificationKey(
+    accountIdentifier?: string | number,
+  ): RegisterKeyMethodMap {
     const builderMethods: Partial<RegisterKeyMethodMap> = {};
 
     for (const proofType in ProofType) {
@@ -38,7 +40,10 @@ export class VerificationKeyRegistrationManager {
               curve,
             };
 
-            return this.createRegisterKeyBuilder(proofOptions);
+            return this.createRegisterKeyBuilder(
+              proofOptions,
+              accountIdentifier,
+            );
           },
           writable: false,
           configurable: false,
@@ -56,14 +61,15 @@ export class VerificationKeyRegistrationManager {
    *
    * @returns {RegisterKeyBuilder} A new instance of `RegisterKeyBuilder`.
    * @private
-   * @param proofOptions
    */
   private createRegisterKeyBuilder(
     proofOptions: ProofOptions,
+    accountIdentifier?: string | number,
   ): RegisterKeyBuilder {
     return new RegisterKeyBuilder(
       this.executeRegisterVerificationKey.bind(this),
       proofOptions,
+      accountIdentifier,
     );
   }
 

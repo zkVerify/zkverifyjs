@@ -16,12 +16,18 @@ export async function startSession(
     );
   }
 
-  const { host, seedPhrase, customWsUrl } = options;
+  const { host, seedPhrases, customWsUrl } = options;
   const { api, provider } = await establishConnection(host, customWsUrl);
 
-  if (seedPhrase) {
-    const account = setupAccount(seedPhrase);
-    return { api, provider, account } as AccountConnection;
+  if (seedPhrases && seedPhrases.length > 0) {
+    const accounts = new Map(
+      seedPhrases.map((phrase) => {
+        const account = setupAccount(phrase);
+        return [account.address, account];
+      }),
+    );
+
+    return { api, provider, accounts } as AccountConnection;
   } else {
     return { api, provider } as EstablishedConnection;
   }

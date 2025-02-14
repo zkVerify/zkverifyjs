@@ -1,7 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { AccountConnection } from '../connection/types';
 import { ExtrinsicCostEstimate } from './types';
+import { KeyringPair } from '@polkadot/keyring/types';
 
 /**
  * Converts a fee in the smallest unit to the base token unit.
@@ -19,25 +19,25 @@ export function convertFeeToToken(
 }
 
 /**
- * Estimates the cost of a given extrinsic for the specified user.
+ * Estimates the cost of a given extrinsic for the specified account.
  *
  * @param {ApiPromise} api - The Polkadot API instance.
  * @param {SubmittableExtrinsic<'promise', ISubmittableResult>} extrinsic - The extrinsic to estimate.
- * @param {AccountConnection} connection - The user's account connection, containing account information.
+ * @param {KeyringPair} account - The account to use.
  * @returns {Promise<ExtrinsicCostEstimate>} - A promise that resolves to an object containing the estimated fee and extrinsic details.
  */
 export async function estimateCost(
   api: ApiPromise,
   extrinsic: SubmittableExtrinsic<'promise'>,
-  connection: AccountConnection,
+  account: KeyringPair,
 ): Promise<ExtrinsicCostEstimate> {
-  if (!connection.account) {
+  if (!account) {
     throw new Error(
-      'Account information is required to estimate extrinsic cost.',
+      'A session with a connected account is required to estimate extrinsic cost.',
     );
   }
 
-  const paymentInfo = await extrinsic.paymentInfo(connection.account);
+  const paymentInfo = await extrinsic.paymentInfo(account);
   const tokenDecimals = api.registry.chainDecimals[0];
   const estimatedFeeInTokens = convertFeeToToken(
     paymentInfo.partialFee.toString(),

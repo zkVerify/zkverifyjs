@@ -10,6 +10,7 @@ import { VerifyInput } from './types';
 import { ProofData } from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types';
+import { KeyringPair } from '@polkadot/keyring/types';
 
 export const verify = async (
   connection: AccountConnection | WalletConnection,
@@ -20,6 +21,28 @@ export const verify = async (
   try {
     const { api } = connection;
     let transaction: SubmittableExtrinsic<'promise'>;
+
+    let selectedAccount: KeyringPair | undefined;
+
+    if ('accounts' in connection) {
+      if (options.accountIdentifier !== undefined) {
+        if (typeof options.accountIdentifier === 'number') {
+          selectedAccount = Array.from(connection.accounts.values())[
+            options.accountIdentifier
+          ];
+        } else {
+          selectedAccount = connection.accounts.get(options.accountIdentifier);
+        }
+      } else {
+        selectedAccount = Array.from(connection.accounts.values())[0];
+      }
+
+      if (!selectedAccount) {
+        throw new Error(
+          `Account ${options.accountIdentifier ?? '0'} not found.`,
+        );
+      }
+    }
 
     if ('proofData' in input && input.proofData) {
       const { proof, publicSignals, vk, version } =
@@ -48,11 +71,11 @@ export const verify = async (
     }
 
     const result = await (async () => {
-      if ('account' in connection) {
+      if (selectedAccount) {
         return await handleTransaction(
           api,
           transaction,
-          connection.account,
+          selectedAccount,
           undefined,
           emitter,
           options,

@@ -2,7 +2,7 @@ import { CurveType, Library, ProofType, SupportedNetwork } from '../config';
 
 export interface zkVerifySessionOptions {
   host: SupportedNetwork;
-  seedPhrase?: string;
+  seedPhrases?: string[];
   customWsUrl?: string;
   wallet?: WalletOptions;
 }
@@ -14,6 +14,7 @@ export interface WalletOptions {
 
 export interface VerifyOptions {
   proofOptions: ProofOptions;
+  accountIdentifier?: string | number;
   nonce?: number;
   waitForNewAttestationEvent?: boolean;
   registeredVk?: boolean;

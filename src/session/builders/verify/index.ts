@@ -26,8 +26,9 @@ export class VerificationBuilder {
       transactionResult: Promise<VerifyTransactionInfo>;
     }>,
     proofOptions: ProofOptions,
+    accountIdentifier?: string | number,
   ) {
-    this.options = { proofOptions };
+    this.options = { proofOptions, accountIdentifier };
   }
 
   nonce(nonce: number): this {
