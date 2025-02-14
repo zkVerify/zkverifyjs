@@ -7,6 +7,11 @@ import { proofConfigurations, ProofType } from '../../config';
 import { subscribeToNewAttestations } from '../../api/attestation';
 import { decodeDispatchError } from '../transactions/errors';
 import { DispatchError } from '@polkadot/types/interfaces';
+import {
+  AccountConnection,
+  EstablishedConnection,
+  WalletConnection,
+} from '../../api/connection/types';
 
 /**
  * Waits for a specific `NewAttestation` event and returns the associated data.
@@ -96,8 +101,10 @@ export function getProofPallet(proofType: ProofType): string {
   return config.pallet;
 }
 
-export function checkReadOnly(readOnly: boolean): void {
-  if (readOnly) {
+export function checkReadOnly(
+  connection: AccountConnection | WalletConnection | EstablishedConnection,
+): void {
+  if (!('account' in connection) && !('injector' in connection)) {
     throw new Error(
       'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.',
     );
@@ -165,6 +172,37 @@ export function validateProofVersion(
       throw new Error(
         `Invalid version '${version}' for proof type: ${proofType}. Supported versions: ${config.supportedVersions.join(', ')}`,
       );
+    }
+  }
+}
+
+/**
+ * Binds all methods from the source object to the target object,
+ * preserving the original `this` context.
+ *
+ * Throws an error if a method with the same name already exists on the target.
+ *
+ * @param target - The object to bind methods to.
+ * @param source - The object containing the methods to bind.
+ *
+ * @throws {Error} If a method with the same name already exists on the target.
+ */
+export function bindMethods<T extends object>(target: T, source: object): void {
+  const propertyNames = Object.getOwnPropertyNames(
+    Object.getPrototypeOf(source),
+  );
+
+  for (const name of propertyNames) {
+    const method = (source as Record<string, unknown>)[name];
+
+    if (typeof method === 'function' && name !== 'constructor') {
+      if (name in target) {
+        throw new Error(
+          `❌ Method collision detected: "${name}". Binding aborted.`,
+        );
+      }
+
+      (target as Record<string, unknown>)[name] = method.bind(source);
     }
   }
 }

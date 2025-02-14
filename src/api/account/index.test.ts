@@ -9,15 +9,16 @@ describe('setupAccount', () => {
 
   it('should return a KeyringPair when provided with a valid seed phrase', async () => {
     let wallet: string | undefined;
+    let envVar: string | undefined;
     try {
-      wallet = await walletPool.acquireWallet();
+      [envVar, wallet] = await walletPool.acquireWallet();
       const account = setupAccount(wallet);
 
       expect(account).toBeDefined();
       expect(account.publicKey).toBeDefined();
     } finally {
-      if (wallet) {
-        await walletPool.releaseWallet(wallet);
+      if (envVar) {
+        await walletPool.releaseWallet(envVar);
       }
     }
   });

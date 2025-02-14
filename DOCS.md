@@ -111,6 +111,7 @@ The zkVerifySession.verify method allows you to configure and execute a verifica
 
 ```typescript
 const { events, transactionResult } = await session
+        .verify()
         .fflonk()                                  // Select the proof type (e.g., fflonk)
         .nonce(1)                                  // Set the nonce (optional)
         .waitForPublishedAttestation()             // Wait for the attestation to be published (optional)
@@ -439,7 +440,7 @@ const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
 ### `zkVerifySession.format`
 
 ```typescript
-const { formattedVk, formattedProof, formattedPubs } = await session.format(proofType, proof, publicSignals, vk, registeredVk);
+const { formattedVk, formattedProof, formattedPubs } = await session.format(proofType, proof, publicSignals, vk, version, registeredVk);
 
 ```
 
@@ -447,6 +448,7 @@ const { formattedVk, formattedProof, formattedPubs } = await session.format(proo
 * `proof`: The proof data that needs to be formatted.
 * `publicSignals`: The public signals associated with the proof, which are also formatted.
 * `vk`: The verification key that may be either registered or unregistered, depending on the context.
+* `version`: (Optional) the version of the proof type being used e.g. for risc0 it could be 'V1\_0'
 * `registeredVk`: (Optional) A boolean indicating if the verification key is already registered.
 * Returns: A Promise that resolves to a `FormattedProofData` object containing:
   * formattedVk: The formatted verification key.
@@ -456,10 +458,9 @@ const { formattedVk, formattedProof, formattedPubs } = await session.format(proo
 ### `zkVerifySession.createSubmitProofExtrinsic`
 
 ```shell
-const extrinsic = await session.createSubmitProofExtrinsic(api, proofType, params);
+const extrinsic = await session.createSubmitProofExtrinsic(proofType, params);
 ```
 
-* `api`: An instance of the Polkadot API that provides the necessary methods for interacting with the blockchain.
 * `proofType`: ProofType enum - used to obtain the name of the pallet that contains the proof submission method.
 * `params`: A FormattedProofData object containing formatted proof parameters required for the extrinsic.
 * Returns: A Promise that resolves to a `SubmittableExtrinsic<'promise'>`, allowing you to submit the proof to the blockchain.
@@ -467,21 +468,19 @@ const extrinsic = await session.createSubmitProofExtrinsic(api, proofType, param
 ### `zkVerifySession.createExtrinsicHex`
 
 ```shell
-const hex = await session.createExtrinsicHex(api, pallet, params);
+const hex = await session.createExtrinsicHex(proofType, params);
 ```
 
-* `api`: An instance of the Polkadot API used to create the extrinsic.
-* `pallet`: A string representing the name of the pallet that contains the proof submission method.
+* `proofType`: ProofType enum - used to obtain the name of the pallet that contains the proof submission method.
 * `params`: A FormattedProofData object of formatted proof parameters needed for the extrinsic.
 * Returns: A Promise that resolves to a hex-encoded string representing the SubmittableExtrinsic.
 
 ### `zkVerifySession.createExtrinsicFromHex`
 
 ```shell
-const extrinsic = await session.createExtrinsicFromHex(api, extrinsicHex);
+const extrinsic = await session.createExtrinsicFromHex(extrinsicHex);
 ```
 
-* `api`: An instance of the Polkadot API used for creating the extrinsic.
 * `extrinsicHex`: A string representing the hex-encoded SubmittableExtrinsic to be reconstructed.
 * Returns: A Promise that resolves to a `SubmittableExtrinsic<'promise'>`, allowing you to interact with the reconstructed extrinsic.
 
@@ -491,7 +490,7 @@ const extrinsic = await session.createExtrinsicFromHex(api, extrinsicHex);
 const extrinsic = await session.estimateCost(extrinsic);
 ```
 
-* `extrinstic`: A submitProof SubmittableExtrinsic.
+* `extrinsic`: A submitProof SubmittableExtrinsic.
 * Returns: A Promise that resolves to an ExtrinsicCostEstimate:
   ```
   partialFee: string;

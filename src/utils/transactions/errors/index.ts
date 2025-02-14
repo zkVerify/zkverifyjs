@@ -48,7 +48,7 @@ export const handleError = (
           'DispatchError',
           parsedError,
         );
-        decodedError = decodeDispatchError(api, dispatchError);
+        decodedError = decodeDispatchError(api, dispatchError as DispatchError);
       } else {
         decodedError = error.message;
       }

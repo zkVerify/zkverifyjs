@@ -8,15 +8,16 @@ jest.setTimeout(180000);
 describe('zkVerifySession - estimateCost', () => {
     let session: zkVerifySession;
     let wallet: string;
+    let envVar: string;
 
     beforeAll(async () => {
-        wallet = await walletPool.acquireWallet();
+        [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
     });
 
     afterAll(async () => {
         await session.close();
-        await walletPool.releaseWallet(wallet);
+        await walletPool.releaseWallet(envVar);
     });
 
     async function getTestExtrinsic() {

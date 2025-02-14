@@ -1,4 +1,5 @@
 import { ApiPromise } from '@polkadot/api';
+import { EventRecord } from '@polkadot/types/interfaces/system';
 import { EventEmitter } from 'events';
 import { AttestationEvent } from '../../types';
 import { ZkVerifyEvents } from '../../enums';
@@ -21,15 +22,43 @@ export function subscribeToNewAttestations(
   const emitter = new EventEmitter();
 
   api.query.system
-    .events((events) => {
-      events.forEach((record) => {
+    .events((events: EventRecord[]) => {
+      events.forEach((record: EventRecord) => {
         const { event } = record;
 
         if (event.section === 'poe' && event.method === 'NewAttestation') {
           const currentAttestationId = Number(event.data[0]);
 
           if (attestationId) {
-            if (currentAttestationId > attestationId) {
+            if (currentAttestationId < attestationId) {
+              emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, {
+                expectedId: attestationId,
+                receivedId: currentAttestationId,
+                event: record.event,
+              });
+
+              return;
+            }
+            if (currentAttestationId === attestationId + 1) {
+              scanLastNBlocksForAttestation(api, attestationId, 20)
+                .then((found) => {
+                  if (!found) {
+                    emitter.emit(ZkVerifyEvents.AttestationMissed, {
+                      expectedId: attestationId,
+                      receivedId: currentAttestationId,
+                      event: record.event,
+                    });
+                  }
+                  unsubscribeFromNewAttestations(emitter);
+                })
+                .catch((error) => {
+                  emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+                  unsubscribeFromNewAttestations(emitter);
+                });
+
+              return;
+            }
+            if (currentAttestationId > attestationId + 1) {
               emitter.emit(ZkVerifyEvents.AttestationMissed, {
                 expectedId: attestationId,
                 receivedId: currentAttestationId,
@@ -37,19 +66,8 @@ export function subscribeToNewAttestations(
               });
 
               unsubscribeFromNewAttestations(emitter);
-
               return;
             }
-
-            if (currentAttestationId < attestationId) {
-              emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, {
-                expectedId: attestationId,
-                receivedId: currentAttestationId,
-                event: record.event,
-              });
-              return;
-            }
-
             if (currentAttestationId === attestationId) {
               const attestationEvent: AttestationEvent = {
                 id: currentAttestationId,
@@ -60,10 +78,10 @@ export function subscribeToNewAttestations(
                 ZkVerifyEvents.AttestationConfirmed,
                 attestationEvent,
               );
-
               callback(attestationEvent);
 
               unsubscribeFromNewAttestations(emitter);
+              return;
             }
           } else {
             const attestationEvent: AttestationEvent = {
@@ -91,4 +109,57 @@ export function subscribeToNewAttestations(
 export function unsubscribeFromNewAttestations(emitter: EventEmitter): void {
   emitter.emit(ZkVerifyEvents.Unsubscribe);
   emitter.removeAllListeners();
+}
+
+/**
+ * Scans the last N blocks for a specific attestation event.
+ *
+ * @param {ApiPromise} api - The Polkadot.js API instance.
+ * @param {number} attestationId - The attestation ID to search for.
+ * @param {number} maxBlocks - The maximum number of blocks to scan.
+ * @returns {Promise<boolean>} - Resolves to `true` if the attestation is found, otherwise `false`.
+ */
+async function scanLastNBlocksForAttestation(
+  api: ApiPromise,
+  attestationId: number,
+  maxBlocks: number,
+): Promise<boolean> {
+  let currentBlockHash = await api.rpc.chain.getFinalizedHead();
+  let currentBlock = await api.rpc.chain.getBlock(currentBlockHash);
+
+  for (let i = 0; i < maxBlocks && currentBlock; i++) {
+    const events = (await api.query.system.events.at(
+      currentBlockHash,
+    )) as unknown as EventRecord[];
+
+    events.forEach((record: EventRecord) => {
+      const { event } = record;
+
+      if (event.section === 'poe' && event.method === 'NewAttestation') {
+        const scannedAttestationId = Number(event.data[0]);
+
+        if (scannedAttestationId < attestationId) {
+          return false;
+        }
+        if (scannedAttestationId === attestationId) {
+          return true;
+        }
+      }
+    });
+
+    try {
+      const previousBlockNumber =
+        currentBlock.block.header.number.toNumber() - 1;
+      if (previousBlockNumber < 0) {
+        break;
+      }
+
+      currentBlockHash = await api.rpc.chain.getBlockHash(previousBlockNumber);
+      currentBlock = await api.rpc.chain.getBlock(currentBlockHash);
+    } catch {
+      break;
+    }
+  }
+
+  return false;
 }

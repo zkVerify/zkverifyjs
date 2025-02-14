@@ -7,7 +7,8 @@ jest.setTimeout(180000);
 
 describe('optimisticVerify functionality', () => {
     let session: zkVerifySession;
-    let wallet: string;
+    let wallet: string | undefined;
+    let envVar: string | undefined;
 
     const loadGroth16Data = () => {
         const dataPath = path.join(__dirname, 'common/data', 'groth16_snarkjs_bls12381.json');
@@ -18,7 +19,7 @@ describe('optimisticVerify functionality', () => {
         const groth16Data = loadGroth16Data();
         const { proof, publicSignals: defaultPublicSignals, vk } = groth16Data;
 
-        session = await zkVerifySession.start().Custom(customWsUrl).withAccount(wallet);
+        session = await zkVerifySession.start().Custom(customWsUrl).withAccount(wallet!);
 
         return {
             session,
@@ -33,16 +34,18 @@ describe('optimisticVerify functionality', () => {
     };
 
     beforeEach(async () => {
-        wallet = await walletPool.acquireWallet();
+        [envVar, wallet] = await walletPool.acquireWallet();
     });
 
     afterEach(async () => {
         if (session) await session.close();
-        if (wallet) await walletPool.releaseWallet(wallet);
+        if (envVar) await walletPool.releaseWallet(envVar);
+        wallet = undefined;
+        envVar = undefined;
     });
 
     it('should throw an error if optimisticVerify is called on a non-custom network', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+        session = await zkVerifySession.start().Testnet().withAccount(wallet!);
 
         const input = {
             proofData: {

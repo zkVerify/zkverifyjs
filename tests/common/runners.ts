@@ -25,8 +25,10 @@ export const runVerifyTest = async (
     version?: string
 ) => {
     let seedPhrase: string | undefined;
+    let envVar: string | undefined;
+
     try {
-        seedPhrase = await walletPool.acquireWallet();
+        [envVar, seedPhrase] = await walletPool.acquireWallet();
         logTestDetails(proofOptions, "verification test", version);
         const { proof, vk } = loadProofAndVK(proofOptions, version);
         await performVerifyTransaction(
@@ -40,28 +42,30 @@ export const runVerifyTest = async (
             version
         );
     } catch (error) {
-        console.error(`Error during runVerifyTest for ${proofOptions.proofType}:`, error);
+        console.error(`Error during runVerifyTest (${envVar}) for ${proofOptions.proofType}:`, error);
         throw error;
     } finally {
-        if (seedPhrase) {
-            await walletPool.releaseWallet(seedPhrase);
+        if (envVar) {
+            await walletPool.releaseWallet(envVar);
         }
     }
 };
 
 export const runVKRegistrationTest = async (proofOptions: ProofOptions, version?: string) => {
     let seedPhrase: string | undefined;
+    let envVar: string | undefined;
+
     try {
-        seedPhrase = await walletPool.acquireWallet();
+        [envVar, seedPhrase] = await walletPool.acquireWallet();
         logTestDetails(proofOptions, "VK registration");
         const { proof, vk } = loadProofAndVK(proofOptions, version);
         await performVKRegistrationAndVerification(seedPhrase, proofOptions, proof.proof, proof.publicSignals, vk, version);
     } catch (error) {
-        console.error(`Error during runVKRegistrationTest for ${proofOptions.proofType}:`, error);
+        console.error(`Error during runVKRegistrationTest (${envVar}) for ${proofOptions.proofType}:`, error);
         throw error;
     } finally {
-        if (seedPhrase) {
-            await walletPool.releaseWallet(seedPhrase);
+        if (envVar) {
+            await walletPool.releaseWallet(envVar);
         }
     }
 };
@@ -128,7 +132,6 @@ export const runAllProofTests = async (
         throw new Error(`${failures.length} test(s) failed. See logs for details.`);
     }
 };
-
 
 export const runAllVKRegistrationTests = async (
     proofTypes: ProofType[],

@@ -20,6 +20,15 @@ jobs:
       SEED_PHRASE_9: ${{ secrets.SEED_PHRASE_9 }}
       SEED_PHRASE_10: ${{ secrets.SEED_PHRASE_10 }}
       SEED_PHRASE_11: ${{ secrets.SEED_PHRASE_11 }}
+      SEED_PHRASE_12: ${{ secrets.SEED_PHRASE_12 }}
+      SEED_PHRASE_13: ${{ secrets.SEED_PHRASE_13 }}
+      SEED_PHRASE_14: ${{ secrets.SEED_PHRASE_14 }}
+      SEED_PHRASE_15: ${{ secrets.SEED_PHRASE_15 }}
+      SEED_PHRASE_16: ${{ secrets.SEED_PHRASE_16 }}
+      SEED_PHRASE_17: ${{ secrets.SEED_PHRASE_17 }}
+      SEED_PHRASE_18: ${{ secrets.SEED_PHRASE_18 }}
+      SEED_PHRASE_19: ${{ secrets.SEED_PHRASE_19 }}
+      SEED_PHRASE_20: ${{ secrets.SEED_PHRASE_20 }}
 
     steps:
       - name: Checkout code

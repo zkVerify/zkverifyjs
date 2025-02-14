@@ -6,6 +6,7 @@ import { walletPool } from './common/walletPool';
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
     let wallet: string | null = null;
+    let envVar: string | null = null;
 
     const mockVerifyExecution = jest.fn(async () => {
         const events = new EventEmitter();
@@ -15,6 +16,7 @@ describe('zkVerifySession class', () => {
 
     beforeEach(async () => {
         wallet = null;
+        envVar = null;
     });
 
     afterEach(async () => {
@@ -23,8 +25,8 @@ describe('zkVerifySession class', () => {
             expect(session.api.isConnected).toBe(false);
             expect(session['provider'].isConnected).toBe(false);
         }
-        if (wallet) {
-            await walletPool.releaseWallet(wallet);
+        if (envVar) {
+            await walletPool.releaseWallet(envVar);
         }
         jest.clearAllMocks();
     });
@@ -43,7 +45,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should start a session with an account when seed phrase is provided', async () => {
-        wallet = await walletPool.acquireWallet();
+        [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
         expect(session.api).toBeDefined();
@@ -58,7 +60,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should start a session with a custom WebSocket URL and an account when seed phrase is provided', async () => {
-        wallet = await walletPool.acquireWallet();
+        [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Custom("wss://testnet-rpc.zkverify.io").withAccount(wallet);
         expect(session).toBeDefined();
         expect(session.readOnly).toBe(false);
@@ -67,7 +69,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should correctly handle adding, removing, and re-adding an account', async () => {
-        wallet = await walletPool.acquireWallet();
+        [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().readOnly();
         expect(session.readOnly).toBe(true);
 
@@ -85,7 +87,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should throw an error when adding an account to a session that already has one', async () => {
-        wallet = await walletPool.acquireWallet();
+        [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
@@ -93,7 +95,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should allow verification when an account is active', async () => {
-        wallet = await walletPool.acquireWallet();
+        [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
@@ -118,28 +120,22 @@ describe('zkVerifySession class', () => {
     });
 
     it('should return account information when an account is active', async () => {
-        wallet = await walletPool.acquireWallet();
+        [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-        session.accountInfo = jest.fn(async () => ({
-            address: 'some-address',
-            nonce: 1,
-            freeBalance: '1000',
-            reservedBalance: '500',
-        }));
 
-        const accountInfo = await session.accountInfo();
-        expect(accountInfo).toEqual({
-            address: 'some-address',
-            nonce: 1,
-            freeBalance: '1000',
-            reservedBalance: '500',
+        const accountInfo = await session.accountInfo;
+        expect(accountInfo).toMatchObject({
+            address: expect.any(String),
+            nonce: expect.any(Number),
+            freeBalance: expect.any(String),
+            reservedBalance: expect.any(String),
         });
     });
 
     it('should handle multiple verify calls concurrently', async () => {
-            wallet = await walletPool.acquireWallet();
+            [envVar, wallet] = await walletPool.acquireWallet();
             session = await zkVerifySession.start().Testnet().withAccount(wallet);
             expect(session.readOnly).toBe(false);
 

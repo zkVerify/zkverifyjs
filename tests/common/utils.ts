@@ -74,10 +74,11 @@ export const performVerifyTransaction = async (
     version?: string
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
     const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
+    const accountInfo = await session.accountInfo;
 
     try {
         console.log(
-            `[IN PROGRESS] ${session.account!.address!} ${proofOptions.proofType}` +
+            `[IN PROGRESS] ${accountInfo.address} ${proofOptions.proofType}` +
             (version ? `:${version}` : '') +
             (proofOptions.library ? ` with library: ${proofOptions.library}` : '') +
             (proofOptions.curve ? ` with curve: ${proofOptions.curve}` : '')
@@ -101,7 +102,7 @@ export const performVerifyTransaction = async (
                 : handleCommonEvents(events, proofOptions.proofType, 'verify');
 
             console.log(
-                `[RESULT RECEIVED] ${session.account!.address!} ${proofOptions.proofType}` +
+                `[RESULT RECEIVED] ${accountInfo.address} ${proofOptions.proofType}` +
                 (version ? `:${version}` : '') +
                 ` Transaction result received. Validating...`
             );
@@ -121,14 +122,14 @@ export const performVerifyTransaction = async (
     } catch (error) {
         if (error instanceof Error) {
             console.error(
-                `[ERROR] Account: ${session.account?.address || 'unknown'}, ProofType: ${proofOptions.proofType}` +
+                `[ERROR] Account: ${accountInfo.address || 'unknown'}, ProofType: ${proofOptions.proofType}` +
                 (version ? `:${version}` : ''),
                 error
             );
             throw new Error(`Failed to execute transaction. See logs for details: ${error.message}`);
         } else {
             console.error(
-                `[ERROR] Account: ${session.account?.address || 'unknown'}, ProofType: ${proofOptions.proofType}` +
+                `[ERROR] Account: ${accountInfo.address || 'unknown'}, ProofType: ${proofOptions.proofType}` +
                 (version ? `:${version}` : '') +
                 `, Error: ${JSON.stringify(error)}`
             );
@@ -148,9 +149,10 @@ export const performVKRegistrationAndVerification = async (
     version?: string
 ): Promise<void> => {
     const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
+    const accountInfo = await session.accountInfo;
 
     console.log(
-        `${session.account!.address!} ${proofOptions.proofType} Executing VK registration with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
+        `${accountInfo.address} ${proofOptions.proofType} Executing VK registration with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
     );
 
     const { events: registerEvents, transactionResult: registerTransactionResult } =
