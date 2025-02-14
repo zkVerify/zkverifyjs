@@ -27,9 +27,10 @@ export class ConnectionManager {
     customNetwork?: string,
   ) {
     this.connection = connection;
+    this.accounts = 'accounts' in connection ? connection.accounts : new Map();
     this.customNetwork = !!customNetwork;
     this.readOnly =
-      !('account' in connection) &&
+      !('accounts' in connection) &&
       !('injector' in connection) &&
       !('signer' in connection);
   }

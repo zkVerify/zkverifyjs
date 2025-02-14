@@ -23,6 +23,7 @@ export async function startSession(
     const accounts = new Map(
       seedPhrases.map((phrase) => {
         const account = setupAccount(phrase);
+
         return [account.address, account];
       }),
     );
