@@ -15,7 +15,6 @@ import {
   EstablishedConnection,
 } from '../api/connection/types';
 import { bindMethods } from '../utils/helpers';
-import { AccountInfo } from '../types';
 
 export class zkVerifySession {
   private readonly connectionManager: ConnectionManager;
@@ -89,19 +88,6 @@ export class zkVerifySession {
   }
 
   /**
-   * Retrieves information for all active accounts in the current session.
-   *
-   * @returns {Promise<AccountInfo[]>} A promise that resolves to an array of AccountInfo objects,
-   * representing all accounts in the session. As no accountIdentifier is provided for the call, all accounts are returned.
-   * @throws {Error} If no accounts are found in the session.
-   */
-  get accountInfo(): Promise<AccountInfo[]> {
-    return this.connectionManager
-      .getAccountInfo()
-      .then((result) => (Array.isArray(result) ? result : [result]));
-  }
-
-  /**
    * Getter for connection details.
    * @returns {AccountConnection | WalletConnection | EstablishedConnection} The connection details.
    */
@@ -132,7 +118,7 @@ export class zkVerifySession {
       const connectionManager = await ConnectionManager.createSession(options);
       return new zkVerifySession(connectionManager);
     } catch (error) {
-      console.error(
+      console.debug(
         `❌ Failed to start session for network: ${options.host}`,
         error,
       );

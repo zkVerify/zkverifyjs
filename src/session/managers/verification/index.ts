@@ -32,7 +32,7 @@ export class VerificationManager {
    *
    * @returns {ProofMethodMap} A map of proof types to their corresponding builder methods.
    */
-  verify(accountIdentifier?: string | number): ProofMethodMap {
+  verify(accountAddress?: string): ProofMethodMap {
     const builderMethods: Partial<ProofMethodMap> = {};
 
     for (const proofType in ProofType) {
@@ -47,7 +47,7 @@ export class VerificationManager {
 
             validateProofTypeOptions(proofOptions);
 
-            return this.createVerifyBuilder(proofOptions, accountIdentifier);
+            return this.createVerifyBuilder(proofOptions, accountAddress);
           },
           writable: false,
           configurable: false,
@@ -101,7 +101,7 @@ export class VerificationManager {
    *   - `proofType` {ProofType} - The type of proof to be used.
    *   - `library` {Library} [optional] - The cryptographic library to use, if required.
    *   - `curve` {CurveType} [optional] - The elliptic curve to use, if required.
-   * @param {string | number} [accountIdentifier] - The account identifier to use for verification.
+   * @param {string} [accountAddress] - The account to use for verification.
    *   - If a `string`, it represents the account address.
    *   - If a `number`, it represents the account index.
    *   - If `undefined`, the first available account is used by default.
@@ -110,12 +110,12 @@ export class VerificationManager {
    */
   private createVerifyBuilder(
     proofOptions: ProofOptions,
-    accountIdentifier?: string | number,
+    accountAddress?: string,
   ): VerificationBuilder {
     return new VerificationBuilder(
       this.executeVerify.bind(this),
       proofOptions,
-      accountIdentifier,
+      accountAddress,
     );
   }
 

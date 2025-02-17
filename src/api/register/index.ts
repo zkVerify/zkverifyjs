@@ -16,7 +16,7 @@ export async function registerVk(
   events: EventEmitter;
   transactionResult: Promise<VKRegistrationTransactionInfo>;
 }> {
-  const { proofOptions, accountIdentifier } = options;
+  const { proofOptions, accountAddress } = options;
   const emitter = new EventEmitter();
 
   const processor = await getProofProcessor(proofOptions.proofType);
@@ -39,20 +39,14 @@ export async function registerVk(
   let selectedAccount: KeyringPair | undefined;
 
   if ('accounts' in connection) {
-    if (accountIdentifier !== undefined) {
-      if (typeof accountIdentifier === 'number') {
-        selectedAccount = Array.from(connection.accounts.values())[
-          accountIdentifier
-        ];
-      } else {
-        selectedAccount = connection.accounts.get(accountIdentifier);
-      }
+    if (accountAddress !== undefined) {
+      selectedAccount = connection.accounts.get(accountAddress);
     } else {
       selectedAccount = Array.from(connection.accounts.values())[0];
     }
 
     if (!selectedAccount) {
-      throw new Error(`Account ${accountIdentifier ?? '0'} not found.`);
+      throw new Error(`Account ${accountAddress ?? ''} not found.`);
     }
   }
 

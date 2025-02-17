@@ -70,23 +70,23 @@ export class ExtrinsicManager {
    * Estimates the cost of a given extrinsic.
    *
    * @param {SubmittableExtrinsic<'promise'>} extrinsic - The extrinsic to estimate.
-   * @param {string | number} [accountIdentifier] - The account identifier (either an address or an index) to use for estimation.
+   * @param {string} [accountAddress] - The account address to use for estimation.
    * If not provided, the first available account will be used.
    * @returns {Promise<ExtrinsicCostEstimate>} A promise that resolves to an object containing the estimated fee and extrinsic details.
    * @throws {Error} If the session is in read-only mode or no account is available.
    */
   async estimateCost(
     extrinsic: SubmittableExtrinsic<'promise'>,
-    accountIdentifier?: string | number,
+    accountAddress?: string,
   ): Promise<ExtrinsicCostEstimate> {
     checkReadOnly(this.connectionManager.connectionDetails);
 
     let selectedAccount: KeyringPair;
 
-    if (accountIdentifier !== undefined) {
-      selectedAccount = this.connectionManager.getAccount(accountIdentifier);
+    if (accountAddress !== undefined) {
+      selectedAccount = this.connectionManager.getAccount(accountAddress);
     } else {
-      selectedAccount = this.connectionManager.getAccount(0);
+      selectedAccount = this.connectionManager.getAccount();
     }
 
     return estimateCost(this.connectionManager.api, extrinsic, selectedAccount);

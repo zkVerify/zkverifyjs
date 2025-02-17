@@ -25,21 +25,17 @@ export const verify = async (
     let selectedAccount: KeyringPair | undefined;
 
     if ('accounts' in connection) {
-      if (options.accountIdentifier !== undefined) {
-        if (typeof options.accountIdentifier === 'number') {
-          selectedAccount = Array.from(connection.accounts.values())[
-            options.accountIdentifier
-          ];
-        } else {
-          selectedAccount = connection.accounts.get(options.accountIdentifier);
-        }
+      const accountAddress = options.accountAddress;
+
+      if (accountAddress) {
+        selectedAccount = connection.accounts.get(accountAddress);
       } else {
         selectedAccount = Array.from(connection.accounts.values())[0];
       }
 
       if (!selectedAccount) {
         throw new Error(
-          `Account ${options.accountIdentifier ?? '0'} not found.`,
+          `Account ${accountAddress ?? ''} not found in session.`,
         );
       }
     }
@@ -83,12 +79,10 @@ export const verify = async (
         );
       } else if ('injector' in connection) {
         const { signer } = connection.injector;
-        const { accountAddress } = connection;
-
         return await handleTransaction(
           api,
           transaction,
-          accountAddress,
+          connection.accountAddress,
           signer,
           emitter,
           options,

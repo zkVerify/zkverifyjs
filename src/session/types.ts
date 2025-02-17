@@ -14,7 +14,7 @@ export interface WalletOptions {
 
 export interface VerifyOptions {
   proofOptions: ProofOptions;
-  accountIdentifier?: string | number;
+  accountAddress?: string;
   nonce?: number;
   waitForNewAttestationEvent?: boolean;
   registeredVk?: boolean;

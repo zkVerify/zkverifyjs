@@ -74,7 +74,7 @@ export const performVerifyTransaction = async (
     version?: string
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
     const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
-    const accountInfo = await session.accountInfo;
+    const accountInfo = await session.getAccountInfo();
 
     try {
         console.log(
@@ -149,7 +149,7 @@ export const performVKRegistrationAndVerification = async (
     version?: string
 ): Promise<void> => {
     const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
-    const accountInfo = await session.accountInfo;
+    const accountInfo = await session.getAccountInfo();
 
     console.log(
         `${accountInfo[0].address} ${proofOptions.proofType} Executing VK registration with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`

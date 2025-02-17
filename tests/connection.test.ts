@@ -23,7 +23,7 @@ describe('zkVerifySession - accountInfo', () => {
             [envVar, wallet] = await walletPool.acquireWallet();
             session = await zkVerifySession.start().Testnet().withAccount(wallet);
 
-            const accountInfo: AccountInfo[] = await session.accountInfo;
+            const accountInfo: AccountInfo[] = await session.getAccountInfo();
             expect(accountInfo).toBeDefined();
 
             expect(accountInfo[0].address).toBeDefined();
@@ -56,36 +56,34 @@ describe('zkVerifySession - accountInfo', () => {
         try {
             [envVar, wallet] = await walletPool.acquireWallet();
             session = await zkVerifySession.start().Testnet().readOnly();
-            await expect(session.accountInfo).rejects.toThrow(
+            await expect(session.getAccountInfo()).rejects.toThrow(
                 'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
             );
 
             let accountInfo: AccountInfo[];
 
             await session.addAccount(wallet);
-            accountInfo = await session.accountInfo;
+            accountInfo = await session.getAccountInfo();
             expect(accountInfo).toBeDefined();
             expect(accountInfo[0].address).toBeDefined();
             expect(typeof accountInfo[0].address).toBe('string');
             expect(session.readOnly).toBeFalsy()
 
-            session.removeAccount(0);
+            await session.removeAccount();
             await expect(session.readOnly).toBeTruthy()
-            await expect(session.accountInfo).rejects.toThrow(
+            await expect(session.getAccountInfo()).rejects.toThrow(
                 'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
             );
 
-            session.addAccount(wallet);
-            accountInfo = await session.accountInfo;
+            const address = await session.addAccount(wallet);
+            accountInfo = await session.getAccountInfo();
             expect(accountInfo).toBeDefined();
             expect(accountInfo[0].address).toBeDefined();
             expect(typeof accountInfo[0].address).toBe('string');
             expect(session.readOnly).toBeFalsy()
 
-            const address = accountInfo[0].address
-
-            session.removeAccount(address);
-            await expect(session.accountInfo).rejects.toThrow(
+            await session.removeAccount(address);
+            await expect(session.getAccountInfo()).rejects.toThrow(
                 'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
             );
             await expect(session.readOnly).toBeTruthy()

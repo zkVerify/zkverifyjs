@@ -7,6 +7,8 @@ describe('zkVerifySession class', () => {
     let session: zkVerifySession;
     let wallet: string | null = null;
     let envVar: string | null = null;
+    let wallet2: string | null = null;
+    let envVar2: string | null = null;
 
     const mockVerifyExecution = jest.fn(async () => {
         const events = new EventEmitter();
@@ -17,6 +19,8 @@ describe('zkVerifySession class', () => {
     beforeEach(async () => {
         wallet = null;
         envVar = null;
+        wallet2 = null;
+        envVar2 = null;
     });
 
     afterEach(async () => {
@@ -27,6 +31,9 @@ describe('zkVerifySession class', () => {
         }
         if (envVar) {
             await walletPool.releaseWallet(envVar);
+        }
+        if (envVar2) {
+            await walletPool.releaseWallet(envVar2);
         }
         jest.clearAllMocks();
     });
@@ -73,16 +80,16 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start().Testnet().readOnly();
         expect(session.readOnly).toBe(true);
 
-        session.addAccount(wallet);
+        await session.addAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-        session.removeAccount(0);
+        await session.removeAccount();
         expect(session.readOnly).toBe(true);
 
-        session.addAccount(wallet);
+        const address = await session.addAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-        session.removeAccount(0);
+        await session.removeAccount(address);
         expect(session.readOnly).toBe(true);
     });
 
@@ -91,8 +98,18 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
 
         expect(session.readOnly).toBe(false);
-        expect(() => session.addAccount(wallet!))
-            .toThrow(/^Account \w+ is already active\.$/);
+        await expect(session.addAccount(wallet!))
+            .rejects.toThrow(/^Account \w+ is already active\.$/);
+    });
+
+    it('should throw an error when trying to remove a non-existent account', async () => {
+        [envVar, wallet] = await walletPool.acquireWallet();
+        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+
+        const nonExistentAddress = '5FakeAddressDoesNotExist12345';
+
+        await expect(session.removeAccount(nonExistentAddress))
+            .rejects.toThrow(`Account ${nonExistentAddress} not found.`);
     });
 
     it('should allow verification when an account is active', async () => {
@@ -126,7 +143,7 @@ describe('zkVerifySession class', () => {
         expect(session.readOnly).toBe(false);
 
 
-        const accountInfo = await session.accountInfo;
+        const accountInfo = await session.getAccountInfo();
         expect(accountInfo).toMatchObject([{
             address: expect.any(String),
             nonce: expect.any(Number),
@@ -167,4 +184,38 @@ describe('zkVerifySession class', () => {
             expect(result1.transactionResult).toBeDefined();
             expect(result2.transactionResult).toBeDefined();
         });
+
+    it('should throw an error when starting a session with duplicate accounts', async () => {
+        [envVar, wallet] = await walletPool.acquireWallet();
+
+        await expect(zkVerifySession.start().Testnet().withAccounts([wallet, wallet]))
+            .rejects.toThrow(/^Account \w+ is already active\.$/);
+    });
+
+    it('should allow multiple unique accounts to be added using withAccounts, remove one, and verify the remaining account', async () => {
+        [envVar, wallet] = await walletPool.acquireWallet();
+        [envVar2, wallet2] = await walletPool.acquireWallet();
+
+        session = await zkVerifySession.start().Testnet().withAccounts([wallet, wallet2]);
+
+        let accountsInfo = await session.getAccountInfo();
+
+        expect(Array.isArray(accountsInfo)).toBe(true);
+        expect(accountsInfo.length).toBe(2);
+
+        const firstAccountAddress = accountsInfo[0].address;
+        const secondAccountAddress = accountsInfo[1].address;
+
+        expect(firstAccountAddress).not.toEqual(secondAccountAddress);
+
+        await session.removeAccount(firstAccountAddress);
+        expect(session.readOnly).toBe(false);
+
+        const remainingAccountsInfo = await session.getAccountInfo(secondAccountAddress);
+        expect(remainingAccountsInfo.length).toBe(1);
+        expect(remainingAccountsInfo[0].address).toEqual(secondAccountAddress);
+
+        await session.removeAccount(secondAccountAddress);
+        expect(session.readOnly).toBe(true);
+    });
 });
