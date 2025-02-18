@@ -47,7 +47,6 @@ export const loadVerificationKey = (proofOptions: ProofOptions, version?: string
     return proofData.vk;
 };
 
-
 export const validateEventResults = (eventResults: EventResults, expectAttestation: boolean): void => {
     expect(eventResults.broadcastEmitted).toBe(true);
     expect(eventResults.includedInBlockEmitted).toBe(true);
@@ -64,7 +63,8 @@ export const validateEventResults = (eventResults: EventResults, expectAttestati
 };
 
 export const performVerifyTransaction = async (
-    seedPhrase: string,
+    session: zkVerifySession,
+    accountAddress: string,
     proofOptions: ProofOptions,
     proof: any,
     publicSignals: any,
@@ -73,19 +73,19 @@ export const performVerifyTransaction = async (
     validatePoe: boolean = false,
     version?: string
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
-    const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
-    const accountInfo = await session.getAccountInfo();
-
     try {
         console.log(
-            `[IN PROGRESS] ${accountInfo[0].address} ${proofOptions.proofType}` +
+            `[IN PROGRESS] ${accountAddress} ${proofOptions.proofType}` +
             (version ? `:${version}` : '') +
             (proofOptions.library ? ` with library: ${proofOptions.library}` : '') +
             (proofOptions.curve ? ` with curve: ${proofOptions.curve}` : '')
         );
 
         const verifyTransaction = async () => {
-            const verifier = session.verify()[proofOptions.proofType](proofOptions.library, proofOptions.curve);
+            const verifier = session.verify(accountAddress)[proofOptions.proofType](
+                proofOptions.library,
+                proofOptions.curve
+            );
             const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
 
             const { events, transactionResult } = await verify.execute({
@@ -102,7 +102,7 @@ export const performVerifyTransaction = async (
                 : handleCommonEvents(events, proofOptions.proofType, 'verify');
 
             console.log(
-                `[RESULT RECEIVED] ${accountInfo[0].address} ${proofOptions.proofType}` +
+                `[RESULT RECEIVED] ${accountAddress} ${proofOptions.proofType}` +
                 (version ? `:${version}` : '') +
                 ` Transaction result received. Validating...`
             );
@@ -120,48 +120,38 @@ export const performVerifyTransaction = async (
 
         return await retryWithDelay(verifyTransaction);
     } catch (error) {
-        if (error instanceof Error) {
-            console.error(
-                `[ERROR] Account: ${accountInfo[0].address || 'unknown'}, ProofType: ${proofOptions.proofType}` +
-                (version ? `:${version}` : ''),
-                error
-            );
-            throw new Error(`Failed to execute transaction. See logs for details: ${error.message}`);
-        } else {
-            console.error(
-                `[ERROR] Account: ${accountInfo[0].address || 'unknown'}, ProofType: ${proofOptions.proofType}` +
-                (version ? `:${version}` : '') +
-                `, Error: ${JSON.stringify(error)}`
-            );
-            throw new Error(`Failed to execute transaction. See logs for details.`);
-        }
-    } finally {
-        await session.close();
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        console.error(
+            `[ERROR] Account: ${accountAddress}, ProofType: ${proofOptions.proofType}` +
+            (version ? `:${version}` : ''),
+            error
+        );
+
+        throw new Error(`Failed to execute transaction. See logs for details: ${errorMessage}`);
     }
 };
 
 export const performVKRegistrationAndVerification = async (
-    seedPhrase: string,
+    session: zkVerifySession,
+    accountAddress: string,
     proofOptions: ProofOptions,
     proof: any,
     publicSignals: any,
     vk: string,
     version?: string
 ): Promise<void> => {
-    const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
-    const accountInfo = await session.getAccountInfo();
-
     console.log(
-        `${accountInfo[0].address} ${proofOptions.proofType} Executing VK registration with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
+        `${accountAddress} ${proofOptions.proofType} Executing VK registration with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
     );
 
     const { events: registerEvents, transactionResult: registerTransactionResult } =
         await session
-            .registerVerificationKey()[proofOptions.proofType](
+            .registerVerificationKey(accountAddress)[proofOptions.proofType](
             proofOptions.library,
             proofOptions.curve
         )
-            .execute(vk);
+        .execute(vk);
 
     const registerResults = handleCommonEvents(
         registerEvents,
@@ -179,7 +169,7 @@ export const performVKRegistrationAndVerification = async (
 
     const { events: verifyEvents, transactionResult: verifyTransactionResult } =
         await session
-            .verify()[proofOptions.proofType](proofOptions.library, proofOptions.curve)
+            .verify(accountAddress)[proofOptions.proofType](proofOptions.library, proofOptions.curve)
             .withRegisteredVk()
             .execute({
                 proofData: {
@@ -195,8 +185,6 @@ export const performVKRegistrationAndVerification = async (
     const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
     validateVerifyTransactionInfo(verifyTransactionInfo, proofOptions.proofType, false);
     validateEventResults(verifyResults, false);
-
-    await session.close();
 };
 
 export const validateTransactionInfo = (
