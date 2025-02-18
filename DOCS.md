@@ -502,7 +502,7 @@ const extrinsic = await session.estimateCost(extrinsic);
 ### `zkVerifySession.accountInfo`
 
 ```typescript
-const accountInfo: AccountInfo = await session.accountInfo;
+const accountInfo: AccountInfo = await session.accountInfo();
 console.log(accountInfo.address);
 console.log(accountInfo.nonce);
 console.log(accountInfo.freeBalance);
