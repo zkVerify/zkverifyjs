@@ -55,7 +55,9 @@ describe('zkVerifySession - accountInfo', () => {
 
         try {
             [envVar, wallet] = await walletPool.acquireWallet();
+
             session = await zkVerifySession.start().Testnet().readOnly();
+
             await expect(session.getAccountInfo()).rejects.toThrow(
                 'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
             );
@@ -87,7 +89,6 @@ describe('zkVerifySession - accountInfo', () => {
                 'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
             );
             await expect(session.readOnly).toBeTruthy()
-
         } finally {
             if (session) await session.close();
         }

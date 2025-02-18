@@ -111,6 +111,7 @@ export class zkVerifySession {
    * @param {zkVerifySessionOptions} options - The session configuration options.
    * @returns {Promise<zkVerifySession>} A promise resolving to the zkVerifySession instance.
    */
+
   private static async _startSession(
     options: zkVerifySessionOptions,
   ): Promise<zkVerifySession> {

@@ -142,7 +142,6 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-
         const accountInfo = await session.getAccountInfo();
         expect(accountInfo).toMatchObject([{
             address: expect.any(String),
