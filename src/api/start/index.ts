@@ -26,7 +26,10 @@ export async function startSession(
     for (const phrase of seedPhrases) {
       const account = setupAccount(phrase);
       if (uniqueAccounts.has(account.address)) {
-        throw new Error(`Account ${account.address} is already active.`);
+        console.warn(
+          `Skipping adding account ${account.address} to session as it is already active.`,
+        );
+        continue;
       }
       uniqueAccounts.set(account.address, account);
     }

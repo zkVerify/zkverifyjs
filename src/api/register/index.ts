@@ -1,7 +1,11 @@
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { handleTransaction } from '../../utils/transactions';
-import { getProofPallet, getProofProcessor } from '../../utils/helpers';
+import {
+  getProofPallet,
+  getProofProcessor,
+  getSelectedAccount,
+} from '../../utils/helpers';
 import { VKRegistrationTransactionInfo } from '../../types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { AccountConnection } from '../connection/types';
@@ -36,19 +40,7 @@ export async function registerVk(
     throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);
   }
 
-  let selectedAccount: KeyringPair | undefined;
-
-  if ('accounts' in connection) {
-    if (accountAddress !== undefined) {
-      selectedAccount = connection.accounts.get(accountAddress);
-    } else {
-      selectedAccount = Array.from(connection.accounts.values())[0];
-    }
-
-    if (!selectedAccount) {
-      throw new Error(`Account ${accountAddress ?? ''} not found.`);
-    }
-  }
+  const selectedAccount = getSelectedAccount(connection, accountAddress);
 
   const registerExtrinsic: SubmittableExtrinsic<'promise'> =
     connection.api.tx[pallet].registerVk(formattedVk);

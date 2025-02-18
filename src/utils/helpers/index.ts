@@ -12,6 +12,7 @@ import {
   EstablishedConnection,
   WalletConnection,
 } from '../../api/connection/types';
+import { KeyringPair } from '@polkadot/keyring/types';
 
 /**
  * Waits for a specific `NewAttestation` event and returns the associated data.
@@ -210,3 +211,31 @@ export function bindMethods<T extends object>(target: T, source: object): void {
     }
   }
 }
+
+/**
+ * Retrieves the selected account from the connection based on the provided account address.
+ * If no account address is provided, it defaults to the first available account.
+ *
+ * @param {AccountConnection} connection - The connection containing account information.
+ * @param {string | undefined} accountAddress - The optional account address to retrieve.
+ * @returns {KeyringPair} - The selected account.
+ * @throws {Error} If the account is not found.
+ */
+export const getSelectedAccount = (
+  connection: AccountConnection,
+  accountAddress?: string,
+): KeyringPair => {
+  let selectedAccount: KeyringPair | undefined;
+
+  if (accountAddress) {
+    selectedAccount = connection.accounts.get(accountAddress);
+  } else {
+    selectedAccount = Array.from(connection.accounts.values())[0];
+  }
+
+  if (!selectedAccount) {
+    throw new Error(`Account ${accountAddress ?? ''} not found in session.`);
+  }
+
+  return selectedAccount;
+};

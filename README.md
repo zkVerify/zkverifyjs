@@ -86,12 +86,12 @@ const session = await zkVerifySession.start()
 ```typescript
 // Use a single account
 const session = await zkVerifySession.start()
-        .Testnet() // Custom network
+        .Testnet() // Preconfigured network selection
         .withAccount("my seed phrase"); // Full session with a single active account
 
 // Use many accounts
 const multiAccountSession = await zkVerifySession.start()
-        .Testnet() // Custom network
+        .Testnet() // Preconfigured network selection
         .withAccounts(["my seed phrase 1", "my seed phrase 2", "my seed phrase 3"]); // Full session with multiple active accounts
 ```
 4. Full Backend Session (send transactions)  with Custom WebSocket:

@@ -11,6 +11,7 @@ import { ProofData } from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { getSelectedAccount } from '../../utils/helpers';
 
 export const verify = async (
   connection: AccountConnection | WalletConnection,
@@ -25,19 +26,7 @@ export const verify = async (
     let selectedAccount: KeyringPair | undefined;
 
     if ('accounts' in connection) {
-      const accountAddress = options.accountAddress;
-
-      if (accountAddress) {
-        selectedAccount = connection.accounts.get(accountAddress);
-      } else {
-        selectedAccount = Array.from(connection.accounts.values())[0];
-      }
-
-      if (!selectedAccount) {
-        throw new Error(
-          `Account ${accountAddress ?? ''} not found in session.`,
-        );
-      }
+      selectedAccount = getSelectedAccount(connection, options.accountAddress);
     }
 
     if ('proofData' in input && input.proofData) {

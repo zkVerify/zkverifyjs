@@ -7,11 +7,14 @@ import { VerifyOptions } from '../../session/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { ProofType, Library, CurveType } from '../../config';
 import { KeyringPair } from '@polkadot/keyring/types';
+import * as helpers from '../../utils/helpers';
 
 jest.mock('../../utils/helpers', () => ({
   getProofPallet: jest.fn(),
   getProofProcessor: jest.fn(),
+  getSelectedAccount: jest.fn(),
 }));
+
 jest.mock('../../utils/transactions', () => ({
   handleTransaction: jest.fn(),
 }));
@@ -25,6 +28,12 @@ describe('registerVk', () => {
   let mockExtrinsic: { signAndSend: jest.Mock };
 
   beforeEach(() => {
+    jest
+      .spyOn(helpers, 'getSelectedAccount')
+      .mockImplementation(
+        jest.requireActual('../../utils/helpers').getSelectedAccount,
+      );
+
     connection = {
       api: {
         tx: {
