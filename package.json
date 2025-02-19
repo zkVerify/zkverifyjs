@@ -84,12 +84,12 @@
   "dependencies": {
     "@polkadot/api": "15.4.1",
     "@polkadot/extension-dapp": "0.58.1",
+    "async-mutex": "0.5.0",
     "bignumber.js": "9.1.2",
     "dotenv": "16.4.7",
     "js-sha3": "0.9.3",
     "snarkjs": "0.7.4",
-    "web3": "4.16.0",
-    "async-mutex": "0.5.0"
+    "web3": "4.16.0"
   },
   "devDependencies": {
     "@commitlint/cli": "19.6.1",
@@ -103,10 +103,12 @@
     "@types/web3": "1.2.2",
     "@typescript-eslint/eslint-plugin": "8.21.0",
     "@typescript-eslint/parser": "8.21.0",
+    "axios": "^1.7.9",
     "conventional-changelog-cli": "5.0.0",
     "eslint": "9.18.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.2.3",
+    "fastify": "^4.29.0",
     "globals": "15.14.0",
     "husky": "9.1.7",
     "jest": "29.7.0",

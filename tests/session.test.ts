@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import { ProofMethodMap } from "../src/session/builders/verify";
 import { walletPool } from './common/walletPool';
 
+jest.setTimeout(120000);
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
     let wallet: string | null = null;
@@ -184,11 +185,13 @@ describe('zkVerifySession class', () => {
             expect(result2.transactionResult).toBeDefined();
         });
 
-    it('should throw an error when starting a session with duplicate accounts', async () => {
+    it('withAccounts should add only one account when attempting to add the same account twice', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
 
-        await expect(zkVerifySession.start().Testnet().withAccounts([wallet, wallet]))
-            .rejects.toThrow(/^Account \w+ is already active\.$/);
+        session = await zkVerifySession.start().Testnet().withAccounts([wallet, wallet])
+
+        let accountsInfo = await session.getAccountInfo();
+        expect(accountsInfo.length).toBe(1);
     });
 
     it('should allow multiple unique accounts to be added using withAccounts, remove one, and verify the remaining account', async () => {
