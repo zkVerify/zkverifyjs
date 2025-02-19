@@ -6,11 +6,15 @@ import { AccountConnection } from '../connection/types';
 import { VerifyOptions } from '../../session/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { ProofType, Library, CurveType } from '../../config';
+import { KeyringPair } from '@polkadot/keyring/types';
+import * as helpers from '../../utils/helpers';
 
 jest.mock('../../utils/helpers', () => ({
   getProofPallet: jest.fn(),
   getProofProcessor: jest.fn(),
+  getSelectedAccount: jest.fn(),
 }));
+
 jest.mock('../../utils/transactions', () => ({
   handleTransaction: jest.fn(),
 }));
@@ -24,6 +28,12 @@ describe('registerVk', () => {
   let mockExtrinsic: { signAndSend: jest.Mock };
 
   beforeEach(() => {
+    jest
+      .spyOn(helpers, 'getSelectedAccount')
+      .mockImplementation(
+        jest.requireActual('../../utils/helpers').getSelectedAccount,
+      );
+
     connection = {
       api: {
         tx: {
@@ -32,7 +42,9 @@ describe('registerVk', () => {
           },
         },
       },
-      account: 'mockAccount',
+      accounts: new Map([
+        ['mockAddress', { address: 'mockAddress' } as KeyringPair],
+      ]),
     } as unknown as AccountConnection;
 
     mockOptions = {
@@ -86,7 +98,7 @@ describe('registerVk', () => {
     expect(handleTransaction).toHaveBeenCalledWith(
       connection.api,
       mockExtrinsic,
-      connection.account,
+      Array.from(connection.accounts.values())[0],
       undefined,
       expect.any(EventEmitter),
       mockOptions,

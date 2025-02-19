@@ -3,10 +3,13 @@ import { EventEmitter } from 'events';
 import { ProofMethodMap } from "../src/session/builders/verify";
 import { walletPool } from './common/walletPool';
 
+jest.setTimeout(120000);
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
     let wallet: string | null = null;
     let envVar: string | null = null;
+    let wallet2: string | null = null;
+    let envVar2: string | null = null;
 
     const mockVerifyExecution = jest.fn(async () => {
         const events = new EventEmitter();
@@ -17,6 +20,8 @@ describe('zkVerifySession class', () => {
     beforeEach(async () => {
         wallet = null;
         envVar = null;
+        wallet2 = null;
+        envVar2 = null;
     });
 
     afterEach(async () => {
@@ -27,6 +32,9 @@ describe('zkVerifySession class', () => {
         }
         if (envVar) {
             await walletPool.releaseWallet(envVar);
+        }
+        if (envVar2) {
+            await walletPool.releaseWallet(envVar2);
         }
         jest.clearAllMocks();
     });
@@ -73,25 +81,36 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start().Testnet().readOnly();
         expect(session.readOnly).toBe(true);
 
-        session.addAccount(wallet);
+        await session.addAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-        session.removeAccount();
+        await session.removeAccount();
         expect(session.readOnly).toBe(true);
 
-        session.addAccount(wallet);
+        const address = await session.addAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-        session.removeAccount();
+        await session.removeAccount(address);
         expect(session.readOnly).toBe(true);
     });
 
-    it('should throw an error when adding an account to a session that already has one', async () => {
+    it('should throw an error when adding an account to a session that already has been added', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
-        expect(session.readOnly).toBe(false);
 
-        expect(() => session.addAccount('random-seed-phrase')).toThrow('An account is already active in this session.');
+        expect(session.readOnly).toBe(false);
+        await expect(session.addAccount(wallet!))
+            .rejects.toThrow(/^Account \w+ is already active\.$/);
+    });
+
+    it('should throw an error when trying to remove a non-existent account', async () => {
+        [envVar, wallet] = await walletPool.acquireWallet();
+        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+
+        const nonExistentAddress = '5FakeAddressDoesNotExist12345';
+
+        await expect(session.removeAccount(nonExistentAddress))
+            .rejects.toThrow(`Account ${nonExistentAddress} not found.`);
     });
 
     it('should allow verification when an account is active', async () => {
@@ -124,14 +143,13 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-
-        const accountInfo = await session.accountInfo;
-        expect(accountInfo).toMatchObject({
+        const accountInfo = await session.getAccountInfo();
+        expect(accountInfo).toMatchObject([{
             address: expect.any(String),
             nonce: expect.any(Number),
             freeBalance: expect.any(String),
             reservedBalance: expect.any(String),
-        });
+        }]);
     });
 
     it('should handle multiple verify calls concurrently', async () => {
@@ -166,4 +184,40 @@ describe('zkVerifySession class', () => {
             expect(result1.transactionResult).toBeDefined();
             expect(result2.transactionResult).toBeDefined();
         });
+
+    it('withAccounts should add only one account when attempting to add the same account twice', async () => {
+        [envVar, wallet] = await walletPool.acquireWallet();
+
+        session = await zkVerifySession.start().Testnet().withAccounts([wallet, wallet])
+
+        let accountsInfo = await session.getAccountInfo();
+        expect(accountsInfo.length).toBe(1);
+    });
+
+    it('should allow multiple unique accounts to be added using withAccounts, remove one, and verify the remaining account', async () => {
+        [envVar, wallet] = await walletPool.acquireWallet();
+        [envVar2, wallet2] = await walletPool.acquireWallet();
+
+        session = await zkVerifySession.start().Testnet().withAccounts([wallet, wallet2]);
+
+        let accountsInfo = await session.getAccountInfo();
+
+        expect(Array.isArray(accountsInfo)).toBe(true);
+        expect(accountsInfo.length).toBe(2);
+
+        const firstAccountAddress = accountsInfo[0].address;
+        const secondAccountAddress = accountsInfo[1].address;
+
+        expect(firstAccountAddress).not.toEqual(secondAccountAddress);
+
+        await session.removeAccount(firstAccountAddress);
+        expect(session.readOnly).toBe(false);
+
+        const remainingAccountsInfo = await session.getAccountInfo(secondAccountAddress);
+        expect(remainingAccountsInfo.length).toBe(1);
+        expect(remainingAccountsInfo[0].address).toEqual(secondAccountAddress);
+
+        await session.removeAccount(secondAccountAddress);
+        expect(session.readOnly).toBe(true);
+    });
 });

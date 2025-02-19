@@ -10,6 +10,9 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'text-summary'],
   setupFiles: ['dotenv/config'],
+  globalSetup: '<rootDir>/jest.setup.js',
+  globalTeardown: '<rootDir>/jest.teardown.js',
+
   globals: {
     'ts-jest': {
       tsconfig: 'tsconfig.jest.json'
@@ -17,5 +20,6 @@ module.exports = {
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1"
-  }
+  },
+  forceExit: true
 };

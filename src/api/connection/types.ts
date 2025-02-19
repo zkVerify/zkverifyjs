@@ -8,7 +8,7 @@ export interface EstablishedConnection {
 }
 
 export interface AccountConnection extends EstablishedConnection {
-  account: KeyringPair;
+  accounts: Map<string, KeyringPair>;
 }
 
 export interface WalletConnection extends EstablishedConnection {

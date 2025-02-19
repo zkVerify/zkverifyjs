@@ -32,7 +32,7 @@ export class VerificationManager {
    *
    * @returns {ProofMethodMap} A map of proof types to their corresponding builder methods.
    */
-  verify(): ProofMethodMap {
+  verify(accountAddress?: string): ProofMethodMap {
     const builderMethods: Partial<ProofMethodMap> = {};
 
     for (const proofType in ProofType) {
@@ -47,7 +47,7 @@ export class VerificationManager {
 
             validateProofTypeOptions(proofOptions);
 
-            return this.createVerifyBuilder(proofOptions);
+            return this.createVerifyBuilder(proofOptions, accountAddress);
           },
           writable: false,
           configurable: false,
@@ -95,16 +95,28 @@ export class VerificationManager {
 
   /**
    * Factory method to create a `VerificationBuilder` for the given proof type.
-   * The builder allows for chaining options and finally executing the verification process.
+   * The builder allows for chaining options and executing the verification process.
    *
-   * @param {ProofType} proofType - The type of proof to be used.
-   * @param {Library} [library] - The optional library to be used, if required by the proof type.
-   * @param {CurveType} [curve] - The optional curve to be used, if required by the proof type.
-   * @returns {VerificationBuilder} A new instance of `VerificationBuilder`.
+   * @param {ProofOptions} proofOptions - An object containing proof-related options:
+   *   - `proofType` {ProofType} - The type of proof to be used.
+   *   - `library` {Library} [optional] - The cryptographic library to use, if required.
+   *   - `curve` {CurveType} [optional] - The elliptic curve to use, if required.
+   * @param {string} [accountAddress] - The account to use for verification.
+   *   - If a `string`, it represents the account address.
+   *   - If a `number`, it represents the account index.
+   *   - If `undefined`, the first available account is used by default.
+   * @returns {VerificationBuilder} A new instance of `VerificationBuilder` configured with the provided proof options and account.
    * @private
    */
-  private createVerifyBuilder(proofOptions: ProofOptions): VerificationBuilder {
-    return new VerificationBuilder(this.executeVerify.bind(this), proofOptions);
+  private createVerifyBuilder(
+    proofOptions: ProofOptions,
+    accountAddress?: string,
+  ): VerificationBuilder {
+    return new VerificationBuilder(
+      this.executeVerify.bind(this),
+      proofOptions,
+      accountAddress,
+    );
   }
 
   /**

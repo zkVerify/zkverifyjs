@@ -10,11 +10,14 @@ import { ProofType, Library, CurveType } from '../../config';
 import { VerifyInput } from './types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { createSubmitProofExtrinsic } from '../extrinsic';
+import { KeyringPair } from '@polkadot/keyring/types';
+import * as helpers from '../../utils/helpers';
 
 jest.mock('../../utils/helpers', () => ({
   getProofPallet: jest.fn(),
   getProofProcessor: jest.fn(),
   validateProofVersion: jest.fn(),
+  getSelectedAccount: jest.fn(),
 }));
 jest.mock('../../utils/transactions', () => ({
   handleTransaction: jest.fn(),
@@ -31,10 +34,18 @@ describe('verify', () => {
   let mockProcessor: ProofProcessor;
 
   beforeEach(() => {
+    jest
+      .spyOn(helpers, 'getSelectedAccount')
+      .mockImplementation(
+        jest.requireActual('../../utils/helpers').getSelectedAccount,
+      );
+
     mockAccountConnection = {
       api: { method: jest.fn() },
       provider: {},
-      account: { address: 'mockAddress' },
+      accounts: new Map([
+        ['mockAddress', { address: 'mockAddress' } as KeyringPair],
+      ]),
     } as unknown as AccountConnection;
 
     mockWalletConnection = {
@@ -202,7 +213,7 @@ describe('verify', () => {
     expect(handleTransaction).toHaveBeenCalledWith(
       mockAccountConnection.api,
       'mockTransaction',
-      mockAccountConnection.account,
+      Array.from(mockAccountConnection.accounts.values())[0],
       undefined,
       emitter,
       mockOptions,

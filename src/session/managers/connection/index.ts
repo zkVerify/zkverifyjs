@@ -12,8 +12,10 @@ import { accountInfo } from '../../../api/accountInfo';
 import { setupAccount } from '../../../api/account';
 import { checkReadOnly } from '../../../utils/helpers';
 import { AccountInfo } from '../../../types';
+import { Mutex } from 'async-mutex';
 
 export class ConnectionManager {
+  private accountMutex = new Mutex();
   private connection:
     | AccountConnection
     | WalletConnection
@@ -28,11 +30,17 @@ export class ConnectionManager {
     this.connection = connection;
     this.customNetwork = !!customNetwork;
     this.readOnly =
-      !('account' in connection) &&
+      !('accounts' in connection) &&
       !('injector' in connection) &&
       !('signer' in connection);
   }
 
+  /**
+   * Creates a new session with a connection to the specified network.
+   * Supports multiple accounts for startSession if provided in options.
+   * @param {zkVerifySessionOptions} options - The session configuration options.
+   * @returns {Promise<ConnectionManager>} A promise resolving to a ConnectionManager instance.
+   */
   static async createSession(
     options: zkVerifySessionOptions,
   ): Promise<ConnectionManager> {
@@ -52,54 +60,124 @@ export class ConnectionManager {
   }
 
   /**
-   * Retrieves account information for the active account in the session.
-   * @returns {Promise<AccountInfo>} A promise that resolves to the account information.
-   * @throws Will throw an error if the session is in read-only mode.
+   * Retrieves account information for a specified address or all accounts.
+   * If no address is provided, returns an array of all account info objects.
+   *
+   * @param {string} [accountAddress] - The address of the account to fetch info for. If undefined, returns all accounts.
+   * @returns {Promise<AccountInfo[]>} A promise resolving to an array of account info objects.
+   * @throws Will throw an error if the account is not found.
    */
-  async getAccountInfo(): Promise<AccountInfo> {
+  async getAccountInfo(accountAddress?: string): Promise<AccountInfo[]> {
     checkReadOnly(this.connection);
 
-    if ('account' in this.connection) {
-      return accountInfo(this.api, this.connection.account);
+    const accountConnection = this.connection as AccountConnection;
+    const accountList = Array.from(accountConnection.accounts.values());
+
+    if (accountAddress === undefined) {
+      return Promise.all(
+        accountList.map((account) => accountInfo(this.api, account)),
+      );
     }
 
-    throw new Error('No account available in this session.');
+    if (accountConnection.accounts.has(accountAddress)) {
+      return [
+        await accountInfo(
+          this.api,
+          accountConnection.accounts.get(accountAddress)!,
+        ),
+      ];
+    }
+
+    throw new Error(`Account ${accountAddress} not found in this session.`);
   }
 
   /**
-   * Allows the user to add an account to the session if one is not already active.
-   * @param {string} seedPhrase - The seed phrase for the account to add.
-   * @returns {void}
-   * @throws Will throw an error if an account is already active in the session.
+   * Adds a single account to the session in a thread-safe manner.
+   *
+   * @param {string} seedPhrase - The seed phrase used to generate the account.
+   * @returns {Promise<string>} A promise resolving to the account address.
+   * @throws {Error} If the account is already added.
    */
-  addAccount(seedPhrase: string): void {
-    if ('account' in this.connection) {
-      throw new Error('An account is already active in this session.');
-    }
+  async addAccount(seedPhrase: string): Promise<string> {
+    return this.accountMutex.runExclusive(async () => {
+      const account = setupAccount(seedPhrase);
 
-    this.connection = {
-      api: this.api,
-      provider: this.provider,
-      account: setupAccount(seedPhrase),
-    };
-    this.readOnly = false;
+      if (!('accounts' in this.connection)) {
+        this.connection = {
+          api: this.api,
+          provider: this.provider,
+          accounts: new Map(),
+        } as AccountConnection;
+      }
+
+      const accountConnection = this.connection as AccountConnection;
+
+      if (accountConnection.accounts.has(account.address)) {
+        throw new Error(`Account ${account.address} is already active.`);
+      }
+
+      accountConnection.accounts.set(account.address, account);
+      this.readOnly = false;
+
+      return account.address;
+    });
   }
 
   /**
-   * Allows the user to remove the active account from the session, making it read-only.
-   * If no account is active, the method simply ensures the session is in read-only mode.
-   * @returns {void}
+   * Adds multiple accounts to the session in a thread-safe manner.
+   *
+   * @param {string[]} seedPhrases - An array of seed phrases to generate accounts.
+   * @returns {Promise<string[]>} A promise resolving to an array of added account addresses.
+   * @throws {Error} If any of the accounts are already active.
    */
-  removeAccount(): void {
-    if ('account' in this.connection) {
-      this.connection = {
-        api: this.api,
-        provider: this.provider,
-      };
-      this.readOnly = true;
-    } else {
-      throw new Error('No account to remove.');
-    }
+  async addAccounts(seedPhrases: string[]): Promise<string[]> {
+    return Promise.all(
+      seedPhrases.map((seedPhrase) => this.addAccount(seedPhrase)),
+    );
+  }
+
+  /**
+   * Removes an account from the session in a thread-safe manner.
+   *
+   * @param {string} [address] - (Optional) The account address to remove.
+   *                              If omitted and only one account exists, that account will be removed.
+   *                              If omitted and no accounts exist, the method does nothing.
+   * @throws {Error} If a specified account is not found or the connection type does not support accounts.
+   */
+  async removeAccount(address?: string): Promise<void> {
+    await this.accountMutex.runExclusive(async () => {
+      if (!('accounts' in this.connection)) {
+        throw new Error('This connection type does not support accounts.');
+      }
+
+      const accountConnection = this.connection as AccountConnection;
+
+      if (!address && accountConnection.accounts.size === 1) {
+        const firstAccount =
+          [...accountConnection.accounts.keys()][0] ?? undefined;
+        if (firstAccount) {
+          address = firstAccount;
+        }
+      }
+
+      if (!address) {
+        return;
+      }
+
+      if (!accountConnection.accounts.has(address)) {
+        throw new Error(`Account ${address} not found.`);
+      }
+
+      accountConnection.accounts.delete(address);
+
+      if (accountConnection.accounts.size === 0) {
+        this.connection = {
+          api: this.api,
+          provider: this.provider,
+        } as EstablishedConnection;
+        this.readOnly = true;
+      }
+    });
   }
 
   /**
@@ -119,13 +197,44 @@ export class ConnectionManager {
   }
 
   /**
-   * Getter for the account, if available.
-   * @returns {KeyringPair | undefined} The active account, or undefined if in read-only mode.
+   * Retrieves the account associated with the given address.
+   * If no address is provided, it returns the first available account.
+   *
+   * @param {string} [accountAddress] - The address of the account to retrieve. If not provided, the first account is returned.
+   * @returns {KeyringPair} The associated KeyringPair.
+   * @throws {Error} If no accounts exist in the session or the specified account is not found.
    */
-  get account(): KeyringPair | undefined {
-    return 'account' in this.connection ? this.connection.account : undefined;
+  getAccount(accountAddress?: string): KeyringPair {
+    if (!('accounts' in this.connection)) {
+      throw new Error('This connection type does not support accounts.');
+    }
+
+    const accountConnection = this.connection as AccountConnection;
+
+    if (accountConnection.accounts.size === 0) {
+      throw new Error('No accounts have been added to this session.');
+    }
+
+    if (!accountAddress) {
+      return Array.from(accountConnection.accounts.values())[0];
+    }
+
+    const account = accountConnection.accounts.get(accountAddress);
+
+    if (!account) {
+      throw new Error(
+        `Account with address '${accountAddress}' not found in the session.`,
+      );
+    }
+
+    return account;
   }
 
+  /**
+   * Retrieves the current connection details.
+   *
+   * @returns {AccountConnection | WalletConnection | EstablishedConnection} The current connection instance.
+   */
   get connectionDetails():
     | AccountConnection
     | WalletConnection

@@ -10,6 +10,8 @@ import { VerifyInput } from './types';
 import { ProofData } from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { getSelectedAccount } from '../../utils/helpers';
 
 export const verify = async (
   connection: AccountConnection | WalletConnection,
@@ -20,6 +22,12 @@ export const verify = async (
   try {
     const { api } = connection;
     let transaction: SubmittableExtrinsic<'promise'>;
+
+    let selectedAccount: KeyringPair | undefined;
+
+    if ('accounts' in connection) {
+      selectedAccount = getSelectedAccount(connection, options.accountAddress);
+    }
 
     if ('proofData' in input && input.proofData) {
       const { proof, publicSignals, vk, version } =
@@ -48,11 +56,11 @@ export const verify = async (
     }
 
     const result = await (async () => {
-      if ('account' in connection) {
+      if (selectedAccount) {
         return await handleTransaction(
           api,
           transaction,
-          connection.account,
+          selectedAccount,
           undefined,
           emitter,
           options,
@@ -60,12 +68,10 @@ export const verify = async (
         );
       } else if ('injector' in connection) {
         const { signer } = connection.injector;
-        const { accountAddress } = connection;
-
         return await handleTransaction(
           api,
           transaction,
-          accountAddress,
+          connection.accountAddress,
           signer,
           emitter,
           options,

@@ -15,7 +15,6 @@ import {
   EstablishedConnection,
 } from '../api/connection/types';
 import { bindMethods } from '../utils/helpers';
-import { AccountInfo } from '../types';
 
 export class zkVerifySession {
   private readonly connectionManager: ConnectionManager;
@@ -33,7 +32,10 @@ export class zkVerifySession {
   declare createExtrinsicFromHex: ExtrinsicManager['createExtrinsicFromHex'];
   declare close: ConnectionManager['close'];
   declare addAccount: ConnectionManager['addAccount'];
+  declare addAccounts: ConnectionManager['addAccounts'];
   declare removeAccount: ConnectionManager['removeAccount'];
+  declare getAccount: ConnectionManager['getAccount'];
+  declare getAccountInfo: ConnectionManager['getAccountInfo'];
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
@@ -51,6 +53,10 @@ export class zkVerifySession {
     managers.forEach((manager) => bindMethods(this, manager));
   }
 
+  /**
+   * Starts a session for the specified network.
+   * @returns {SupportedNetworkMap} A map of supported networks.
+   */
   static start(): SupportedNetworkMap {
     return Object.fromEntries(
       Object.entries(SupportedNetwork).map(([networkKey, networkValue]) => [
@@ -65,18 +71,26 @@ export class zkVerifySession {
     ) as SupportedNetworkMap;
   }
 
+  /**
+   * Getter for the Polkadot.js API instance.
+   * @returns {ApiPromise} The API instance.
+   */
   get api(): ApiPromise {
     return this.connectionManager.api;
   }
 
+  /**
+   * Getter for the WebSocket provider.
+   * @returns {WsProvider} The WebSocket provider.
+   */
   get provider(): WsProvider {
     return this.connectionManager.provider;
   }
 
-  get accountInfo(): Promise<AccountInfo> {
-    return this.connectionManager.getAccountInfo();
-  }
-
+  /**
+   * Getter for connection details.
+   * @returns {AccountConnection | WalletConnection | EstablishedConnection} The connection details.
+   */
   get connection():
     | AccountConnection
     | WalletConnection
@@ -84,9 +98,19 @@ export class zkVerifySession {
     return this.connectionManager;
   }
 
+  /**
+   * Checks if the session is in read-only mode.
+   * @returns {boolean} True if read-only, otherwise false.
+   */
   get readOnly(): boolean {
     return this.connectionManager.readOnly;
   }
+
+  /**
+   * Initializes a new zkVerifySession instance.
+   * @param {zkVerifySessionOptions} options - The session configuration options.
+   * @returns {Promise<zkVerifySession>} A promise resolving to the zkVerifySession instance.
+   */
 
   private static async _startSession(
     options: zkVerifySessionOptions,
@@ -95,7 +119,7 @@ export class zkVerifySession {
       const connectionManager = await ConnectionManager.createSession(options);
       return new zkVerifySession(connectionManager);
     } catch (error) {
-      console.error(
+      console.debug(
         `❌ Failed to start session for network: ${options.host}`,
         error,
       );

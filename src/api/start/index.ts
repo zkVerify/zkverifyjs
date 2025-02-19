@@ -6,6 +6,7 @@ import {
   EstablishedConnection,
   WalletConnection,
 } from '../connection/types';
+import { KeyringPair } from '@polkadot/keyring/types';
 
 export async function startSession(
   options: zkVerifySessionOptions,
@@ -16,12 +17,24 @@ export async function startSession(
     );
   }
 
-  const { host, seedPhrase, customWsUrl } = options;
+  const { host, seedPhrases, customWsUrl } = options;
   const { api, provider } = await establishConnection(host, customWsUrl);
 
-  if (seedPhrase) {
-    const account = setupAccount(seedPhrase);
-    return { api, provider, account } as AccountConnection;
+  if (seedPhrases && seedPhrases.length > 0) {
+    const uniqueAccounts = new Map<string, KeyringPair>();
+
+    for (const phrase of seedPhrases) {
+      const account = setupAccount(phrase);
+      if (uniqueAccounts.has(account.address)) {
+        console.warn(
+          `Skipping adding account ${account.address} to session as it is already active.`,
+        );
+        continue;
+      }
+      uniqueAccounts.set(account.address, account);
+    }
+
+    return { api, provider, accounts: uniqueAccounts } as AccountConnection;
   } else {
     return { api, provider } as EstablishedConnection;
   }

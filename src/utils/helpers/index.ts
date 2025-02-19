@@ -12,6 +12,7 @@ import {
   EstablishedConnection,
   WalletConnection,
 } from '../../api/connection/types';
+import { KeyringPair } from '@polkadot/keyring/types';
 
 /**
  * Waits for a specific `NewAttestation` event and returns the associated data.
@@ -104,7 +105,11 @@ export function getProofPallet(proofType: ProofType): string {
 export function checkReadOnly(
   connection: AccountConnection | WalletConnection | EstablishedConnection,
 ): void {
-  if (!('account' in connection) && !('injector' in connection)) {
+  if (
+    (!('accounts' in connection) ||
+      ('accounts' in connection && connection.accounts.size === 0)) &&
+    !('injector' in connection)
+  ) {
     throw new Error(
       'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.',
     );
@@ -206,3 +211,31 @@ export function bindMethods<T extends object>(target: T, source: object): void {
     }
   }
 }
+
+/**
+ * Retrieves the selected account from the connection based on the provided account address.
+ * If no account address is provided, it defaults to the first available account.
+ *
+ * @param {AccountConnection} connection - The connection containing account information.
+ * @param {string | undefined} accountAddress - The optional account address to retrieve.
+ * @returns {KeyringPair} - The selected account.
+ * @throws {Error} If the account is not found.
+ */
+export const getSelectedAccount = (
+  connection: AccountConnection,
+  accountAddress?: string,
+): KeyringPair => {
+  let selectedAccount: KeyringPair | undefined;
+
+  if (accountAddress) {
+    selectedAccount = connection.accounts.get(accountAddress);
+  } else {
+    selectedAccount = Array.from(connection.accounts.values())[0];
+  }
+
+  if (!selectedAccount) {
+    throw new Error(`Account ${accountAddress ?? ''} not found in session.`);
+  }
+
+  return selectedAccount;
+};

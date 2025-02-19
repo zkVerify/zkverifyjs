@@ -6,6 +6,7 @@ import {
 } from "./utils";
 import { walletPool } from "./walletPool";
 import { proofConfigurations } from "../../src/config";
+import { zkVerifySession } from "../../src";
 
 //TODO: Update this once we have V1_1 test data
 const proofTypeVersionExclusions: Partial<Record<ProofType, string[]>> = {
@@ -19,6 +20,7 @@ const logTestDetails = (proofOptions: ProofOptions, testType: string, version?: 
 };
 
 export const runVerifyTest = async (
+    session: zkVerifySession,
     proofOptions: ProofOptions,
     withAttestation: boolean = false,
     checkExistence: boolean = false,
@@ -30,9 +32,13 @@ export const runVerifyTest = async (
     try {
         [envVar, seedPhrase] = await walletPool.acquireWallet();
         logTestDetails(proofOptions, "verification test", version);
+
+        const accountAddress = await session.addAccount(seedPhrase);
         const { proof, vk } = loadProofAndVK(proofOptions, version);
+
         await performVerifyTransaction(
-            seedPhrase,
+            session,
+            accountAddress,
             proofOptions,
             proof.proof,
             proof.publicSignals,
@@ -51,15 +57,30 @@ export const runVerifyTest = async (
     }
 };
 
-export const runVKRegistrationTest = async (proofOptions: ProofOptions, version?: string) => {
+export const runVKRegistrationTest = async (
+    session: zkVerifySession,
+    proofOptions: ProofOptions,
+    version?: string
+) => {
     let seedPhrase: string | undefined;
     let envVar: string | undefined;
 
     try {
         [envVar, seedPhrase] = await walletPool.acquireWallet();
         logTestDetails(proofOptions, "VK registration");
+
+        const accountAddress = await session.addAccount(seedPhrase);
         const { proof, vk } = loadProofAndVK(proofOptions, version);
-        await performVKRegistrationAndVerification(seedPhrase, proofOptions, proof.proof, proof.publicSignals, vk, version);
+
+        await performVKRegistrationAndVerification(
+            session,
+            accountAddress,
+            proofOptions,
+            proof.proof,
+            proof.publicSignals,
+            vk,
+            version
+        );
     } catch (error) {
         console.error(`Error during runVKRegistrationTest (${envVar}) for ${proofOptions.proofType}:`, error);
         throw error;
@@ -121,15 +142,28 @@ export const runAllProofTests = async (
     libraries: Library[],
     withAttestation: boolean
 ) => {
-    const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, (proofOptions, version) =>
-        runVerifyTest(proofOptions, withAttestation, false, version)
-    );
+    let session: zkVerifySession | undefined;
 
-    const results = await Promise.allSettled(testPromises);
-    const failures = results.filter(result => result.status === 'rejected');
+    try {
+        session = await zkVerifySession.start().Testnet().readOnly();
 
-    if (failures.length > 0) {
-        throw new Error(`${failures.length} test(s) failed. See logs for details.`);
+        const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, (proofOptions, version) =>
+            runVerifyTest(session!, proofOptions, withAttestation, false, version)
+        );
+
+        const results = await Promise.allSettled(testPromises);
+        const failures = results.filter(result => result.status === 'rejected');
+
+        if (failures.length > 0) {
+            throw new Error(`${failures.length} test(s) failed. See logs for details.`);
+        }
+    } catch (error) {
+        console.error("Error running all proof tests:", error);
+        throw error;
+    } finally {
+        if (session) {
+            await session.close();
+        }
     }
 };
 
@@ -138,6 +172,17 @@ export const runAllVKRegistrationTests = async (
     curveTypes: CurveType[],
     libraries: Library[]
 ) => {
-    const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, runVKRegistrationTest);
-    await Promise.all(testPromises);
+    const session = await zkVerifySession.start().Testnet().readOnly();
+
+    try {
+        const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, (proofOptions, version) =>
+            runVKRegistrationTest(session, proofOptions, version)
+        );
+        await Promise.all(testPromises);
+    } finally {
+        if (session) {
+            await session.close();
+        }
+    }
 };
+
