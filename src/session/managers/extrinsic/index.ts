@@ -30,11 +30,13 @@ export class ExtrinsicManager {
   async createSubmitProofExtrinsic(
     proofType: ProofType,
     params: FormattedProofData,
+    domainId?: number | null,
   ): Promise<SubmittableExtrinsic<'promise'>> {
     return createSubmitProofExtrinsic(
       this.connectionManager.api,
       proofType,
       params,
+      domainId,
     );
   }
 
@@ -49,8 +51,14 @@ export class ExtrinsicManager {
   async createExtrinsicHex(
     proofType: ProofType,
     params: FormattedProofData,
+    domainId?: number | null,
   ): Promise<string> {
-    return createExtrinsicHex(this.connectionManager.api, proofType, params);
+    return createExtrinsicHex(
+      this.connectionManager.api,
+      proofType,
+      params,
+      domainId,
+    );
   }
 
   /**

@@ -54,7 +54,42 @@ describe('extrinsic utilities', () => {
         proofParams.formattedVk,
         proofParams.formattedProof,
         proofParams.formattedPubs,
-        null, // TODO: Aggregate pallet (domain_id)
+        null,
+      );
+      expect(extrinsic.toHex()).toBe('0x1234');
+    });
+
+    it('should create a submittable extrinsic with a specific domainId', () => {
+      const domainId = 42;
+      const extrinsic = createSubmitProofExtrinsic(
+        mockApi,
+        ProofType.groth16,
+        proofParams,
+        domainId,
+      );
+
+      expect(mockTxMethod.submitProof).toHaveBeenCalledWith(
+        proofParams.formattedVk,
+        proofParams.formattedProof,
+        proofParams.formattedPubs,
+        domainId,
+      );
+      expect(extrinsic.toHex()).toBe('0x1234');
+    });
+
+    it('should handle undefined domainId as null', () => {
+      const extrinsic = createSubmitProofExtrinsic(
+        mockApi,
+        ProofType.groth16,
+        proofParams,
+        undefined,
+      );
+
+      expect(mockTxMethod.submitProof).toHaveBeenCalledWith(
+        proofParams.formattedVk,
+        proofParams.formattedProof,
+        proofParams.formattedPubs,
+        null,
       );
       expect(extrinsic.toHex()).toBe('0x1234');
     });
@@ -98,7 +133,42 @@ describe('extrinsic utilities', () => {
         proofParams.formattedVk,
         proofParams.formattedProof,
         proofParams.formattedPubs,
-        null, // TODO: Aggregate pallet (domain_id)
+        null,
+      );
+      expect(hex).toBe('0x1234');
+    });
+
+    it('should return hex representation with specific domainId', () => {
+      const domainId = 42;
+      const hex = createExtrinsicHex(
+        mockApi,
+        ProofType.groth16,
+        proofParams,
+        domainId,
+      );
+
+      expect(mockTxMethod.submitProof).toHaveBeenCalledWith(
+        proofParams.formattedVk,
+        proofParams.formattedProof,
+        proofParams.formattedPubs,
+        domainId,
+      );
+      expect(hex).toBe('0x1234');
+    });
+
+    it('should handle undefined domainId as null in hex generation', () => {
+      const hex = createExtrinsicHex(
+        mockApi,
+        ProofType.groth16,
+        proofParams,
+        undefined,
+      );
+
+      expect(mockTxMethod.submitProof).toHaveBeenCalledWith(
+        proofParams.formattedVk,
+        proofParams.formattedProof,
+        proofParams.formattedPubs,
+        null,
       );
       expect(hex).toBe('0x1234');
     });
