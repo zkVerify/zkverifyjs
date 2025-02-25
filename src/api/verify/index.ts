@@ -46,6 +46,7 @@ export const verify = async (
         api,
         options.proofOptions.proofType,
         formattedProofData,
+        input.domainId,
       );
     } else if ('extrinsic' in input && input.extrinsic) {
       transaction = input.extrinsic;

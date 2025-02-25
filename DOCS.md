@@ -46,7 +46,7 @@ Before sending a proof, you need to start a session. A session establishes a con
 ```typescript
 const session = await zkVerifySession.start()
         .Testnet(); // Preconfigured network selection
-// No full account session as .withAccount() has not been used.
+// No full account session as .withAccount() or .withAccounts() has not been used.
 ```
 
 2. Read-Only Session with Custom WebSocket:
@@ -54,15 +54,21 @@ const session = await zkVerifySession.start()
 ```typescript
 const session = await zkVerifySession.start()
         .Custom("wss://testnet-rpc.zkverify.io"); // Custom network
-// No full account session as .withAccount() has not been used.
+// No full account session as .withAccount() or withAccounts() has not been used.
 ```
 
 3. Full Backend Session (send transactions) with Supported Network:
 
 ```typescript
+// Use a single account
 const session = await zkVerifySession.start()
         .Testnet() // Preconfigured network selection
-        .withAccount(process.env.SEED_PHRASE!); // Full session with active account
+        .withAccount("my seed phrase"); // Full session with a single active account
+
+// Use many accounts
+const multiAccountSession = await zkVerifySession.start()
+        .Testnet() // Preconfigured network selection
+        .withAccounts(["my seed phrase 1", "my seed phrase 2", "my seed phrase 3"]); // Full session with multiple active accounts
 ```
 
 4. Full Backend Session (send transactions)  with Custom WebSocket:
@@ -95,7 +101,7 @@ const session = await zkVerifySession.start()
         }); // Uses browser session context "window"
 ```
 
-Not specifying `withAccount()` or `withWallet()` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
+Not specifying `withAccount()`, `withAccounts()` or `withWallet()` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
 
 ```typescript
 import { zkVerifySession } from 'zkverifyjs';
@@ -111,7 +117,7 @@ The zkVerifySession.verify method allows you to configure and execute a verifica
 
 ```typescript
 const { events, transactionResult } = await session
-        .verify()
+        .verify()                                  // Optionally provide account address to verify("myaddress") if connected with multple accounts
         .fflonk()                                  // Select the proof type (e.g., fflonk)
         .nonce(1)                                  // Set the nonce (optional)
         .waitForPublishedAttestation()             // Wait for the attestation to be published (optional)
@@ -499,34 +505,66 @@ const extrinsic = await session.estimateCost(extrinsic);
   length: number;
   ```
 
-### `zkVerifySession.accountInfo`
+### `zkVerifySession.getAccountInfo`
 
 ```typescript
-const accountInfo: AccountInfo = await session.accountInfo();
-console.log(accountInfo.address);
-console.log(accountInfo.nonce);
-console.log(accountInfo.freeBalance);
-console.log(accountInfo.reservedBalance);
+const accountInfo: AccountInfo[] = await session.getAccountInfo();
+console.log(accountInfo[0].address);
+console.log(accountInfo[0].nonce);
+console.log(accountInfo[0].freeBalance);
+console.log(accountInfo[0].reservedBalance);
 ```
 
-* Returns account information: address, nonce, freeBalance and reservedBalance. Full session only, will not work in readOnly mode.
+* Returns an array of account information: address, nonce, freeBalance and reservedBalance. Full session only, will not work in readOnly mode.
 
 ### `zkVerifySession.addAccount`
 
 ```typescript
-session.addAccount(seedPhrase);
+await session.addAccount(seedPhrase);
 ```
 
 * `seedPhrase`: Your seed phrase as a string "my seed phrase"
+* Returns: Promise<string> Account Address, which is also required as an input for removeAccount().
 * Adds the account to the current session
+
+### `zkVerifySession.addAccounts`
+
+```typescript
+await session.addAccounts([seedPhrase1, seedPhrase2, seedPhrase3, seedPhrase4]);
+```
+
+* `[seedPhrase]`: Your seed phrases as a string array \["my seed phrase 1", "my seed phrase 2"]'
+* Returns: Promise\<string\[]> Account Address array, which is also required as an input for removeAccount().
+* Adds the accounts to the current session
 
 ### `zkVerifySession.removeAccount`
 
 ```typescript
-session.removeAccount();
+// Remove specific account
+await session.removeAccount(accountAddress);
+// Remove account if only one exists
+await session.removeAccount();
 ```
 
-* Removes the active account from the current session, does nothing if no account is currently active.
+* `accountAddress`: The account address to remove, in string format.
+* Removes specified accountAddress from the active accounts list.
+* If no accountAddress is provided and exactly one account exists, that account is removed.
+* If no accounts remain after removal, the session transitions to read-only mode.
+* If the session is already in read-only mode, calling this method has no effect.
+
+### `zkVerifySession.getAccount`
+
+```typescript
+// Return sole KeyringPair if only one account is connected
+const account = session.getAccount();
+
+// Return specific KeyringPair if multiple accounts are connected
+const account2 = session.getAccount("myAccountAddress");
+```
+
+* Returns: The KeyringPair object representing the active account in the session, or undefined if the session is in read-only mode.
+* The account is used for signing transactions and interacting with the blockchain on behalf of the user.
+* If no account is associated with the session (i.e., the session is in read-only mode) or account searched for does not exist, this will error.
 
 ### `zkVerifySession.subscribeToNewAttestations`
 
@@ -551,7 +589,7 @@ session.unsubscribe();
 const api = session.api;
 ```
 
-* Uses PolkadotJS 12.4.2
+* Uses PolkadotJS 15.4.1
 * Returns: The ApiPromise instance connected to the Polkadot.js API.
 * This is the main API object used to interact with the blockchain. It provides methods for querying the chain state, submitting extrinsics, subscribing to events, and more.
 
@@ -563,12 +601,3 @@ const provider = session.provider;
 
 * Returns: The WsProvider instance connected to the WebSocket endpoint.
 * The provider manages the connection to the blockchain node. It handles WebSocket communication and can be used to interact with the node directly, such as for subscribing to updates or making RPC calls.
-
-### `zkVerifySession.account`
-
-```typescript
-const account = session.account;
-```
-
-* Returns: The KeyringPair object representing the active account in the session, or undefined if the session is in read-only mode.
-* The account is used for signing transactions and interacting with the blockchain on behalf of the user. If no account is associated with the session (i.e., the session is in read-only mode), this will return undefined.
