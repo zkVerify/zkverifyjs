@@ -30,7 +30,11 @@ export class DomainManager {
   }
 
   async holdDomain(domainId: number): Promise<void> {
-    return holdDomain(domainId, this.eventEmitter);
+    return holdDomain(
+      this.connectionManager.connectionDetails,
+      domainId,
+      this.eventEmitter,
+    );
   }
 
   async unregisterDomain(domainId: number): Promise<void> {

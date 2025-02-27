@@ -1,5 +1,6 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import {
+  DomainHoldTransactionInfo,
   RegisterDomainTransactionInfo,
   TransactionInfo,
   VKRegistrationTransactionInfo,
@@ -26,6 +27,7 @@ export const handleTransactionEvents = (
   let attestationId: number | undefined = undefined;
   let leafDigest: string | null = null;
   let domainId: number | undefined;
+  let domainState: string | undefined;
 
   events.forEach(({ event, phase }) => {
     if (phase.isApplyExtrinsic) {
@@ -92,6 +94,13 @@ export const handleTransactionEvents = (
       } as RegisterDomainTransactionInfo;
     }
   });
+
+  if (transactionType === TransactionType.DomainHold) {
+    return {
+      ...transactionInfo,
+      domainState,
+    } as DomainHoldTransactionInfo;
+  }
 
   if (transactionType === TransactionType.Verify) {
     return {

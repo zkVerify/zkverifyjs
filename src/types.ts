@@ -48,6 +48,10 @@ export interface RegisterDomainTransactionInfo extends TransactionInfo {
   domainId: number;
 }
 
+export interface DomainHoldTransactionInfo extends TransactionInfo {
+  domainState: string;
+}
+
 export interface AccountInfo {
   address: string;
   nonce: number;

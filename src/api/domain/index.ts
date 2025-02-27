@@ -7,7 +7,9 @@ import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { checkReadOnly, getSelectedAccount } from '../../utils/helpers';
 
 import EventEmitter from 'events';
+import { EventRecord } from '@polkadot/types/interfaces';
 import { RegisterDomainTransactionInfo } from '../../types';
+import { Vec } from '@polkadot/types';
 import { VerifyOptions } from '../../session/types';
 import { handleTransaction } from '../../utils/transactions';
 
@@ -77,15 +79,76 @@ export const registerDomain = async (
   }
 };
 
-export const holdDomain = (domainId: number, emitter: EventEmitter) => {
-  // modify state
-  // tbd
-  const newState = 'Hold'; // placeholder - or 'Removable' depending on pending statements
-  // emit event
-  emitter.emit(ZkVerifyEvents.DomainStateChanged, {
-    domainId,
-    newState,
-  });
+export const holdDomain = async (
+  connection: AccountConnection | WalletConnection | EstablishedConnection,
+  domainId: number,
+  emitter: EventEmitter,
+): Promise<void> => {
+  checkReadOnly(connection);
+
+  const { api } = connection;
+  let selectedAccount;
+
+  if ('accounts' in connection) {
+    selectedAccount = getSelectedAccount(connection);
+  }
+
+  const holdExtrinsic = api.tx.aggregate.holdDomain(domainId);
+
+  try {
+    await (async () => {
+      if (selectedAccount) {
+        return await handleTransaction(
+          api,
+          holdExtrinsic,
+          selectedAccount,
+          undefined,
+          emitter,
+          {} as VerifyOptions,
+          TransactionType.DomainHold,
+        );
+      } else if ('injector' in connection) {
+        const { signer } = connection.injector;
+        return await handleTransaction(
+          api,
+          holdExtrinsic,
+          connection.accountAddress,
+          signer,
+          emitter,
+          {} as VerifyOptions,
+          TransactionType.DomainHold,
+        );
+      } else {
+        throw new Error('Unsupported connection type.');
+      }
+    })();
+
+    // Subscribe to system events
+    api.query.system.events((events: Vec<EventRecord>) => {
+      events.forEach((record) => {
+        const { event } = record;
+        if (
+          event.section === 'aggregate' &&
+          event.method === 'DomainStateChanged'
+        ) {
+          const [eventDomainId, state] = event.data;
+          const domainIdNum = eventDomainId.toString();
+          const stateStr = state.toString();
+
+          if (Number(domainIdNum) === domainId) {
+            emitter.emit(ZkVerifyEvents.DomainStateChanged, {
+              domainId,
+              newState: stateStr,
+            });
+          }
+        }
+      });
+    });
+  } catch (error) {
+    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+    emitter.removeAllListeners();
+    throw error;
+  }
 };
 
 export const unregisterDomain = (domainId: number, emitter: EventEmitter) => {
