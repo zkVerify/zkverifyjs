@@ -38,6 +38,10 @@ export class DomainManager {
   }
 
   async unregisterDomain(domainId: number): Promise<void> {
-    return unregisterDomain(domainId, this.eventEmitter);
+    return unregisterDomain(
+      this.connectionManager.connectionDetails,
+      domainId,
+      this.eventEmitter,
+    );
   }
 }

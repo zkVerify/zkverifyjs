@@ -51,6 +51,10 @@ export interface RegisterDomainTransactionInfo extends TransactionInfo {
 export interface DomainHoldTransactionInfo extends TransactionInfo {
   domainState: string;
 }
+// In case this is correct, chould these types be merged?
+export interface DomainUnregisterTransactionInfo extends TransactionInfo {
+  domainState: string;
+}
 
 export interface AccountInfo {
   address: string;

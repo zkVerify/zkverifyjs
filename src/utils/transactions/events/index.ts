@@ -1,6 +1,7 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import {
   DomainHoldTransactionInfo,
+  DomainUnregisterTransactionInfo,
   RegisterDomainTransactionInfo,
   TransactionInfo,
   VKRegistrationTransactionInfo,
@@ -22,7 +23,9 @@ export const handleTransactionEvents = (
 ):
   | VerifyTransactionInfo
   | VKRegistrationTransactionInfo
-  | RegisterDomainTransactionInfo => {
+  | RegisterDomainTransactionInfo
+  | DomainHoldTransactionInfo
+  | DomainUnregisterTransactionInfo => {
   let statementHash: string | undefined;
   let attestationId: number | undefined = undefined;
   let leafDigest: string | null = null;
@@ -83,6 +86,16 @@ export const handleTransactionEvents = (
     }
 
     if (
+      (transactionType === TransactionType.DomainHold ||
+        transactionType === TransactionType.DomainUnregister) &&
+      event.section === 'aggregate' &&
+      event.method === 'DomainStateChanged'
+    ) {
+      const [, state] = event.data; // Is this correct? How can I know what is the data from the event?
+      domainState = state.toString();
+    }
+
+    if (
       transactionType === TransactionType.DomainRegistration &&
       event.section === 'aggregate' &&
       event.method === 'DomainRegistered' // Is this correct?
@@ -100,6 +113,13 @@ export const handleTransactionEvents = (
       ...transactionInfo,
       domainState,
     } as DomainHoldTransactionInfo;
+  }
+
+  if (transactionType === TransactionType.DomainUnregister) {
+    return {
+      ...transactionInfo,
+      domainState,
+    } as DomainUnregisterTransactionInfo;
   }
 
   if (transactionType === TransactionType.Verify) {

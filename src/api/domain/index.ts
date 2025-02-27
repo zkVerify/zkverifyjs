@@ -123,7 +123,6 @@ export const holdDomain = async (
       }
     })();
 
-    // Subscribe to system events
     api.query.system.events((events: Vec<EventRecord>) => {
       events.forEach((record) => {
         const { event } = record;
@@ -135,7 +134,7 @@ export const holdDomain = async (
           const domainIdNum = eventDomainId.toString();
           const stateStr = state.toString();
 
-          if (Number(domainIdNum) === domainId) {
+          if (Number(domainIdNum) === domainId && stateStr === 'Removable') {
             emitter.emit(ZkVerifyEvents.DomainStateChanged, {
               domainId,
               newState: stateStr,
@@ -151,13 +150,52 @@ export const holdDomain = async (
   }
 };
 
-export const unregisterDomain = (domainId: number, emitter: EventEmitter) => {
-  // modify state
-  // tbd
-  const newState = 'Removed';
-  // emit event
-  emitter.emit(ZkVerifyEvents.DomainStateChanged, {
-    domainId,
-    newState,
-  });
+export const unregisterDomain = async (
+  connection: AccountConnection | WalletConnection | EstablishedConnection,
+  domainId: number,
+  emitter: EventEmitter,
+): Promise<void> => {
+  checkReadOnly(connection);
+
+  const { api } = connection;
+  let selectedAccount;
+
+  if ('accounts' in connection) {
+    selectedAccount = getSelectedAccount(connection);
+  }
+
+  const unregisterExtrinsic = api.tx.aggregate.unregisterDomain(domainId);
+
+  try {
+    await (async () => {
+      if (selectedAccount) {
+        return await handleTransaction(
+          api,
+          unregisterExtrinsic,
+          selectedAccount,
+          undefined,
+          emitter,
+          {} as VerifyOptions,
+          TransactionType.DomainUnregister,
+        );
+      } else if ('injector' in connection) {
+        const { signer } = connection.injector;
+        return await handleTransaction(
+          api,
+          unregisterExtrinsic,
+          connection.accountAddress,
+          signer,
+          emitter,
+          {} as VerifyOptions,
+          TransactionType.DomainUnregister,
+        );
+      } else {
+        throw new Error('Unsupported connection type.');
+      }
+    })();
+  } catch (error) {
+    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+    emitter.removeAllListeners();
+    throw error;
+  }
 };
