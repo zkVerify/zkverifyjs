@@ -1,13 +1,16 @@
-import { ApiPromise } from '@polkadot/api';
-import { EventEmitter } from 'events';
-import { SubmittableResult } from '@polkadot/api';
+import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import {
+  DomainHoldTransactionInfo,
+  DomainUnregisterTransactionInfo,
+  RegisterDomainTransactionInfo,
   TransactionInfo,
-  VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
+  VerifyTransactionInfo,
 } from '../../../types';
-import { TransactionType } from '../../../enums';
+
 import { DispatchInfo } from '@polkadot/types/interfaces';
+import { EventEmitter } from 'events';
+import { TransactionType } from '../../../enums';
 import { getProofPallet } from '../../helpers';
 
 export const handleTransactionEvents = (
@@ -17,10 +20,17 @@ export const handleTransactionEvents = (
   emitter: EventEmitter,
   setAttestationId: (id: number | undefined) => void,
   transactionType: TransactionType,
-): VerifyTransactionInfo | VKRegistrationTransactionInfo => {
+):
+  | VerifyTransactionInfo
+  | VKRegistrationTransactionInfo
+  | RegisterDomainTransactionInfo
+  | DomainHoldTransactionInfo
+  | DomainUnregisterTransactionInfo => {
   let statementHash: string | undefined;
   let attestationId: number | undefined = undefined;
   let leafDigest: string | null = null;
+  let domainId: number | undefined;
+  let domainState: string | undefined;
 
   events.forEach(({ event, phase }) => {
     if (phase.isApplyExtrinsic) {
@@ -74,7 +84,43 @@ export const handleTransactionEvents = (
     ) {
       statementHash = event.data[0].toString();
     }
+
+    if (
+      (transactionType === TransactionType.DomainHold ||
+        transactionType === TransactionType.DomainUnregister) &&
+      event.section === 'aggregate' &&
+      event.method === 'DomainStateChanged'
+    ) {
+      const [, state] = event.data; // Is this correct? How can I know what is the data from the event?
+      domainState = state.toString();
+    }
+
+    if (
+      transactionType === TransactionType.DomainRegistration &&
+      event.section === 'aggregate' &&
+      event.method === 'DomainRegistered' // Is this correct?
+    ) {
+      domainId = Number(event.data[0].toString());
+      return {
+        ...transactionInfo,
+        domainId,
+      } as RegisterDomainTransactionInfo;
+    }
   });
+
+  if (transactionType === TransactionType.DomainHold) {
+    return {
+      ...transactionInfo,
+      domainState,
+    } as DomainHoldTransactionInfo;
+  }
+
+  if (transactionType === TransactionType.DomainUnregister) {
+    return {
+      ...transactionInfo,
+      domainState,
+    } as DomainUnregisterTransactionInfo;
+  }
 
   if (transactionType === TransactionType.Verify) {
     return {
