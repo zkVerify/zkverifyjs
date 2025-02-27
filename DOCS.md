@@ -117,33 +117,37 @@ The zkVerifySession.verify method allows you to configure and execute a verifica
 
 ```typescript
 const { events, transactionResult } = await session
-        .verify()                                  // Optionally provide account address to verify("myaddress") if connected with multple accounts
-        .fflonk()                                  // Select the proof type (e.g., fflonk)
-        .nonce(1)                                  // Set the nonce (optional)
-        .waitForPublishedAttestation()             // Wait for the attestation to be published (optional)
-        .withRegisteredVk()                        // Indicate that the verification key is already registered (optional)
-        .execute({ proofData: { 
-            vk: vk,
-            proof: proof,
-            publicSignals: publicSignals }
-        });  // Execute the verification with the provided proof data
-
+  .verify() // Optionally provide account address to verify("myaddress") if connected with multple accounts
+  .fflonk() // Select the proof type (e.g., fflonk)
+  .nonce(1) // Set the nonce (optional)
+  .waitForPublishedAttestation() // Wait for the attestation to be published (optional)
+  .withRegisteredVk() // Indicate that the verification key is already registered (optional)
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }); // Execute the verification with the provided proof data
 ```
 
 2. Frontend after establishing a session with `withWallet()`
 
 ```typescript
-import {CurveType} from "./index";
+import { CurveType } from './index';
 
-const {events, transactionResult} = await session.verify()
-        .groth16(Library.snarkjs, CurveType.bn128)
-        .execute({
-          proofData: {
-            vk: vk,
-            proof: proof,
-            publicSignals: publicSignals
-          }
-        });
+const { events, transactionResult } = await session
+  .verify()
+  .groth16(Library.snarkjs, CurveType.bn128)
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 1, // Optional domain ID for proof categorization
+  });
 
 events.on('ErrorEvent', (eventData) => {
   console.error(JSON.stringify(eventData));
@@ -162,19 +166,29 @@ try {
 Register your Verification Key on chain and use it in future proof submissions by specifying the `registeredVk()` option.
 
 ```typescript
-const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
-const vkTransactionInfo: VKRegistrationTransactionInfo = await transactionResult;
+const { events, transactionResult } = await session
+  .registerVerificationKey()
+  .fflonk()
+  .execute(vk);
+const vkTransactionInfo: VKRegistrationTransactionInfo =
+  await transactionResult;
 
-const {events: verifyEvents, transactionResult: verifyTransactionResult} = await session.verify()
-        .fflonk()
-        .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
-        .execute({ proofData: {
-            vk: vkTransactionInfo.statementHash!,
-            proof: proof,
-            publicSignals: publicSignals }
-        });;
+const { events: verifyEvents, transactionResult: verifyTransactionResult } =
+  await session
+    .verify()
+    .fflonk()
+    .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
+    .execute({
+      proofData: {
+        vk: vkTransactionInfo.statementHash!,
+        proof: proof,
+        publicSignals: publicSignals,
+      },
+      domainId: 42,
+    });
 
-const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
+const verifyTransactionInfo: VerifyTransactionInfo =
+  await verifyTransactionResult;
 ```
 
 ### Listening to Events
@@ -187,11 +201,17 @@ You can listen for transaction events using the events emitter. Common events in
 * `error`: Triggered if an error occurs during the transaction process.
 
 ```typescript
-const { events, transactionResult } = await session.verify().risc0().execute({ proofData: {
-    vk: vk,
-    proof: proof,
-    publicSignals: publicSignals }
-});;
+const { events, transactionResult } = await session
+  .verify()
+  .risc0()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 
 events.on('includedInBlock', (eventData) => {
     console.log('Transaction included in block:', eventData);
@@ -215,13 +235,17 @@ events.on('error', (error) => {
 To await the final result of the transaction, use the transactionResult promise. This resolves with the final transaction details after the transaction is finalized in a block.
 
 ```typescript
-const { events, transactionResult } = await session.verify()
+const { events, transactionResult } = await session
+  .verify()
   .groth16(Library.gnark, CurveType.bls12381)
-  .execute({ proofData: {
+  .execute({
+    proofData: {
       vk: vk,
       proof: proof,
-      publicSignals: publicSignals }
-  });;
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 
 const result = await transactionResult;
 console.log('Final transaction result:', result);
@@ -229,16 +253,21 @@ console.log('Final transaction result:', result);
 
 ### Wait for the Attestation to be published
 
-Wait for the NewElement event to be published before the transaction info is returned back by the promise.  Occurs around every ~60s.
+Wait for the NewElement event to be published before the transaction info is returned back by the promise. Occurs around every ~60s.
 
 ```typescript
-const { events, transactionResult } = await session.verify().risc0()
-    .waitForPublishedAttestation()
-    .execute({ proofData: {
-        vk: vk,
-        proof: proof,
-        publicSignals: publicSignals }
-    });;
+const { events, transactionResult } = await session
+  .verify()
+  .risc0()
+  .waitForPublishedAttestation()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 
 const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
@@ -262,18 +291,23 @@ Under the hood this is a wrapper around the `dryRun()` call and requires a `Cust
 Connect to your custom node that has the unsafe flags set, and send the proof:
 
 ```typescript
-  // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
-  const session = await zkVerifySession.start()
-          .Custom('ws://my-custom-node')
-          .withAccount('your-seed-phrase');
+// Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
+const session = await zkVerifySession
+  .start()
+  .Custom('ws://my-custom-node')
+  .withAccount('your-seed-phrase');
 
-  const { success, message } = session.optimisticVerify()
-          .risc0()
-          .execute({ proofData: {
-              vk: vk,
-              proof: proof,
-              publicSignals: publicSignals }
-          });;
+const { success, message } = session
+  .optimisticVerify()
+  .risc0()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 ```
 
 ### Example Usage
@@ -293,7 +327,8 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
           .execute({ proofData: {
               vk: vk,
               proof: proof,
-              publicSignals: publicSignals }
+              publicSignals: publicSignals },
+              domainId: 42 // Optional domain ID for proof categorization
           });;
           
   if(!success) {
@@ -310,7 +345,8 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
           .execute({ proofData: {
               vk: vk,
               proof: proof,
-              publicSignals: publicSignals }
+              publicSignals: publicSignals },
+              domainId: 42 // Optional domain ID for proof categorization
           });;
 
   // Listen for the 'includedInBlock' event
@@ -386,18 +422,21 @@ await session.close();
 ### `zkVerifySession.verify`
 
 ```typescript
-const { events, transactionResult } = await session.verify()
-        .fflonk()
-        .nonce(1)
-        .waitForPublishedAttestation()
-        .withRegisteredVk()
-        .execute({ proofData: {
-            vk: vk,
-            proof: proof,
-            publicSignals: publicSignals }
-        });; // 1. Directly pass proof data
-        // .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
-
+const { events, transactionResult } = await session
+  .verify()
+  .fflonk()
+  .nonce(1)
+  .waitForPublishedAttestation()
+  .withRegisteredVk()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }); // 1. Directly pass proof data
+// .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
 ```
 
 * Proof Type: `.fflonk()` specifies the type of proof to be used. Options available for all supported proof types.
@@ -410,13 +449,17 @@ const { events, transactionResult } = await session.verify()
 ### `zkVerifySession.optimisticVerify`
 
 ```typescript
-  const { success, message } = session.optimisticVerify()
-          .risc0()
-          .execute({ proofData: {
-              vk: vk,
-              proof: proof,
-              publicSignals: publicSignals }
-          });;
+const { success, message } = session
+  .optimisticVerify()
+  .risc0()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 ```
 
 * Proof Type: `.risc0()` specifies the type of proof to be used. Options available for all supported proof types.
