@@ -1,13 +1,14 @@
-import { ApiPromise } from '@polkadot/api';
-import { EventEmitter } from 'events';
-import { SubmittableResult } from '@polkadot/api';
+import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import {
+  RegisterDomainTransactionInfo,
   TransactionInfo,
-  VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
+  VerifyTransactionInfo,
 } from '../../../types';
-import { TransactionType } from '../../../enums';
+
 import { DispatchInfo } from '@polkadot/types/interfaces';
+import { EventEmitter } from 'events';
+import { TransactionType } from '../../../enums';
 import { getProofPallet } from '../../helpers';
 
 export const handleTransactionEvents = (
@@ -17,10 +18,14 @@ export const handleTransactionEvents = (
   emitter: EventEmitter,
   setAttestationId: (id: number | undefined) => void,
   transactionType: TransactionType,
-): VerifyTransactionInfo | VKRegistrationTransactionInfo => {
+):
+  | VerifyTransactionInfo
+  | VKRegistrationTransactionInfo
+  | RegisterDomainTransactionInfo => {
   let statementHash: string | undefined;
   let attestationId: number | undefined = undefined;
   let leafDigest: string | null = null;
+  let domainId: number | undefined;
 
   events.forEach(({ event, phase }) => {
     if (phase.isApplyExtrinsic) {
@@ -73,6 +78,18 @@ export const handleTransactionEvents = (
       event.method == 'VkRegistered'
     ) {
       statementHash = event.data[0].toString();
+    }
+
+    if (
+      transactionType === TransactionType.DomainRegistration &&
+      event.section === 'aggregate' &&
+      event.method === 'DomainRegistered' // Is this correct?
+    ) {
+      domainId = Number(event.data[0].toString());
+      return {
+        ...transactionInfo,
+        domainId,
+      } as RegisterDomainTransactionInfo;
     }
   });
 

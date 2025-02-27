@@ -21,7 +21,12 @@ export class DomainManager {
     aggregationSize: number,
     queueSize: number = 16,
   ): Promise<number> {
-    return await registerDomain(aggregationSize, queueSize, this.eventEmitter);
+    return await registerDomain(
+      this.connectionManager.connectionDetails,
+      aggregationSize,
+      queueSize,
+      this.eventEmitter,
+    );
   }
 
   async holdDomain(domainId: number): Promise<void> {
