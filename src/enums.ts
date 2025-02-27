@@ -20,9 +20,11 @@ export enum ZkVerifyEvents {
   AttestationConfirmed = 'attestationConfirmed',
   AttestationMissed = 'attestationMissed',
   Broadcast = 'broadcast',
+  DomainStateChanged = 'domainStateChanged',
   ErrorEvent = 'error',
   Finalized = 'finalized',
   IncludedInBlock = 'includedInBlock',
+  NewDomain = 'newDomain',
   Unsubscribe = 'unsubscribe',
 }
 
