@@ -46,7 +46,7 @@ Before sending a proof, you need to start a session. A session establishes a con
 ```typescript
 const session = await zkVerifySession.start()
         .Testnet(); // Preconfigured network selection
-// No full account session as .withAccount() has not been used.
+// No full account session as .withAccount() or .withAccounts() has not been used.
 ```
 
 2. Read-Only Session with Custom WebSocket:
@@ -54,15 +54,21 @@ const session = await zkVerifySession.start()
 ```typescript
 const session = await zkVerifySession.start()
         .Custom("wss://testnet-rpc.zkverify.io"); // Custom network
-// No full account session as .withAccount() has not been used.
+// No full account session as .withAccount() or withAccounts() has not been used.
 ```
 
 3. Full Backend Session (send transactions) with Supported Network:
 
 ```typescript
+// Use a single account
 const session = await zkVerifySession.start()
         .Testnet() // Preconfigured network selection
-        .withAccount(process.env.SEED_PHRASE!); // Full session with active account
+        .withAccount("my seed phrase"); // Full session with a single active account
+
+// Use many accounts
+const multiAccountSession = await zkVerifySession.start()
+        .Testnet() // Preconfigured network selection
+        .withAccounts(["my seed phrase 1", "my seed phrase 2", "my seed phrase 3"]); // Full session with multiple active accounts
 ```
 
 4. Full Backend Session (send transactions)  with Custom WebSocket:
@@ -95,7 +101,7 @@ const session = await zkVerifySession.start()
         }); // Uses browser session context "window"
 ```
 
-Not specifying `withAccount()` or `withWallet()` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
+Not specifying `withAccount()`, `withAccounts()` or `withWallet()` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
 
 ```typescript
 import { zkVerifySession } from 'zkverifyjs';
@@ -111,33 +117,37 @@ The zkVerifySession.verify method allows you to configure and execute a verifica
 
 ```typescript
 const { events, transactionResult } = await session
-        .verify()
-        .fflonk()                                  // Select the proof type (e.g., fflonk)
-        .nonce(1)                                  // Set the nonce (optional)
-        .waitForPublishedAttestation()             // Wait for the attestation to be published (optional)
-        .withRegisteredVk()                        // Indicate that the verification key is already registered (optional)
-        .execute({ proofData: { 
-            vk: vk,
-            proof: proof,
-            publicSignals: publicSignals }
-        });  // Execute the verification with the provided proof data
-
+  .verify() // Optionally provide account address to verify("myaddress") if connected with multple accounts
+  .fflonk() // Select the proof type (e.g., fflonk)
+  .nonce(1) // Set the nonce (optional)
+  .waitForPublishedAttestation() // Wait for the attestation to be published (optional)
+  .withRegisteredVk() // Indicate that the verification key is already registered (optional)
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }); // Execute the verification with the provided proof data
 ```
 
 2. Frontend after establishing a session with `withWallet()`
 
 ```typescript
-import {CurveType} from "./index";
+import { CurveType } from './index';
 
-const {events, transactionResult} = await session.verify()
-        .groth16(Library.snarkjs, CurveType.bn128)
-        .execute({
-          proofData: {
-            vk: vk,
-            proof: proof,
-            publicSignals: publicSignals
-          }
-        });
+const { events, transactionResult } = await session
+  .verify()
+  .groth16(Library.snarkjs, CurveType.bn128)
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 1, // Optional domain ID for proof categorization
+  });
 
 events.on('ErrorEvent', (eventData) => {
   console.error(JSON.stringify(eventData));
@@ -156,19 +166,29 @@ try {
 Register your Verification Key on chain and use it in future proof submissions by specifying the `registeredVk()` option.
 
 ```typescript
-const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
-const vkTransactionInfo: VKRegistrationTransactionInfo = await transactionResult;
+const { events, transactionResult } = await session
+  .registerVerificationKey()
+  .fflonk()
+  .execute(vk);
+const vkTransactionInfo: VKRegistrationTransactionInfo =
+  await transactionResult;
 
-const {events: verifyEvents, transactionResult: verifyTransactionResult} = await session.verify()
-        .fflonk()
-        .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
-        .execute({ proofData: {
-            vk: vkTransactionInfo.statementHash!,
-            proof: proof,
-            publicSignals: publicSignals }
-        });;
+const { events: verifyEvents, transactionResult: verifyTransactionResult } =
+  await session
+    .verify()
+    .fflonk()
+    .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
+    .execute({
+      proofData: {
+        vk: vkTransactionInfo.statementHash!,
+        proof: proof,
+        publicSignals: publicSignals,
+      },
+      domainId: 42,
+    });
 
-const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
+const verifyTransactionInfo: VerifyTransactionInfo =
+  await verifyTransactionResult;
 ```
 
 ### Listening to Events
@@ -181,11 +201,17 @@ You can listen for transaction events using the events emitter. Common events in
 * `error`: Triggered if an error occurs during the transaction process.
 
 ```typescript
-const { events, transactionResult } = await session.verify().risc0().execute({ proofData: {
-    vk: vk,
-    proof: proof,
-    publicSignals: publicSignals }
-});;
+const { events, transactionResult } = await session
+  .verify()
+  .risc0()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 
 events.on('includedInBlock', (eventData) => {
     console.log('Transaction included in block:', eventData);
@@ -209,13 +235,17 @@ events.on('error', (error) => {
 To await the final result of the transaction, use the transactionResult promise. This resolves with the final transaction details after the transaction is finalized in a block.
 
 ```typescript
-const { events, transactionResult } = await session.verify()
+const { events, transactionResult } = await session
+  .verify()
   .groth16(Library.gnark, CurveType.bls12381)
-  .execute({ proofData: {
+  .execute({
+    proofData: {
       vk: vk,
       proof: proof,
-      publicSignals: publicSignals }
-  });;
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 
 const result = await transactionResult;
 console.log('Final transaction result:', result);
@@ -223,16 +253,21 @@ console.log('Final transaction result:', result);
 
 ### Wait for the Attestation to be published
 
-Wait for the NewElement event to be published before the transaction info is returned back by the promise.  Occurs around every ~60s.
+Wait for the NewElement event to be published before the transaction info is returned back by the promise. Occurs around every ~60s.
 
 ```typescript
-const { events, transactionResult } = await session.verify().risc0()
-    .waitForPublishedAttestation()
-    .execute({ proofData: {
-        vk: vk,
-        proof: proof,
-        publicSignals: publicSignals }
-    });;
+const { events, transactionResult } = await session
+  .verify()
+  .risc0()
+  .waitForPublishedAttestation()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 
 const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
@@ -256,18 +291,23 @@ Under the hood this is a wrapper around the `dryRun()` call and requires a `Cust
 Connect to your custom node that has the unsafe flags set, and send the proof:
 
 ```typescript
-  // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
-  const session = await zkVerifySession.start()
-          .Custom('ws://my-custom-node')
-          .withAccount('your-seed-phrase');
+// Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
+const session = await zkVerifySession
+  .start()
+  .Custom('ws://my-custom-node')
+  .withAccount('your-seed-phrase');
 
-  const { success, message } = session.optimisticVerify()
-          .risc0()
-          .execute({ proofData: {
-              vk: vk,
-              proof: proof,
-              publicSignals: publicSignals }
-          });;
+const { success, message } = session
+  .optimisticVerify()
+  .risc0()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 ```
 
 ### Example Usage
@@ -287,7 +327,8 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
           .execute({ proofData: {
               vk: vk,
               proof: proof,
-              publicSignals: publicSignals }
+              publicSignals: publicSignals },
+              domainId: 42 // Optional domain ID for proof categorization
           });;
           
   if(!success) {
@@ -304,7 +345,8 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
           .execute({ proofData: {
               vk: vk,
               proof: proof,
-              publicSignals: publicSignals }
+              publicSignals: publicSignals },
+              domainId: 42 // Optional domain ID for proof categorization
           });;
 
   // Listen for the 'includedInBlock' event
@@ -380,18 +422,21 @@ await session.close();
 ### `zkVerifySession.verify`
 
 ```typescript
-const { events, transactionResult } = await session.verify()
-        .fflonk()
-        .nonce(1)
-        .waitForPublishedAttestation()
-        .withRegisteredVk()
-        .execute({ proofData: {
-            vk: vk,
-            proof: proof,
-            publicSignals: publicSignals }
-        });; // 1. Directly pass proof data
-        // .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
-
+const { events, transactionResult } = await session
+  .verify()
+  .fflonk()
+  .nonce(1)
+  .waitForPublishedAttestation()
+  .withRegisteredVk()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }); // 1. Directly pass proof data
+// .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
 ```
 
 * Proof Type: `.fflonk()` specifies the type of proof to be used. Options available for all supported proof types.
@@ -404,13 +449,17 @@ const { events, transactionResult } = await session.verify()
 ### `zkVerifySession.optimisticVerify`
 
 ```typescript
-  const { success, message } = session.optimisticVerify()
-          .risc0()
-          .execute({ proofData: {
-              vk: vk,
-              proof: proof,
-              publicSignals: publicSignals }
-          });;
+const { success, message } = session
+  .optimisticVerify()
+  .risc0()
+  .execute({
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  });
 ```
 
 * Proof Type: `.risc0()` specifies the type of proof to be used. Options available for all supported proof types.
@@ -499,34 +548,66 @@ const extrinsic = await session.estimateCost(extrinsic);
   length: number;
   ```
 
-### `zkVerifySession.accountInfo`
+### `zkVerifySession.getAccountInfo`
 
 ```typescript
-const accountInfo: AccountInfo = await session.accountInfo();
-console.log(accountInfo.address);
-console.log(accountInfo.nonce);
-console.log(accountInfo.freeBalance);
-console.log(accountInfo.reservedBalance);
+const accountInfo: AccountInfo[] = await session.getAccountInfo();
+console.log(accountInfo[0].address);
+console.log(accountInfo[0].nonce);
+console.log(accountInfo[0].freeBalance);
+console.log(accountInfo[0].reservedBalance);
 ```
 
-* Returns account information: address, nonce, freeBalance and reservedBalance. Full session only, will not work in readOnly mode.
+* Returns an array of account information: address, nonce, freeBalance and reservedBalance. Full session only, will not work in readOnly mode.
 
 ### `zkVerifySession.addAccount`
 
 ```typescript
-session.addAccount(seedPhrase);
+await session.addAccount(seedPhrase);
 ```
 
 * `seedPhrase`: Your seed phrase as a string "my seed phrase"
+* Returns: Promise<string> Account Address, which is also required as an input for removeAccount().
 * Adds the account to the current session
+
+### `zkVerifySession.addAccounts`
+
+```typescript
+await session.addAccounts([seedPhrase1, seedPhrase2, seedPhrase3, seedPhrase4]);
+```
+
+* `[seedPhrase]`: Your seed phrases as a string array \["my seed phrase 1", "my seed phrase 2"]'
+* Returns: Promise\<string\[]> Account Address array, which is also required as an input for removeAccount().
+* Adds the accounts to the current session
 
 ### `zkVerifySession.removeAccount`
 
 ```typescript
-session.removeAccount();
+// Remove specific account
+await session.removeAccount(accountAddress);
+// Remove account if only one exists
+await session.removeAccount();
 ```
 
-* Removes the active account from the current session, does nothing if no account is currently active.
+* `accountAddress`: The account address to remove, in string format.
+* Removes specified accountAddress from the active accounts list.
+* If no accountAddress is provided and exactly one account exists, that account is removed.
+* If no accounts remain after removal, the session transitions to read-only mode.
+* If the session is already in read-only mode, calling this method has no effect.
+
+### `zkVerifySession.getAccount`
+
+```typescript
+// Return sole KeyringPair if only one account is connected
+const account = session.getAccount();
+
+// Return specific KeyringPair if multiple accounts are connected
+const account2 = session.getAccount("myAccountAddress");
+```
+
+* Returns: The KeyringPair object representing the active account in the session, or undefined if the session is in read-only mode.
+* The account is used for signing transactions and interacting with the blockchain on behalf of the user.
+* If no account is associated with the session (i.e., the session is in read-only mode) or account searched for does not exist, this will error.
 
 ### `zkVerifySession.subscribeToNewAttestations`
 
@@ -551,7 +632,7 @@ session.unsubscribe();
 const api = session.api;
 ```
 
-* Uses PolkadotJS 12.4.2
+* Uses PolkadotJS 15.4.1
 * Returns: The ApiPromise instance connected to the Polkadot.js API.
 * This is the main API object used to interact with the blockchain. It provides methods for querying the chain state, submitting extrinsics, subscribing to events, and more.
 
@@ -563,12 +644,3 @@ const provider = session.provider;
 
 * Returns: The WsProvider instance connected to the WebSocket endpoint.
 * The provider manages the connection to the blockchain node. It handles WebSocket communication and can be used to interact with the node directly, such as for subscribing to updates or making RPC calls.
-
-### `zkVerifySession.account`
-
-```typescript
-const account = session.account;
-```
-
-* Returns: The KeyringPair object representing the active account in the session, or undefined if the session is in read-only mode.
-* The account is used for signing transactions and interacting with the blockchain on behalf of the user. If no account is associated with the session (i.e., the session is in read-only mode), this will return undefined.

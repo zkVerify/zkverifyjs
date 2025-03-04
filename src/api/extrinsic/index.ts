@@ -11,6 +11,7 @@ import { FormattedProofData } from '../format/types';
  * @param {ApiPromise} api - The Polkadot API instance.
  * @param {ProofType} proofType - The type of supported proof, used to select the correct pallet.
  * @param {FormattedProofData} params - Formatted Proof Parameters required by the extrinsic.
+ * @param {number | null | undefined} domainId - The domain ID for the extrinsic (32-bit unsigned integer).
  * @returns {SubmittableExtrinsic<'promise'>} The generated SubmittableExtrinsic for submission.
  * @throws {Error} - Throws an error if the extrinsic creation fails.
  */
@@ -18,6 +19,7 @@ export const createSubmitProofExtrinsic = (
   api: ApiPromise,
   proofType: ProofType,
   params: FormattedProofData,
+  domainId: number | null = null,
 ): SubmittableExtrinsic<'promise'> => {
   const pallet = getProofPallet(proofType);
 
@@ -30,7 +32,7 @@ export const createSubmitProofExtrinsic = (
       params.formattedVk,
       params.formattedProof,
       params.formattedPubs,
-      null, // TODO: Update with aggregate pallet functionality (domain_id)
+      domainId,
     );
   } catch (error: unknown) {
     throw new Error(formatError(error, proofType, params));
@@ -43,6 +45,7 @@ export const createSubmitProofExtrinsic = (
  * @param {ApiPromise} api - The Polkadot API instance.
  * @param {ProofType} proofType - The type of supported proof, used to select the correct pallet.
  * @param {FormattedProofData} params - Formatted Proof Parameters required by the extrinsic.
+ * @param {number | null | undefined} domainId - The domain ID for the extrinsic (32-bit unsigned integer).
  * @returns {string} Hex-encoded string of the SubmittableExtrinsic.
  * @throws {Error} - Throws an error if the extrinsic creation fails.
  */
@@ -50,8 +53,14 @@ export const createExtrinsicHex = (
   api: ApiPromise,
   proofType: ProofType,
   params: FormattedProofData,
+  domainId?: number | null,
 ): string => {
-  const extrinsic = createSubmitProofExtrinsic(api, proofType, params);
+  const extrinsic = createSubmitProofExtrinsic(
+    api,
+    proofType,
+    params,
+    domainId,
+  );
   return extrinsic.toHex();
 };
 

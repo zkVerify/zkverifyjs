@@ -221,6 +221,47 @@ describe('verify', () => {
     );
   });
 
+  it('should handle the transaction with AccountConnection when proofData and domainId are provided', async () => {
+    (getProofProcessor as jest.Mock).mockReturnValue(mockProcessor);
+    (getProofPallet as jest.Mock).mockReturnValue('mockPallet');
+    (createSubmitProofExtrinsic as jest.Mock).mockReturnValue(
+      'mockTransaction',
+    );
+    (handleTransaction as jest.Mock).mockResolvedValue({ success: true });
+    const input: VerifyInput = {
+      proofData: {
+        proof: 'proof',
+        publicSignals: 'signals',
+        vk: 'vk',
+      },
+      domainId: 42,
+    };
+
+    const result = await verify(
+      mockAccountConnection,
+      mockOptions,
+      emitter,
+      input,
+    );
+
+    expect(result).toEqual({ success: true });
+    expect(createSubmitProofExtrinsic).toHaveBeenCalledWith(
+      mockAccountConnection.api,
+      mockOptions.proofOptions.proofType,
+      expect.any(Object),
+      42,
+    );
+    expect(handleTransaction).toHaveBeenCalledWith(
+      mockAccountConnection.api,
+      'mockTransaction',
+      Array.from(mockAccountConnection.accounts.values())[0],
+      undefined,
+      emitter,
+      mockOptions,
+      TransactionType.Verify,
+    );
+  });
+
   it('should throw an error and emit when transaction submission fails', async () => {
     (getProofProcessor as jest.Mock).mockReturnValue(mockProcessor);
     (handleTransaction as jest.Mock).mockRejectedValue(
@@ -248,6 +289,33 @@ describe('verify', () => {
   it('should handle the transaction with WalletConnection when extrinsic is provided', async () => {
     const mockExtrinsic = {} as SubmittableExtrinsic<'promise'>;
     const input: VerifyInput = { extrinsic: mockExtrinsic };
+    (handleTransaction as jest.Mock).mockResolvedValue({ success: true });
+
+    const result = await verify(
+      mockWalletConnection,
+      mockOptions,
+      emitter,
+      input,
+    );
+
+    expect(result).toEqual({ success: true });
+    expect(handleTransaction).toHaveBeenCalledWith(
+      mockWalletConnection.api,
+      mockExtrinsic,
+      mockWalletConnection.accountAddress,
+      mockWalletConnection.injector.signer,
+      emitter,
+      mockOptions,
+      TransactionType.Verify,
+    );
+  });
+
+  it('should handle the transaction with WalletConnection when extrinsic and domainId are provided', async () => {
+    const mockExtrinsic = {} as SubmittableExtrinsic<'promise'>;
+    const input: VerifyInput = {
+      extrinsic: mockExtrinsic,
+      domainId: 42,
+    };
     (handleTransaction as jest.Mock).mockResolvedValue({ success: true });
 
     const result = await verify(
