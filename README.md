@@ -582,7 +582,7 @@ await session.addAccount(seedPhrase);
 ```
 
 - `seedPhrase`: Your seed phrase as a string "my seed phrase"
-- Returns: Promise<string> Account Address, which is also required as an input for removeAccount().
+- Returns: `Promise<string>` Account Address, which is also required as an input for removeAccount().
 - Adds the account to the current session
 
 ### `zkVerifySession.addAccounts`
@@ -592,7 +592,7 @@ await session.addAccounts([seedPhrase1, seedPhrase2, seedPhrase3, seedPhrase4]);
 ```
 
 - `[seedPhrase]`: Your seed phrases as a string array ["my seed phrase 1", "my seed phrase 2"]'
-- Returns: Promise<string[]> Account Address array, which is also required as an input for removeAccount().
+- Returns: `Promise<string[]>` Account Address array, which is also required as an input for removeAccount().
 - Adds the accounts to the current session
 
 ## `zkVerifySession.removeAccount`
