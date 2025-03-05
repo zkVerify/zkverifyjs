@@ -1,8 +1,4 @@
-import {
-  AccountConnection,
-  EstablishedConnection,
-  WalletConnection,
-} from '../connection/types';
+import { AccountConnection, WalletConnection } from '../connection/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { checkReadOnly, getSelectedAccount } from '../../utils/helpers';
 
@@ -14,21 +10,24 @@ import { VerifyOptions } from '../../session/types';
 import { handleTransaction } from '../../utils/transactions';
 
 export const registerDomain = async (
-  connection: AccountConnection | WalletConnection | EstablishedConnection,
+  connection: AccountConnection | WalletConnection,
   aggregationSize: number,
   queueSize: number = 16,
   emitter: EventEmitter,
+  accountAddress?: string,
 ): Promise<number> => {
-  if (aggregationSize > 128) throw new Error('aggregationSize must be <= 128');
-  if (queueSize > 16) throw new Error('queueSize must be <= 16');
-
   checkReadOnly(connection);
+
+  if (aggregationSize <= 0 || aggregationSize > 128)
+    throw new Error(`registerDomain aggregationSize must be between 1 and 128`);
+  if (queueSize <= 0 || queueSize > 16)
+    throw new Error(`registerDomain queueSize must be between 1 and 16`);
 
   const { api } = connection;
   let selectedAccount;
 
   if ('accounts' in connection) {
-    selectedAccount = getSelectedAccount(connection);
+    selectedAccount = getSelectedAccount(connection, accountAddress);
   }
 
   const registerExtrinsic = api.tx.aggregate.registerDomain(
@@ -80,17 +79,21 @@ export const registerDomain = async (
 };
 
 export const holdDomain = async (
-  connection: AccountConnection | WalletConnection | EstablishedConnection,
+  connection: AccountConnection | WalletConnection,
   domainId: number,
   emitter: EventEmitter,
+  accountAddress?: string,
 ): Promise<void> => {
   checkReadOnly(connection);
+
+  if (domainId < 0)
+    throw new Error(`holdDomain domainId must be greater than 0`);
 
   const { api } = connection;
   let selectedAccount;
 
   if ('accounts' in connection) {
-    selectedAccount = getSelectedAccount(connection);
+    selectedAccount = getSelectedAccount(connection, accountAddress);
   }
 
   const holdExtrinsic = api.tx.aggregate.holdDomain(domainId);
@@ -151,17 +154,21 @@ export const holdDomain = async (
 };
 
 export const unregisterDomain = async (
-  connection: AccountConnection | WalletConnection | EstablishedConnection,
+  connection: AccountConnection | WalletConnection,
   domainId: number,
   emitter: EventEmitter,
+  accountAddress?: string,
 ): Promise<void> => {
   checkReadOnly(connection);
+
+  if (domainId < 0)
+    throw new Error(`holdDomain domainId must be greater than 0`);
 
   const { api } = connection;
   let selectedAccount;
 
   if ('accounts' in connection) {
-    selectedAccount = getSelectedAccount(connection);
+    selectedAccount = getSelectedAccount(connection, accountAddress);
   }
 
   const unregisterExtrinsic = api.tx.aggregate.unregisterDomain(domainId);

@@ -7,25 +7,24 @@ import {
 import { ConnectionManager } from '../connection';
 import { EventEmitter } from 'events';
 
-// That file will contain most of the logic similar to all the other api files, see verify for example of how events are used and fired.
 export class DomainManager {
   private readonly connectionManager: ConnectionManager;
-  private eventEmitter: EventEmitter;
+  public readonly events: EventEmitter;
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
-    this.eventEmitter = new EventEmitter();
+    this.events = new EventEmitter();
   }
 
   async registerDomain(
     aggregationSize: number,
     queueSize: number = 16,
   ): Promise<number> {
-    return await registerDomain(
+    return registerDomain(
       this.connectionManager.connectionDetails,
       aggregationSize,
       queueSize,
-      this.eventEmitter,
+      this.events,
     );
   }
 
@@ -33,7 +32,7 @@ export class DomainManager {
     return holdDomain(
       this.connectionManager.connectionDetails,
       domainId,
-      this.eventEmitter,
+      this.events,
     );
   }
 
@@ -41,7 +40,7 @@ export class DomainManager {
     return unregisterDomain(
       this.connectionManager.connectionDetails,
       domainId,
-      this.eventEmitter,
+      this.events,
     );
   }
 }

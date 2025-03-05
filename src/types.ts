@@ -16,7 +16,7 @@ export interface ProofData {
 
 export interface TransactionInfo {
   blockHash: string;
-  proofType: ProofType;
+  proofType?: ProofType;
   status: TransactionStatus;
   txHash?: string;
   extrinsicIndex?: number;
