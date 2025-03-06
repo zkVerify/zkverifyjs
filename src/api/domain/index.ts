@@ -1,6 +1,6 @@
 import { AccountConnection, WalletConnection } from '../connection/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { checkReadOnly, getSelectedAccount } from '../../utils/helpers';
+import { getSelectedAccount } from '../../utils/helpers';
 
 import EventEmitter from 'events';
 import { EventRecord } from '@polkadot/types/interfaces';
@@ -16,8 +16,6 @@ export const registerDomain = async (
   emitter: EventEmitter,
   accountAddress?: string,
 ): Promise<number> => {
-  checkReadOnly(connection);
-
   if (aggregationSize <= 0 || aggregationSize > 128)
     throw new Error(`registerDomain aggregationSize must be between 1 and 128`);
   if (queueSize <= 0 || queueSize > 16)
@@ -84,8 +82,6 @@ export const holdDomain = async (
   emitter: EventEmitter,
   accountAddress?: string,
 ): Promise<void> => {
-  checkReadOnly(connection);
-
   if (domainId < 0)
     throw new Error(`holdDomain domainId must be greater than 0`);
 
@@ -159,8 +155,6 @@ export const unregisterDomain = async (
   emitter: EventEmitter,
   accountAddress?: string,
 ): Promise<void> => {
-  checkReadOnly(connection);
-
   if (domainId < 0)
     throw new Error(`holdDomain domainId must be greater than 0`);
 

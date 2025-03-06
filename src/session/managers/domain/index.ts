@@ -6,6 +6,8 @@ import {
 
 import { ConnectionManager } from '../connection';
 import { EventEmitter } from 'events';
+import { checkReadOnly } from "../../../utils/helpers";
+import { AccountConnection, WalletConnection } from "../../../api/connection/types";
 
 export class DomainManager {
   private readonly connectionManager: ConnectionManager;
@@ -20,8 +22,12 @@ export class DomainManager {
     aggregationSize: number,
     queueSize: number = 16,
   ): Promise<number> {
+    checkReadOnly(this.connectionManager.connectionDetails);
+
     return registerDomain(
-      this.connectionManager.connectionDetails,
+      this.connectionManager.connectionDetails as
+          | AccountConnection
+          | WalletConnection,
       aggregationSize,
       queueSize,
       this.events,
@@ -29,16 +35,24 @@ export class DomainManager {
   }
 
   async holdDomain(domainId: number): Promise<void> {
+    checkReadOnly(this.connectionManager.connectionDetails);
+
     return holdDomain(
-      this.connectionManager.connectionDetails,
+      this.connectionManager.connectionDetails as
+          | AccountConnection
+          | WalletConnection,
       domainId,
       this.events,
     );
   }
 
   async unregisterDomain(domainId: number): Promise<void> {
+    checkReadOnly(this.connectionManager.connectionDetails);
+
     return unregisterDomain(
-      this.connectionManager.connectionDetails,
+      this.connectionManager.connectionDetails as
+          | AccountConnection
+          | WalletConnection,
       domainId,
       this.events,
     );

@@ -79,7 +79,7 @@ export const handleTransactionEvents = (
 
     if (
       transactionType === TransactionType.VKRegistration &&
-      event.section == getProofPallet(transactionInfo.proofType) &&
+      event.section == getProofPallet(transactionInfo.proofType!) &&
       event.method == 'VkRegistered'
     ) {
       statementHash = event.data[0].toString();
