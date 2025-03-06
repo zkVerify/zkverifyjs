@@ -6,12 +6,15 @@ import {
 
 import { ConnectionManager } from '../connection';
 import { EventEmitter } from 'events';
-import { checkReadOnly } from "../../../utils/helpers";
-import { AccountConnection, WalletConnection } from "../../../api/connection/types";
+import { checkReadOnly } from '../../../utils/helpers';
+import {
+  AccountConnection,
+  WalletConnection,
+} from '../../../api/connection/types';
 
 export class DomainManager {
   private readonly connectionManager: ConnectionManager;
-  public readonly events: EventEmitter;
+  private readonly events: EventEmitter;
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
@@ -19,42 +22,48 @@ export class DomainManager {
   }
 
   async registerDomain(
-    aggregationSize: number,
-    queueSize: number = 16,
-  ): Promise<number> {
+      aggregationSize: number,
+      queueSize: number = 16,
+  ): Promise<{ events: EventEmitter; domainId: number }> {
     checkReadOnly(this.connectionManager.connectionDetails);
 
-    return registerDomain(
-      this.connectionManager.connectionDetails as
-          | AccountConnection
-          | WalletConnection,
-      aggregationSize,
-      queueSize,
-      this.events,
+    const domainId = await registerDomain(
+        this.connectionManager.connectionDetails as
+            | AccountConnection
+            | WalletConnection,
+        aggregationSize,
+        queueSize,
+        this.events,
     );
+
+    return { events: this.events, domainId };
   }
 
-  async holdDomain(domainId: number): Promise<void> {
+  async holdDomain(domainId: number): Promise<{ events: EventEmitter }> {
     checkReadOnly(this.connectionManager.connectionDetails);
 
-    return holdDomain(
-      this.connectionManager.connectionDetails as
-          | AccountConnection
-          | WalletConnection,
-      domainId,
-      this.events,
+    await holdDomain(
+        this.connectionManager.connectionDetails as
+            | AccountConnection
+            | WalletConnection,
+        domainId,
+        this.events,
     );
+
+    return { events: this.events };
   }
 
-  async unregisterDomain(domainId: number): Promise<void> {
+  async unregisterDomain(domainId: number): Promise<{ events: EventEmitter }> {
     checkReadOnly(this.connectionManager.connectionDetails);
 
-    return unregisterDomain(
-      this.connectionManager.connectionDetails as
-          | AccountConnection
-          | WalletConnection,
-      domainId,
-      this.events,
+    await unregisterDomain(
+        this.connectionManager.connectionDetails as
+            | AccountConnection
+            | WalletConnection,
+        domainId,
+        this.events,
     );
+
+    return { events: this.events };
   }
 }

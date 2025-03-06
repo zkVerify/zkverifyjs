@@ -1,5 +1,6 @@
 import { zkVerifySession } from '../src';
 import { walletPool } from './common/walletPool';
+import { ZkVerifyEvents } from "../src";
 
 jest.setTimeout(120000);
 describe('Domain interaction tests', () => {
@@ -40,6 +41,43 @@ describe('Domain interaction tests', () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
 
-        const result = await session.registerDomain(1, 2);
+        const { events: registerEvents, domainId } = await session.registerDomain(1, 2);
+
+        registerEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
+            console.log("Transaction included in block:", eventData);
+        });
+
+        registerEvents.on(ZkVerifyEvents.Finalized, (eventData) => {
+            console.log("Transaction finalized:", eventData);
+        });
+
+        registerEvents.on(ZkVerifyEvents.NewDomain, (eventData) => {
+            console.log("New domain registered:", eventData.domainId);
+        });
+
+        registerEvents.on(ZkVerifyEvents.ErrorEvent, (error) => {
+            console.error("Transaction error:", error);
+        });
+
+        console.log("Domain registered with ID:", domainId);
+
+        const { events: unRegisterEvents } = await session.unregisterDomain(domainId);
+
+        unRegisterEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
+            console.log("Transaction included in block:", eventData);
+        });
+
+        unRegisterEvents.on(ZkVerifyEvents.Finalized, (eventData) => {
+            console.log("Transaction finalized:", eventData);
+        });
+
+        unRegisterEvents.on(ZkVerifyEvents.DomainStateChanged, (eventData) => {
+            console.log("Domain State Changed", eventData.domainState);
+        });
+
+        unRegisterEvents.on(ZkVerifyEvents.ErrorEvent, (error) => {
+            console.error("Transaction error:", error);
+        });
+
     });
 });

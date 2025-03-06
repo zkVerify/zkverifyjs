@@ -1,7 +1,6 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import {
-  DomainHoldTransactionInfo,
-  DomainUnregisterTransactionInfo,
+  DomainTransactionInfo,
   RegisterDomainTransactionInfo,
   TransactionInfo,
   VKRegistrationTransactionInfo,
@@ -24,15 +23,17 @@ export const handleTransactionEvents = (
   | VerifyTransactionInfo
   | VKRegistrationTransactionInfo
   | RegisterDomainTransactionInfo
-  | DomainHoldTransactionInfo
-  | DomainUnregisterTransactionInfo => {
+  | DomainTransactionInfo => {
   let statementHash: string | undefined;
   let attestationId: number | undefined = undefined;
   let leafDigest: string | null = null;
   let domainId: number | undefined;
   let domainState: string | undefined;
 
+  console.log(`Received ${events.length} events in transaction: ${transactionType}`);
+
   events.forEach(({ event, phase }) => {
+    console.log(`Event Captured: section=${event.section}, method=${event.method}, data=${JSON.stringify(event.data, null, 2)}`);
     if (phase.isApplyExtrinsic) {
       transactionInfo.extrinsicIndex = phase.asApplyExtrinsic.toNumber();
     }
@@ -98,28 +99,24 @@ export const handleTransactionEvents = (
     if (
       transactionType === TransactionType.DomainRegistration &&
       event.section === 'aggregate' &&
-      event.method === 'DomainRegistered' // Is this correct?
+      event.method === 'NewDomain'
     ) {
       domainId = Number(event.data[0].toString());
-      return {
-        ...transactionInfo,
-        domainId,
-      } as RegisterDomainTransactionInfo;
     }
   });
 
-  if (transactionType === TransactionType.DomainHold) {
+  if (transactionType === TransactionType.DomainRegistration) {
     return {
       ...transactionInfo,
-      domainState,
-    } as DomainHoldTransactionInfo;
+      domainId,
+    } as RegisterDomainTransactionInfo;
   }
 
-  if (transactionType === TransactionType.DomainUnregister) {
+  if (transactionType === TransactionType.DomainHold || transactionType === TransactionType.DomainUnregister) {
     return {
       ...transactionInfo,
       domainState,
-    } as DomainUnregisterTransactionInfo;
+    } as DomainTransactionInfo;
   }
 
   if (transactionType === TransactionType.Verify) {
