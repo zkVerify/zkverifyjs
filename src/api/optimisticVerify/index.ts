@@ -62,6 +62,7 @@ const buildTransaction = (
       api,
       proofOptions.proofType,
       formattedProofData,
+      input.domainId,
     );
   }
 
