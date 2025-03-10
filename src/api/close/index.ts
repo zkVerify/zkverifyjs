@@ -21,7 +21,7 @@ export async function closeSession(provider: WsProvider): Promise<void> {
       retries--;
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    throw new Error(`Failed to disconnect ${name} after 5 attempts.`);
+    console.warn(`Failed to disconnect ${name} after 5 attempts.`);
   };
 
   try {
@@ -58,8 +58,7 @@ export async function closeSession(provider: WsProvider): Promise<void> {
         () => provider.isConnected,
       );
     } catch (error) {
-      console.debug('Provider disconnection failed:', error);
-      throw error;
+      console.warn('Provider disconnection failed:', error);
     }
   }
 }

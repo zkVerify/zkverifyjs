@@ -7,8 +7,11 @@ import {
 } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import {
+  DomainTransactionInfo,
+  RegisterDomainTransactionInfo,
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
+  TransactionInfo,
 } from '../../types';
 import { waitForNewAttestationEvent } from '../helpers';
 import { handleTransactionEvents } from './events';
@@ -20,6 +23,9 @@ import {
 } from '../../enums';
 import { handleError } from './errors';
 
+/**
+ * Safe wrapper for emitting events without crashing.
+ */
 const safeEmit = (emitter: EventEmitter, event: string, data: unknown) => {
   try {
     emitter.emit(event, data);
@@ -28,6 +34,9 @@ const safeEmit = (emitter: EventEmitter, event: string, data: unknown) => {
   }
 };
 
+/**
+ * Handles "In Block" transaction updates.
+ */
 const handleInBlock = async (
   api: ApiPromise,
   events: SubmittableResult['events'],
@@ -35,10 +44,8 @@ const handleInBlock = async (
   setAttestationId: (id: number | undefined) => void,
   emitter: EventEmitter,
   transactionType: TransactionType,
-): Promise<void> => {
-  if (transactionInfo.status === TransactionStatus.Error) {
-    return;
-  }
+) => {
+  if (transactionInfo.status === TransactionStatus.Error) return;
 
   transactionInfo.status = TransactionStatus.InBlock;
 
@@ -55,16 +62,17 @@ const handleInBlock = async (
   safeEmit(emitter, ZkVerifyEvents.IncludedInBlock, transactionInfo);
 };
 
+/**
+ * Handles "Finalized" transaction updates.
+ */
 const handleFinalized = async (
   api: ApiPromise,
-  transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo,
+  transactionInfo: TransactionInfo,
   dispatchError: unknown,
   emitter: EventEmitter,
   transactionType: TransactionType,
-): Promise<void> => {
-  if (transactionInfo.status === TransactionStatus.Error) {
-    return;
-  }
+) => {
+  if (transactionInfo.status === TransactionStatus.Error) return;
 
   if (dispatchError) {
     handleError(emitter, api, transactionInfo, dispatchError);
@@ -73,31 +81,115 @@ const handleFinalized = async (
 
   transactionInfo.status = TransactionStatus.Finalized;
 
-  if (transactionType === TransactionType.Verify) {
-    const verifyTransactionInfo = transactionInfo as VerifyTransactionInfo;
-    if (verifyTransactionInfo.attestationId) {
-      safeEmit(emitter, ZkVerifyEvents.Finalized, verifyTransactionInfo);
-    } else {
-      const errorMsg = 'Finalized but no attestation ID found.';
-      safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
-        ...verifyTransactionInfo,
-        error: errorMsg,
-      });
+  switch (transactionType) {
+    case TransactionType.Verify: {
+      const verifyInfo = transactionInfo as VerifyTransactionInfo;
+      if (verifyInfo.attestationId) {
+        safeEmit(emitter, ZkVerifyEvents.Finalized, verifyInfo);
+      } else {
+        safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
+          ...verifyInfo,
+          error: 'Finalized but no attestation ID found.',
+        });
+      }
+      break;
     }
-  } else if (transactionType === TransactionType.VKRegistration) {
-    const vkRegistrationInfo = transactionInfo as VKRegistrationTransactionInfo;
-    if (vkRegistrationInfo.statementHash) {
-      safeEmit(emitter, ZkVerifyEvents.Finalized, vkRegistrationInfo);
-    } else {
-      const errorMsg = 'Finalized but no statement hash found.';
-      safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
-        ...vkRegistrationInfo,
-        error: errorMsg,
-      });
+
+    case TransactionType.VKRegistration: {
+      const vkInfo = transactionInfo as VKRegistrationTransactionInfo;
+      if (vkInfo.statementHash) {
+        safeEmit(emitter, ZkVerifyEvents.Finalized, vkInfo);
+      } else {
+        safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
+          ...vkInfo,
+          error: 'Finalized but no statement hash found.',
+        });
+      }
+      break;
+    }
+
+    case TransactionType.DomainRegistration: {
+      const domainInfo = transactionInfo as RegisterDomainTransactionInfo;
+      if (domainInfo.domainId !== undefined) {
+        safeEmit(emitter, ZkVerifyEvents.NewDomain, {
+          domainId: domainInfo.domainId,
+        });
+        safeEmit(emitter, ZkVerifyEvents.Finalized, domainInfo);
+      } else {
+        safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
+          ...domainInfo,
+          error: 'Finalized but no domain ID found.',
+        });
+      }
+      break;
+    }
+
+    case TransactionType.DomainHold:
+    case TransactionType.DomainUnregister: {
+      const domainStateInfo = transactionInfo as DomainTransactionInfo;
+      if (domainStateInfo.domainState) {
+        safeEmit(emitter, ZkVerifyEvents.Finalized, domainStateInfo);
+      } else {
+        safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
+          ...domainStateInfo,
+          error: 'Finalized but no domain state returned.',
+        });
+      }
+      break;
+    }
+
+    default: {
+      console.warn('Unknown transaction type finalized:', transactionType);
+      break;
     }
   }
 };
 
+/**
+ * Initializes a transaction object based on its type.
+ */
+const initializeTransactionInfo = (
+  transactionType: TransactionType,
+  options: VerifyOptions,
+): TransactionInfo => {
+  const baseInfo: TransactionInfo = {
+    blockHash: '',
+    status: TransactionStatus.Pending,
+    txHash: undefined,
+  };
+
+  switch (transactionType) {
+    case TransactionType.Verify:
+      return {
+        ...baseInfo,
+        proofType: options.proofOptions?.proofType,
+        attestationId: undefined,
+        leafDigest: null,
+        attestationConfirmed: false,
+      } as VerifyTransactionInfo;
+
+    case TransactionType.VKRegistration:
+      return {
+        ...baseInfo,
+        proofType: options.proofOptions?.proofType,
+        statementHash: undefined,
+      } as VKRegistrationTransactionInfo;
+
+    case TransactionType.DomainRegistration:
+      return { ...baseInfo, domainId: -1 } as RegisterDomainTransactionInfo;
+
+    case TransactionType.DomainHold:
+    case TransactionType.DomainUnregister:
+      return { ...baseInfo, domainState: '' } as DomainTransactionInfo;
+
+    default:
+      throw new Error(`Unsupported transaction type: ${transactionType}`);
+  }
+};
+
+/**
+ * Handles transaction execution, signing, and event handling.
+ */
 export const handleTransaction = async (
   api: ApiPromise,
   submitExtrinsic: SubmittableExtrinsic<'promise'>,
@@ -106,141 +198,117 @@ export const handleTransaction = async (
   emitter: EventEmitter,
   options: VerifyOptions,
   transactionType: TransactionType,
-): Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo> => {
-  const {
-    proofOptions: { proofType },
-    waitForNewAttestationEvent: shouldWaitForAttestation = false,
-    nonce = -1, // accountNextIndex preferred shortcut if not set by user.
-  } = options;
+): Promise<TransactionInfo> => {
+  const transactionInfo = initializeTransactionInfo(transactionType, options);
 
-  const transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo =
-    {
-      blockHash: '',
-      proofType,
-      status: TransactionStatus.Pending,
-      txHash: undefined,
-      extrinsicIndex: undefined,
-      feeInfo: undefined,
-      weightInfo: undefined,
-      txClass: undefined,
-    } as VerifyTransactionInfo | VKRegistrationTransactionInfo;
+  return new Promise((resolve, reject) => {
+    const cancelTransaction = (error: unknown) => {
+      if (transactionInfo.status !== TransactionStatus.Error) {
+        transactionInfo.status = TransactionStatus.Error;
 
-  const setAttestationId = (id: number | undefined) => {
-    (transactionInfo as VerifyTransactionInfo).attestationId = id;
-  };
-
-  return new Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo>(
-    (resolve, reject) => {
-      const cancelTransaction = (error: unknown) => {
-        if (transactionInfo.status !== TransactionStatus.Error) {
-          transactionInfo.status = TransactionStatus.Error;
-
-          try {
-            if (error instanceof Error) {
-              handleError(emitter, api, transactionInfo, error, true);
-            } else {
-              handleError(
+        try {
+          if (error instanceof Error) {
+            handleError(emitter, api, transactionInfo, error, true);
+          } else {
+            handleError(
                 emitter,
                 api,
                 transactionInfo,
                 new Error(String(error)),
-                true,
-              );
-            }
-          } catch (err) {
-            reject(err);
-            return;
+                true
+            );
           }
-        }
-      };
-
-      const finalizeTransaction = async (result: SubmittableResult) => {
-        if (transactionInfo.status === TransactionStatus.Error) {
+        } catch (err) {
+          reject(err);
           return;
         }
+      }
+      reject(error);
+    };
 
-        try {
-          await handleFinalized(
-            api,
-            transactionInfo,
-            result.dispatchError,
-            emitter,
-            transactionType,
-          );
+    const finalizeTransaction = async (result: SubmittableResult) => {
+      if (transactionInfo.status === TransactionStatus.Error) return;
 
-          if (
-            transactionType === TransactionType.Verify &&
-            shouldWaitForAttestation &&
-            (transactionInfo as VerifyTransactionInfo).attestationId
-          ) {
-            try {
-              (transactionInfo as VerifyTransactionInfo).attestationEvent =
-                await waitForNewAttestationEvent(
-                  api,
-                  (transactionInfo as VerifyTransactionInfo).attestationId!,
-                  emitter,
-                );
-              (transactionInfo as VerifyTransactionInfo).attestationConfirmed =
-                true;
-            } catch (error) {
-              cancelTransaction(error);
-              return;
-            }
-          }
+      try {
+        await handleFinalized(
+          api,
+          transactionInfo,
+          result.dispatchError,
+          emitter,
+          transactionType,
+        );
 
-          resolve(transactionInfo);
-        } catch (error) {
-          cancelTransaction(error);
-        }
-      };
-
-      performSignAndSend(
-        submitExtrinsic,
-        account,
-        signer ? { signer, nonce } : { nonce },
-        async (result: SubmittableResult) => {
-          if (transactionInfo.status === TransactionStatus.Error) {
-            return;
-          }
-
+        if (
+          transactionType === TransactionType.Verify &&
+          options.waitForNewAttestationEvent &&
+          (transactionInfo as VerifyTransactionInfo).attestationId
+        ) {
           try {
-            if (result.status.isBroadcast) {
-              safeEmit(emitter, ZkVerifyEvents.Broadcast, {
-                txHash: result.txHash.toString(),
-              });
-            }
-
-            if (result.status.isInBlock) {
-              transactionInfo.txHash = result.txHash.toString();
-              transactionInfo.blockHash = result.status.asInBlock.toString();
-
-              await handleInBlock(
+            (transactionInfo as VerifyTransactionInfo).attestationEvent =
+              await waitForNewAttestationEvent(
                 api,
-                result.events,
-                transactionInfo,
-                setAttestationId,
+                (transactionInfo as VerifyTransactionInfo).attestationId!,
                 emitter,
-                transactionType,
               );
-            }
-
-            if (result.status.isFinalized) {
-              await finalizeTransaction(result);
-            } else if (result.status.isInvalid) {
-              throw new Error('Transaction is invalid.');
-            }
+            (transactionInfo as VerifyTransactionInfo).attestationConfirmed =
+              true;
           } catch (error) {
             cancelTransaction(error);
           }
-        },
-      ).catch((error) => {
+        }
+
+        resolve(transactionInfo);
+      } catch (error) {
         cancelTransaction(error);
-      });
-    },
-  );
+      }
+    };
+
+    performSignAndSend(
+      submitExtrinsic,
+      account,
+      signer ? { signer, nonce: options.nonce ?? -1 } : {},
+      async (result) => {
+        if (transactionInfo.status === TransactionStatus.Error) return;
+
+        try {
+          if (result.status.isBroadcast) {
+            safeEmit(emitter, ZkVerifyEvents.Broadcast, {
+              txHash: result.txHash.toString(),
+            });
+          }
+
+          if (result.status.isInBlock) {
+            transactionInfo.txHash = result.txHash.toString();
+            transactionInfo.blockHash = result.status.asInBlock.toString();
+            await handleInBlock(
+              api,
+              result.events,
+              transactionInfo,
+              () => {},
+              emitter,
+              transactionType,
+            );
+          }
+
+          if (result.status.isFinalized) {
+            await finalizeTransaction(result);
+          } else if (result.status.isInvalid) {
+            throw new Error('Transaction is invalid.');
+          }
+        } catch (error) {
+          cancelTransaction(error);
+        }
+      },
+    ).catch((error) => {
+      cancelTransaction(error);
+    });
+  });
 };
 
-function performSignAndSend(
+/**
+ * Handles signing and sending transactions.
+ */
+export function performSignAndSend(
   submitExtrinsic: SubmittableExtrinsic<'promise'>,
   account: KeyringPair | string,
   options: Partial<SignerOptions> | undefined,
@@ -249,12 +317,9 @@ function performSignAndSend(
   if (typeof account === 'string' && options?.signer) {
     return submitExtrinsic.signAndSend(account, options, callback);
   } else if (typeof account !== 'string') {
-    if (options) {
-      return submitExtrinsic.signAndSend(account, options, callback);
-    } else {
-      return submitExtrinsic.signAndSend(account, callback);
-    }
-  } else {
-    throw new Error('Unsupported account or signer type.');
+    return options
+      ? submitExtrinsic.signAndSend(account, options, callback)
+      : submitExtrinsic.signAndSend(account, callback);
   }
+  throw new Error('Unsupported account or signer type.');
 }

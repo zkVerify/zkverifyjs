@@ -3,6 +3,7 @@ import { VerificationManager } from './managers/verification';
 import { VerificationKeyRegistrationManager } from './managers/register';
 import { EventManager } from './managers/events';
 import { ExtrinsicManager } from './managers/extrinsic';
+import { DomainManager } from './managers/domain';
 import { zkVerifySessionOptions } from './types';
 import { SupportedNetwork } from '../config';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
@@ -36,6 +37,9 @@ export class zkVerifySession {
   declare removeAccount: ConnectionManager['removeAccount'];
   declare getAccount: ConnectionManager['getAccount'];
   declare getAccountInfo: ConnectionManager['getAccountInfo'];
+  declare registerDomain: DomainManager['registerDomain'];
+  declare unregisterDomain: DomainManager['unregisterDomain'];
+  declare holdDomain: DomainManager['holdDomain'];
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
@@ -46,6 +50,7 @@ export class zkVerifySession {
       new EventManager(connectionManager),
       new ExtrinsicManager(connectionManager),
       new PoEManager(connectionManager),
+      new DomainManager(connectionManager),
       new FormatManager(),
       connectionManager,
     ];
