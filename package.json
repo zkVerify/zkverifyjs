@@ -1,6 +1,6 @@
 {
   "name": "zkverifyjs",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "Horizen Labs <research@horizenlabs.io>",
   "license": "GPL-3.0",
@@ -82,13 +82,13 @@
     "zkp"
   ],
   "dependencies": {
-    "@polkadot/api": "15.4.1",
-    "@polkadot/extension-dapp": "0.58.1",
+    "@polkadot/api": "15.8.1",
+    "@polkadot/extension-dapp": "0.58.5",
     "async-mutex": "0.5.0",
     "bignumber.js": "9.1.2",
     "dotenv": "16.4.7",
     "js-sha3": "0.9.3",
-    "snarkjs": "0.7.4",
+    "snarkjs": "0.7.5",
     "web3": "4.16.0"
   },
   "devDependencies": {

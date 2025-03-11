@@ -40,7 +40,7 @@ export function subscribeToNewAttestations(
               return;
             }
             if (currentAttestationId === attestationId + 1) {
-              scanLastNBlocksForAttestation(api, attestationId, 20)
+              scanLastNBlocksForAttestation(api, attestationId, 30)
                 .then((found) => {
                   if (!found) {
                     emitter.emit(ZkVerifyEvents.AttestationMissed, {
