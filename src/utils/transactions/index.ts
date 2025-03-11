@@ -211,11 +211,11 @@ export const handleTransaction = async (
             handleError(emitter, api, transactionInfo, error, true);
           } else {
             handleError(
-                emitter,
-                api,
-                transactionInfo,
-                new Error(String(error)),
-                true
+              emitter,
+              api,
+              transactionInfo,
+              new Error(String(error)),
+              true,
             );
           }
         } catch (err) {
@@ -266,7 +266,7 @@ export const handleTransaction = async (
     performSignAndSend(
       submitExtrinsic,
       account,
-      signer ? { signer, nonce: options.nonce ?? -1 } : {},
+      signer ? { signer, nonce: options.nonce } : { nonce: options.nonce },
       async (result) => {
         if (transactionInfo.status === TransactionStatus.Error) return;
 

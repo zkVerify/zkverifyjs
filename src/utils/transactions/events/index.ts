@@ -30,10 +30,16 @@ export const handleTransactionEvents = (
   let domainId: number | undefined;
   let domainState: string | undefined;
 
-  console.log(`Received ${events.length} events in transaction: ${transactionType}`);
+  //TODO: Remove this, used for testing....
+  console.log(
+    `Received ${events.length} events in transaction: ${transactionType}`,
+  );
 
   events.forEach(({ event, phase }) => {
-    console.log(`Event Captured: section=${event.section}, method=${event.method}, data=${JSON.stringify(event.data, null, 2)}`);
+    //TODO: Remove this, used for testing....
+    console.log(
+      `Event Captured: section=${event.section}, method=${event.method}, data=${JSON.stringify(event.data, null, 2)}`,
+    );
     if (phase.isApplyExtrinsic) {
       transactionInfo.extrinsicIndex = phase.asApplyExtrinsic.toNumber();
     }
@@ -112,7 +118,10 @@ export const handleTransactionEvents = (
     } as RegisterDomainTransactionInfo;
   }
 
-  if (transactionType === TransactionType.DomainHold || transactionType === TransactionType.DomainUnregister) {
+  if (
+    transactionType === TransactionType.DomainHold ||
+    transactionType === TransactionType.DomainUnregister
+  ) {
     return {
       ...transactionInfo,
       domainState,

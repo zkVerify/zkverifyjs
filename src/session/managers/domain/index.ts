@@ -22,18 +22,18 @@ export class DomainManager {
   }
 
   async registerDomain(
-      aggregationSize: number,
-      queueSize: number = 16,
+    aggregationSize: number,
+    queueSize: number = 16,
   ): Promise<{ events: EventEmitter; domainId: number }> {
     checkReadOnly(this.connectionManager.connectionDetails);
 
     const domainId = await registerDomain(
-        this.connectionManager.connectionDetails as
-            | AccountConnection
-            | WalletConnection,
-        aggregationSize,
-        queueSize,
-        this.events,
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
+      aggregationSize,
+      queueSize,
+      this.events,
     );
 
     return { events: this.events, domainId };
@@ -43,11 +43,11 @@ export class DomainManager {
     checkReadOnly(this.connectionManager.connectionDetails);
 
     await holdDomain(
-        this.connectionManager.connectionDetails as
-            | AccountConnection
-            | WalletConnection,
-        domainId,
-        this.events,
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
+      domainId,
+      this.events,
     );
 
     return { events: this.events };
@@ -57,11 +57,11 @@ export class DomainManager {
     checkReadOnly(this.connectionManager.connectionDetails);
 
     await unregisterDomain(
-        this.connectionManager.connectionDetails as
-            | AccountConnection
-            | WalletConnection,
-        domainId,
-        this.events,
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
+      domainId,
+      this.events,
     );
 
     return { events: this.events };
