@@ -2,6 +2,8 @@ import { CurveType, Library, zkVerifySession } from '../src';
 import { EventEmitter } from 'events';
 import { ProofMethodMap } from "../src/session/builders/verify";
 import { walletPool } from './common/walletPool';
+import { loadProofAndVK } from "./common/utils";
+import { ProofType } from "../src";
 
 jest.setTimeout(120000);
 describe('zkVerifySession class', () => {
@@ -219,5 +221,54 @@ describe('zkVerifySession class', () => {
 
         await session.removeAccount(secondAccountAddress);
         expect(session.readOnly).toBe(true);
+    });
+
+    it('should handle setting nonces for multiple same-session calls', async () => {
+        try {
+            [envVar, wallet] = await walletPool.acquireWallet();
+            const proofData = loadProofAndVK({ proofType: ProofType.fflonk });
+
+            session = await zkVerifySession.start().Testnet().withAccount(wallet);
+
+            const accountInfo = await session.getAccountInfo();
+            const startingNonce = accountInfo[0].nonce;
+
+            const [tx1, tx2] = await Promise.all([
+                (async () => {
+                    const { events, transactionResult } = await session.verify().fflonk().nonce(startingNonce).execute({
+                        proofData: {
+                            proof: proofData.proof.proof,
+                            publicSignals: proofData.proof.publicSignals,
+                            vk: proofData.vk
+                        }
+                    });
+                    await transactionResult;
+                    return { events, transactionResult };
+                })(),
+                (async () => {
+                    const { events, transactionResult } = await session.verify().fflonk().nonce(startingNonce + 1).execute({
+                        proofData: {
+                            proof: proofData.proof.proof,
+                            publicSignals: proofData.proof.publicSignals,
+                            vk: proofData.vk
+                        }
+                    });
+                    await transactionResult;
+                    return { events, transactionResult };
+                })()
+            ]);
+
+            expect(tx1).toBeDefined();
+            expect(tx2).toBeDefined();
+            expect(tx1.transactionResult).toBeDefined();
+            expect(tx2.transactionResult).toBeDefined();
+
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                throw new Error(`Test failed with error: ${error.message}`);
+            } else {
+                throw new Error('Test failed with an unknown error');
+            }
+        }
     });
 });
