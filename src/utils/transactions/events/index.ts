@@ -1,13 +1,15 @@
-import { ApiPromise } from '@polkadot/api';
-import { EventEmitter } from 'events';
-import { SubmittableResult } from '@polkadot/api';
+import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import {
+  DomainTransactionInfo,
+  RegisterDomainTransactionInfo,
   TransactionInfo,
-  VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
+  VerifyTransactionInfo,
 } from '../../../types';
-import { TransactionType } from '../../../enums';
+
 import { DispatchInfo } from '@polkadot/types/interfaces';
+import { EventEmitter } from 'events';
+import { TransactionType } from '../../../enums';
 import { getProofPallet } from '../../helpers';
 
 export const handleTransactionEvents = (
@@ -17,12 +19,27 @@ export const handleTransactionEvents = (
   emitter: EventEmitter,
   setAttestationId: (id: number | undefined) => void,
   transactionType: TransactionType,
-): VerifyTransactionInfo | VKRegistrationTransactionInfo => {
+):
+  | VerifyTransactionInfo
+  | VKRegistrationTransactionInfo
+  | RegisterDomainTransactionInfo
+  | DomainTransactionInfo => {
   let statementHash: string | undefined;
   let attestationId: number | undefined = undefined;
   let leafDigest: string | null = null;
+  let domainId: number | undefined;
+  let domainState: string | undefined;
+
+  //TODO: Remove this, used for testing....
+  console.log(
+    `Received ${events.length} events in transaction: ${transactionType}`,
+  );
 
   events.forEach(({ event, phase }) => {
+    //TODO: Remove this, used for testing....
+    console.log(
+      `Event Captured: section=${event.section}, method=${event.method}, data=${JSON.stringify(event.data, null, 2)}`,
+    );
     if (phase.isApplyExtrinsic) {
       transactionInfo.extrinsicIndex = phase.asApplyExtrinsic.toNumber();
     }
@@ -69,12 +86,47 @@ export const handleTransactionEvents = (
 
     if (
       transactionType === TransactionType.VKRegistration &&
-      event.section == getProofPallet(transactionInfo.proofType) &&
+      event.section == getProofPallet(transactionInfo.proofType!) &&
       event.method == 'VkRegistered'
     ) {
       statementHash = event.data[0].toString();
     }
+
+    if (
+      (transactionType === TransactionType.DomainHold ||
+        transactionType === TransactionType.DomainUnregister) &&
+      event.section === 'aggregate' &&
+      event.method === 'DomainStateChanged'
+    ) {
+      const [, state] = event.data; // Is this correct? How can I know what is the data from the event?
+      domainState = state.toString();
+    }
+
+    if (
+      transactionType === TransactionType.DomainRegistration &&
+      event.section === 'aggregate' &&
+      event.method === 'NewDomain'
+    ) {
+      domainId = Number(event.data[0].toString());
+    }
   });
+
+  if (transactionType === TransactionType.DomainRegistration) {
+    return {
+      ...transactionInfo,
+      domainId,
+    } as RegisterDomainTransactionInfo;
+  }
+
+  if (
+    transactionType === TransactionType.DomainHold ||
+    transactionType === TransactionType.DomainUnregister
+  ) {
+    return {
+      ...transactionInfo,
+      domainState,
+    } as DomainTransactionInfo;
+  }
 
   if (transactionType === TransactionType.Verify) {
     return {

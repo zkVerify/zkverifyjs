@@ -17,6 +17,8 @@ export {
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
   TransactionInfo,
+  DomainTransactionInfo,
+  RegisterDomainTransactionInfo,
   MerkleProof,
   AccountInfo,
   AttestationEvent,
