@@ -14,56 +14,51 @@ import {
 
 export class DomainManager {
   private readonly connectionManager: ConnectionManager;
-  private readonly events: EventEmitter;
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
-    this.events = new EventEmitter();
   }
 
-  async registerDomain(
+  registerDomain(
     aggregationSize: number,
     queueSize: number = 16,
-  ): Promise<{ events: EventEmitter; domainId: number }> {
+  ): { events: EventEmitter; domainIdPromise: Promise<number> } {
     checkReadOnly(this.connectionManager.connectionDetails);
 
-    const domainId = await registerDomain(
+    return registerDomain(
       this.connectionManager.connectionDetails as
         | AccountConnection
         | WalletConnection,
       aggregationSize,
       queueSize,
-      this.events,
     );
-
-    return { events: this.events, domainId };
   }
 
-  async holdDomain(domainId: number): Promise<{ events: EventEmitter }> {
+  holdDomain(domainId: number): {
+    events: EventEmitter;
+    result: Promise<boolean>;
+  } {
     checkReadOnly(this.connectionManager.connectionDetails);
 
-    await holdDomain(
+    return holdDomain(
       this.connectionManager.connectionDetails as
         | AccountConnection
         | WalletConnection,
       domainId,
-      this.events,
     );
-
-    return { events: this.events };
   }
 
-  async unregisterDomain(domainId: number): Promise<{ events: EventEmitter }> {
+  unregisterDomain(domainId: number): {
+    events: EventEmitter;
+    result: Promise<boolean>;
+  } {
     checkReadOnly(this.connectionManager.connectionDetails);
 
-    await unregisterDomain(
+    return unregisterDomain(
       this.connectionManager.connectionDetails as
         | AccountConnection
         | WalletConnection,
       domainId,
-      this.events,
     );
-
-    return { events: this.events };
   }
 }

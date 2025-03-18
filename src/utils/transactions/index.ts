@@ -40,7 +40,11 @@ const safeEmit = (emitter: EventEmitter, event: string, data: unknown) => {
 const handleInBlock = async (
   api: ApiPromise,
   events: SubmittableResult['events'],
-  transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo,
+  transactionInfo:
+    | VerifyTransactionInfo
+    | VKRegistrationTransactionInfo
+    | RegisterDomainTransactionInfo
+    | DomainTransactionInfo,
   setAttestationId: (id: number | undefined) => void,
   emitter: EventEmitter,
   transactionType: TransactionType,
@@ -58,7 +62,6 @@ const handleInBlock = async (
     transactionType,
   );
   Object.assign(transactionInfo, updatedTransactionInfo);
-
   safeEmit(emitter, ZkVerifyEvents.IncludedInBlock, transactionInfo);
 };
 
@@ -127,7 +130,11 @@ const handleFinalized = async (
     case TransactionType.DomainHold:
     case TransactionType.DomainUnregister: {
       const domainStateInfo = transactionInfo as DomainTransactionInfo;
-      if (domainStateInfo.domainState) {
+      if (domainStateInfo.domainState !== undefined) {
+        safeEmit(emitter, ZkVerifyEvents.DomainStateChanged, {
+          domainId: domainStateInfo.domainId,
+          domainState: domainStateInfo.domainState,
+        });
         safeEmit(emitter, ZkVerifyEvents.Finalized, domainStateInfo);
       } else {
         safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {

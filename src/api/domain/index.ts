@@ -1,28 +1,25 @@
 import { AccountConnection, WalletConnection } from '../connection/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { getSelectedAccount } from '../../utils/helpers';
-
 import EventEmitter from 'events';
-import { EventRecord } from '@polkadot/types/interfaces';
 import { RegisterDomainTransactionInfo } from '../../types';
-import { Vec } from '@polkadot/types';
 import { VerifyOptions } from '../../session/types';
 import { handleTransaction } from '../../utils/transactions';
+import { KeyringPair } from '@polkadot/keyring/types';
 
-export const registerDomain = async (
+export const registerDomain = (
   connection: AccountConnection | WalletConnection,
   aggregationSize: number,
   queueSize: number = 16,
-  emitter: EventEmitter,
   accountAddress?: string,
-): Promise<number> => {
+): { events: EventEmitter; domainIdPromise: Promise<number> } => {
   if (aggregationSize <= 0 || aggregationSize > 128)
     throw new Error(`registerDomain aggregationSize must be between 1 and 128`);
   if (queueSize <= 0 || queueSize > 16)
     throw new Error(`registerDomain queueSize must be between 1 and 16`);
 
   const { api } = connection;
-  let selectedAccount;
+  let selectedAccount: KeyringPair | undefined;
 
   if ('accounts' in connection) {
     selectedAccount = getSelectedAccount(connection, accountAddress);
@@ -33,60 +30,68 @@ export const registerDomain = async (
     queueSize,
   );
 
-  try {
-    const transactionResult = await (async () => {
-      if (selectedAccount) {
-        return await handleTransaction(
-          api,
-          registerExtrinsic,
-          selectedAccount,
-          undefined, // Not sure about this, should we be using a signer here?
-          emitter,
-          {} as VerifyOptions, // Do we need verify options for domain registration?
-          TransactionType.DomainRegistration,
-        );
-      } else if ('injector' in connection) {
-        const { signer } = connection.injector;
-        return await handleTransaction(
-          api,
-          registerExtrinsic,
-          connection.accountAddress,
-          signer,
-          emitter,
-          {} as VerifyOptions,
-          TransactionType.DomainRegistration,
-        );
-      } else {
-        throw new Error('Unsupported connection type.');
+  const emitter = new EventEmitter();
+
+  const domainIdPromise = new Promise<number>((resolve, reject) => {
+    (async () => {
+      try {
+        const transactionResult = await (async () => {
+          if (selectedAccount) {
+            return await handleTransaction(
+              api,
+              registerExtrinsic,
+              selectedAccount,
+              undefined,
+              emitter,
+              {} as VerifyOptions,
+              TransactionType.DomainRegistration,
+            );
+          } else if ('injector' in connection) {
+            const { signer } = connection.injector;
+            return await handleTransaction(
+              api,
+              registerExtrinsic,
+              connection.accountAddress,
+              signer,
+              emitter,
+              {} as VerifyOptions,
+              TransactionType.DomainRegistration,
+            );
+          } else {
+            throw new Error('Unsupported connection type.');
+          }
+        })();
+
+        const domainId = (transactionResult as RegisterDomainTransactionInfo)
+          .domainId;
+        if (typeof domainId !== 'number') {
+          throw new Error('Domain registration failed: No domain ID returned');
+        }
+
+        emitter.removeAllListeners();
+        resolve(domainId);
+      } catch (error) {
+        emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+        emitter.removeAllListeners();
+        reject(error);
       }
     })();
+  });
 
-    const domainId = (transactionResult as RegisterDomainTransactionInfo)
-      .domainId;
-    if (typeof domainId !== 'number') {
-      throw new Error('Domain registration failed: No domain ID returned');
-    }
-
-    emitter.emit(ZkVerifyEvents.NewDomain, { domainId });
-    return domainId;
-  } catch (error) {
-    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-    emitter.removeAllListeners();
-    throw error;
-  }
+  return { events: emitter, domainIdPromise };
 };
 
-export const holdDomain = async (
+export const holdDomain = (
   connection: AccountConnection | WalletConnection,
   domainId: number,
-  emitter: EventEmitter,
   accountAddress?: string,
-): Promise<void> => {
+): { events: EventEmitter; result: Promise<boolean> } => {
   if (domainId < 0)
     throw new Error(`holdDomain domainId must be greater than 0`);
 
   const { api } = connection;
-  let selectedAccount;
+  let selectedAccount: KeyringPair | undefined;
+  const emitter = new EventEmitter();
 
   if ('accounts' in connection) {
     selectedAccount = getSelectedAccount(connection, accountAddress);
@@ -94,72 +99,60 @@ export const holdDomain = async (
 
   const holdExtrinsic = api.tx.aggregate.holdDomain(domainId);
 
-  try {
-    await (async () => {
-      if (selectedAccount) {
-        return await handleTransaction(
-          api,
-          holdExtrinsic,
-          selectedAccount,
-          undefined,
-          emitter,
-          {} as VerifyOptions,
-          TransactionType.DomainHold,
-        );
-      } else if ('injector' in connection) {
-        const { signer } = connection.injector;
-        return await handleTransaction(
-          api,
-          holdExtrinsic,
-          connection.accountAddress,
-          signer,
-          emitter,
-          {} as VerifyOptions,
-          TransactionType.DomainHold,
-        );
-      } else {
-        throw new Error('Unsupported connection type.');
+  const result = new Promise<boolean>((resolve, reject) => {
+    (async () => {
+      try {
+        await (async () => {
+          if (selectedAccount) {
+            return await handleTransaction(
+              api,
+              holdExtrinsic,
+              selectedAccount,
+              undefined,
+              emitter,
+              {} as VerifyOptions,
+              TransactionType.DomainHold,
+            );
+          } else if ('injector' in connection) {
+            const { signer } = connection.injector;
+            return await handleTransaction(
+              api,
+              holdExtrinsic,
+              connection.accountAddress,
+              signer,
+              emitter,
+              {} as VerifyOptions,
+              TransactionType.DomainHold,
+            );
+          } else {
+            throw new Error('Unsupported connection type.');
+          }
+        })();
+
+        emitter.removeAllListeners();
+        resolve(true);
+      } catch (error) {
+        emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+        emitter.removeAllListeners();
+        reject(false);
       }
     })();
+  });
 
-    api.query.system.events((events: Vec<EventRecord>) => {
-      events.forEach((record) => {
-        const { event } = record;
-        if (
-          event.section === 'aggregate' &&
-          event.method === 'DomainStateChanged'
-        ) {
-          const [eventDomainId, state] = event.data;
-          const domainIdNum = eventDomainId.toString();
-          const stateStr = state.toString();
-
-          if (Number(domainIdNum) === domainId && stateStr === 'Removable') {
-            emitter.emit(ZkVerifyEvents.DomainStateChanged, {
-              domainId,
-              newState: stateStr,
-            });
-          }
-        }
-      });
-    });
-  } catch (error) {
-    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-    emitter.removeAllListeners();
-    throw error;
-  }
+  return { events: emitter, result };
 };
 
-export const unregisterDomain = async (
+export const unregisterDomain = (
   connection: AccountConnection | WalletConnection,
   domainId: number,
-  emitter: EventEmitter,
   accountAddress?: string,
-): Promise<void> => {
+): { events: EventEmitter; result: Promise<boolean> } => {
   if (domainId < 0)
-    throw new Error(`holdDomain domainId must be greater than 0`);
+    throw new Error(`unregisterDomain domainId must be greater than 0`);
 
   const { api } = connection;
-  let selectedAccount;
+  let selectedAccount: KeyringPair | undefined;
+  const emitter = new EventEmitter();
 
   if ('accounts' in connection) {
     selectedAccount = getSelectedAccount(connection, accountAddress);
@@ -167,36 +160,45 @@ export const unregisterDomain = async (
 
   const unregisterExtrinsic = api.tx.aggregate.unregisterDomain(domainId);
 
-  try {
-    await (async () => {
-      if (selectedAccount) {
-        return await handleTransaction(
-          api,
-          unregisterExtrinsic,
-          selectedAccount,
-          undefined,
-          emitter,
-          {} as VerifyOptions,
-          TransactionType.DomainUnregister,
-        );
-      } else if ('injector' in connection) {
-        const { signer } = connection.injector;
-        return await handleTransaction(
-          api,
-          unregisterExtrinsic,
-          connection.accountAddress,
-          signer,
-          emitter,
-          {} as VerifyOptions,
-          TransactionType.DomainUnregister,
-        );
-      } else {
-        throw new Error('Unsupported connection type.');
+  const result = new Promise<boolean>((resolve, reject) => {
+    (async () => {
+      try {
+        await (async () => {
+          if (selectedAccount) {
+            return await handleTransaction(
+              api,
+              unregisterExtrinsic,
+              selectedAccount,
+              undefined,
+              emitter,
+              {} as VerifyOptions,
+              TransactionType.DomainUnregister,
+            );
+          } else if ('injector' in connection) {
+            const { signer } = connection.injector;
+            return await handleTransaction(
+              api,
+              unregisterExtrinsic,
+              connection.accountAddress,
+              signer,
+              emitter,
+              {} as VerifyOptions,
+              TransactionType.DomainUnregister,
+            );
+          } else {
+            throw new Error('Unsupported connection type.');
+          }
+        })();
+
+        emitter.removeAllListeners();
+        resolve(true);
+      } catch (error) {
+        emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+        emitter.removeAllListeners();
+        reject(false);
       }
     })();
-  } catch (error) {
-    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-    emitter.removeAllListeners();
-    throw error;
-  }
+  });
+
+  return { events: emitter, result };
 };

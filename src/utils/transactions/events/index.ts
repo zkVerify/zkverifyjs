@@ -30,16 +30,7 @@ export const handleTransactionEvents = (
   let domainId: number | undefined;
   let domainState: string | undefined;
 
-  //TODO: Remove this, used for testing....
-  console.log(
-    `Received ${events.length} events in transaction: ${transactionType}`,
-  );
-
   events.forEach(({ event, phase }) => {
-    //TODO: Remove this, used for testing....
-    console.log(
-      `Event Captured: section=${event.section}, method=${event.method}, data=${JSON.stringify(event.data, null, 2)}`,
-    );
     if (phase.isApplyExtrinsic) {
       transactionInfo.extrinsicIndex = phase.asApplyExtrinsic.toNumber();
     }
@@ -98,7 +89,8 @@ export const handleTransactionEvents = (
       event.section === 'aggregate' &&
       event.method === 'DomainStateChanged'
     ) {
-      const [, state] = event.data; // Is this correct? How can I know what is the data from the event?
+      const [eventDomainId, state] = event.data;
+      domainId = Number(eventDomainId.toString());
       domainState = state.toString();
     }
 
@@ -124,6 +116,7 @@ export const handleTransactionEvents = (
   ) {
     return {
       ...transactionInfo,
+      domainId,
       domainState,
     } as DomainTransactionInfo;
   }

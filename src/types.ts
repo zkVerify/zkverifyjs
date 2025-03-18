@@ -49,6 +49,7 @@ export interface RegisterDomainTransactionInfo extends TransactionInfo {
 }
 
 export interface DomainTransactionInfo extends TransactionInfo {
+  domainId: number;
   domainState: string;
 }
 
