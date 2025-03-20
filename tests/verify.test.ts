@@ -8,7 +8,6 @@ describe('zkVerify proof user journey tests', () => {
         await runAllProofTests(proofTypes, curveTypes, libraries, false);
         console.log("Verify Test 1: COMPLETED");
     });
-
     test('should verify all proof types, wait for Attestation event, and then check proof of existence', async () => {
         console.log("Verify Test 2: Running 'should verify all proof types, wait for Attestation event, and then check proof of existence");
         await runAllProofTests(proofTypes, curveTypes, libraries,true);
