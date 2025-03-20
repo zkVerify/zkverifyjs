@@ -27,14 +27,29 @@ describe('Domain interaction tests', () => {
     it('should error when attempting to register, unregister or hold a domain in a readOnly session', async () => {
         session = await zkVerifySession.start().Testnet().readOnly();
 
-        await expect(session.registerDomain(1, 1))
-            .rejects.toThrow(expect.objectContaining({ message: expect.stringContaining("This action requires an active account.") }));
+        try {
+            await session.registerDomain(1, 1).domainIdPromise;
+            fail("Expected an error but none was thrown.");
+        } catch (error) {
+            expect(error).toBeInstanceOf(Error);
+            expect((error as Error).message).toMatch(/This action requires an active account/);
+        }
 
-        await expect(session.unregisterDomain(9999999992))
-            .rejects.toThrow(expect.objectContaining({ message: expect.stringContaining("This action requires an active account.") }));
+        try {
+            await session.unregisterDomain(9999999992).result;
+            fail("Expected an error but none was thrown.");
+        } catch (error) {
+            expect(error).toBeInstanceOf(Error);
+            expect((error as Error).message).toMatch(/This action requires an active account/);
+        }
 
-        await expect(session.holdDomain(9999993))
-            .rejects.toThrow(expect.objectContaining({ message: expect.stringContaining("This action requires an active account.") }));
+        try {
+            await session.holdDomain(9999993).result;
+            fail("Expected an error but none was thrown.");
+        } catch (error) {
+            expect(error).toBeInstanceOf(Error);
+            expect((error as Error).message).toMatch(/This action requires an active account/);
+        }
     });
 
     it('should register a domain, hold a domain and finally unregister a domain', async () => {

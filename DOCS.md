@@ -321,6 +321,9 @@ session = await zkVerifySession
         .withAccount(wallet);
 
 // Register a Domain
+// Without needing events
+const domainId = await session.registerDomain(1, 1).domainIdPromise
+// If you want to listen to events and also get the domainIdPromise
 const { events: registerEvents, domainIdPromise } = session.registerDomain(1, 2);
 
 // Listen for events if needed
@@ -344,6 +347,9 @@ registerEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
 const domainId = await domainIdPromise;
 
 // Hold a Domain
+// Without events
+const result = await session.unregisterDomain(domainId).result;
+// With events
 const { events: holdEvents, result: holdResult } = session.holdDomain(domainId);
 
 // Listen for events if needed
@@ -367,6 +373,9 @@ holdEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
 const wasSuccessful = await holdResult;
 
 // Unregister a Domain
+// Without events
+const result = await session.unregisterDomain(domainId).result;
+// With events
 const { events: unregisterEvents, result: unregisterResult } = session.unregisterDomain(domainId);
 
 // Listen for events if needed
