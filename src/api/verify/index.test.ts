@@ -57,7 +57,7 @@ describe('verify', () => {
 
     mockOptions = {
       proofOptions: {
-        proofType: ProofType.fflonk,
+        proofType: ProofType.groth16,
         library: Library.snarkjs,
         curve: CurveType.bls12381,
       },

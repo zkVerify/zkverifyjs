@@ -3,7 +3,6 @@
 The `zkverifyjs` package is a TypeScript library designed to facilitate sending proofs to zkVerify for verification, listening for transaction events, and waiting for transaction finalization. The package is built with an intuitive API that allows developers to handle real-time transaction events and await final results.
 
 Currently the following proof verifiers are supported:
-- FFlonk
 - Groth16 (BN128, BN254, BLS12-381 elliptic curves)
   - Note - Must include `Library` and `CurveType` e.g. `.groth16(Library.gnark, CurveType.bn128)`
 - Risc0 `V1_0`, `V1_1`, `V1_2`
@@ -139,7 +138,7 @@ The zkVerifySession.verify method allows you to configure and execute a verifica
 ```typescript
 const { events, transactionResult } = await session
   .verify() // Optionally provide account address to verify("myaddress") if connected with multple accounts
-  .fflonk() // Select the proof type (e.g., fflonk)
+  .ultraplonk() // Select the proof type (e.g., ultraplonk)
   .nonce(1) // Set the nonce (optional)
   .waitForPublishedAttestation() // Wait for the attestation to be published (optional)
   .withRegisteredVk() // Indicate that the verification key is already registered (optional)
@@ -189,7 +188,7 @@ Register your Verification Key on chain and use it in future proof submissions b
 ```typescript
 const { events, transactionResult } = await session
   .registerVerificationKey()
-  .fflonk()
+  .ultraplonk()
   .execute(vk);
 const vkTransactionInfo: VKRegistrationTransactionInfo =
   await transactionResult;
@@ -197,7 +196,7 @@ const vkTransactionInfo: VKRegistrationTransactionInfo =
 const { events: verifyEvents, transactionResult: verifyTransactionResult } =
   await session
     .verify()
-    .fflonk()
+    .ultraplonk()
     .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
     .execute({
       proofData: {
@@ -533,7 +532,7 @@ await session.close();
 ```typescript
 const { events, transactionResult } = await session
   .verify()
-  .fflonk()
+  .ultraplonk()
   .nonce(1)
   .waitForPublishedAttestation()
   .withRegisteredVk()
@@ -548,7 +547,7 @@ const { events, transactionResult } = await session
 // .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
 ```
 
-- Proof Type: `.fflonk()` specifies the type of proof to be used. Options available for all supported proof types.
+- Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
 - Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
 - Attestation Option: `.waitForPublishedAttestation()` specifies that the transaction should wait for the attestation to be published before completing. This is optional.
 - Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
@@ -578,10 +577,10 @@ const { success, message } = session
 ## `zkVerifySession.registerVerificationKey`
 
 ```typescript
-const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
+const { events, transactionResult } = await session.registerVerificationKey().ultraplonk().execute(vk);
 ```
 
-- Proof Type: `.fflonk()` specifies the type of proof to be used. Options available for all supported proof types.
+- Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
 - Returns: A TransactionInfo object containing a statementHash  string.
 
 ## `zkVerifySession.poe` (Proof of Existence)

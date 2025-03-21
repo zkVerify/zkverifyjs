@@ -63,7 +63,6 @@
     "blockchain",
     "crypto",
     "cryptography",
-    "fflonk",
     "groth16",
     "javascript",
     "noir",

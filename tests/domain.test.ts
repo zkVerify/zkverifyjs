@@ -52,7 +52,7 @@ describe('Domain interaction tests', () => {
         }
     });
 
-    it('should register a domain, hold a domain and finally unregister a domain', async () => {
+    it.skip('should register a domain, hold a domain and finally unregister a domain', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
 

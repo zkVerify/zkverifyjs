@@ -1,6 +1,5 @@
 import { ProofProcessor } from '../types';
 import {
-  FflonkProcessor,
   Groth16Processor,
   ProofOfSqlProcessor,
   Risc0Processor,
@@ -15,7 +14,6 @@ export enum SupportedNetwork {
 }
 
 export enum ProofType {
-  fflonk = 'fflonk',
   groth16 = 'groth16',
   risc0 = 'risc0',
   ultraplonk = 'ultraplonk',
@@ -43,13 +41,6 @@ interface ProofConfig {
 }
 
 export const proofConfigurations: Record<ProofType, ProofConfig> = {
-  [ProofType.fflonk]: {
-    pallet: 'settlementFFlonkPallet',
-    processor: FflonkProcessor,
-    supportedVersions: [],
-    requiresLibrary: false,
-    requiresCurve: false,
-  },
   [ProofType.groth16]: {
     pallet: 'settlementGroth16Pallet',
     processor: Groth16Processor,

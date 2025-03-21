@@ -121,14 +121,14 @@ describe('zkVerifySession class', () => {
         expect(session.readOnly).toBe(false);
 
         const mockBuilder = {
-            fflonk: jest.fn(() => ({
+            ultraplonk: jest.fn(() => ({
                 execute: mockVerifyExecution
             })),
         } as unknown as ProofMethodMap;
 
         session.verify = jest.fn(() => mockBuilder);
 
-        const { events, transactionResult } = await session.verify().fflonk().execute({
+        const { events, transactionResult } = await session.verify().ultraplonk().execute({
             proofData: {
                 proof: 'proofData',
                 publicSignals: 'publicSignals',
@@ -160,14 +160,14 @@ describe('zkVerifySession class', () => {
             expect(session.readOnly).toBe(false);
 
             const mockBuilder = {
-                fflonk: jest.fn(() => ({ execute: mockVerifyExecution })),
+                ultraplonk: jest.fn(() => ({ execute: mockVerifyExecution })),
                 groth16: jest.fn(() => ({ execute: mockVerifyExecution })),
             } as unknown as ProofMethodMap;
 
             session.verify = jest.fn(() => mockBuilder);
 
             const [result1, result2] = await Promise.all([
-                session.verify().fflonk().execute({ proofData: {
+                session.verify().ultraplonk().execute({ proofData: {
                     proof: 'proofData',
                     publicSignals: 'publicSignals',
                     vk: 'vk'
@@ -226,7 +226,7 @@ describe('zkVerifySession class', () => {
     it('should handle setting nonces for multiple concurrent same-session calls', async () => {
         try {
             [envVar, wallet] = await walletPool.acquireWallet();
-            const proofData = loadProofAndVK({ proofType: ProofType.fflonk });
+            const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk });
 
             session = await zkVerifySession.start().Testnet().withAccount(wallet);
 
@@ -235,7 +235,7 @@ describe('zkVerifySession class', () => {
 
             const [tx1, tx2] = await Promise.all([
                 (async () => {
-                    const { events, transactionResult } = await session.verify().fflonk().nonce(startingNonce).execute({
+                    const { events, transactionResult } = await session.verify().ultraplonk().nonce(startingNonce).execute({
                         proofData: {
                             proof: proofData.proof.proof,
                             publicSignals: proofData.proof.publicSignals,
@@ -246,7 +246,7 @@ describe('zkVerifySession class', () => {
                     return { events, transactionResult };
                 })(),
                 (async () => {
-                    const { events, transactionResult } = await session.verify().fflonk().nonce(startingNonce + 1).execute({
+                    const { events, transactionResult } = await session.verify().ultraplonk().nonce(startingNonce + 1).execute({
                         proofData: {
                             proof: proofData.proof.proof,
                             publicSignals: proofData.proof.publicSignals,
