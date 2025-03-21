@@ -223,7 +223,7 @@ describe('zkVerifySession class', () => {
         expect(session.readOnly).toBe(true);
     });
 
-    it('should handle setting nonces for multiple same-session calls', async () => {
+    it('should handle setting nonces for multiple concurrent same-session calls', async () => {
         try {
             [envVar, wallet] = await walletPool.acquireWallet();
             const proofData = loadProofAndVK({ proofType: ProofType.fflonk });

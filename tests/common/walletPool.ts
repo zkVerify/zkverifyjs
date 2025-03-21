@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 class WalletPool {
     private readonly walletServerUrl: string;
@@ -7,39 +7,32 @@ class WalletPool {
         this.walletServerUrl = serverUrl;
     }
 
-    /**
-     * Requests a wallet from the Fastify server.
-     * If no wallets are available, the request will wait until one is released (max 60s).
-     */
     async acquireWallet(): Promise<[string, string]> {
         try {
-            const response = await axios.get(`${this.walletServerUrl}/wallet`, { timeout: 61000 });
-            return [response.data.key, response.data.wallet];
-        } catch (error: unknown) {
-            if (axios.isAxiosError(error)) {
-                throw new Error(`Failed to acquire wallet: ${error.message}`);
-            } else if (error instanceof Error) {
-                throw new Error(`Failed to acquire wallet: ${error.message}`);
-            } else {
-                throw new Error(`Failed to acquire wallet: ${JSON.stringify(error)}`);
+            while (true) {
+                const response: AxiosResponse<{ key?: string; wallet?: string; available?: boolean }> = await axios.get(`${this.walletServerUrl}/wallet`, { timeout: 181000 });
+
+                if (response.data && response.data.available && response.data.key && response.data.wallet) {
+                    return [response.data.key, response.data.wallet];
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
             }
+        } catch (error) {
+            console.error(`Failed to acquire wallet: ${error}`);
+            throw new Error(`Failed to acquire wallet: ${error}`);
         }
     }
 
-    /**
-     * Releases a wallet back to the Fastify server using only its key (envVar).
-     */
     async releaseWallet(envVar: string): Promise<void> {
         try {
-            await axios.post(`${this.walletServerUrl}/release`, { key: envVar });
-        } catch (error: unknown) {
-            if (axios.isAxiosError(error)) {
-                throw new Error(`Failed to release wallet: ${error.message}`);
-            } else if (error instanceof Error) {
-                throw new Error(`Failed to release wallet: ${error.message}`);
-            } else {
-                throw new Error(`Failed to release wallet: ${JSON.stringify(error)}`);
+            const response = await axios.post(`${this.walletServerUrl}/release`, { key: envVar });
+
+            if (!(response.data && response.data.success)) {
+                console.error(`Wallet ${envVar} release may have failed`);
             }
+        } catch (error) {
+            console.error(`Failed to release wallet: ${envVar} - ${error}`);
         }
     }
 }

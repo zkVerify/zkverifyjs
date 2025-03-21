@@ -1,60 +1,96 @@
 const Fastify = require('fastify');
 const { Mutex } = require('async-mutex');
+const { Keyring } = require('@polkadot/api');
+const { cryptoWaitReady } = require('@polkadot/util-crypto');
 
 const fastify = Fastify();
-const wallets = new Map(
-    Object.entries(process.env).filter(([key]) => key.startsWith('SEED_PHRASE'))
-);
-
+const availableWallets = new Map();
+const inUseWallets = new Map();
 const requestQueue = [];
 const mutex = new Mutex();
 
-fastify.get('/wallet', async (request, reply) => {
-    return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            const index = requestQueue.indexOf(resolve);
-            if (index !== -1) requestQueue.splice(index, 1);
-            reject(reply.code(408).send({ error: "Wallet request timed out" }));
-        }, 60000);
+async function initializeWallets() {
+    const keyring = new Keyring({ type: 'sr25519' });
+    const invalidKeys = [];
 
-        mutex.runExclusive(async () => {
-            if (wallets.size > 0) {
-                const [key, wallet] = wallets.entries().next().value;
-                wallets.delete(key);
-                clearTimeout(timeout);
-                return resolve(reply.send({ key, wallet }));
+    let total = 0;
+    let valid = 0;
+
+    await cryptoWaitReady();
+
+    Object.entries(process.env)
+        .filter(([key]) => key.startsWith('SEED_PHRASE'))
+        .forEach(([key, seed]) => {
+            total++;
+
+            const words = seed.trim().split(/\s+/);
+            if (words.length !== 12) {
+                console.error(`❌ Invalid seed format for ${key}: does not contain exactly 12 words`);
+                invalidKeys.push(key);
+                return;
             }
 
-            requestQueue.push((wallet) => {
-                clearTimeout(timeout);
-                resolve(reply.send(wallet));
-            });
+            try {
+                keyring.addFromUri(seed);
+                availableWallets.set(key, seed);
+                valid++;
+            } catch (err) {
+                invalidKeys.push(key);
+            }
         });
-    });
+
+    console.log(`-- Wallet Pool Initialized -- `);
+    console.log(`- Total Seed Phrases Found: ${total}`);
+    console.log(`- ✅---   Valid Wallets: ${valid}`);
+    console.log(`- ❌---   Invalid Wallets: ${invalidKeys.length}`);
+    if (invalidKeys.length > 0) {
+        console.log(`- Invalid Env Keys: ${invalidKeys.join(', ')}`);
+    }
+
+    if (valid === 0) {
+        console.error("🚨---   No valid wallets available. Shutting down.");
+        process.exit(1);
+    }
+}
+
+fastify.get('/wallet', async (request, reply) => {
+    return mutex.runExclusive(async () => {
+        if (availableWallets.size > 0) {
+            const [key, wallet] = availableWallets.entries().next().value;
+            availableWallets.delete(key);
+            inUseWallets.set(key, wallet);
+            return { key, wallet, available: true };
+        }
+        requestQueue.push(request.id);
+        return { available: false, queuePosition: requestQueue.indexOf(request.id) };
+    }).then(result => reply.send(result));
 });
 
 fastify.post('/release', async (request, reply) => {
     const { key } = request.body;
-    if (!key) {
-        return reply.code(400).send({ error: "Invalid request, missing key" });
+    if (!key || !inUseWallets.has(key)) {
+        return reply.code(400).send({ error: "Invalid request or wallet not in use" });
     }
 
-    const wallet = process.env[key];
-    if (!wallet) {
-        return reply.code(400).send({ error: `Wallet for key ${key} not found in env vars` });
-    }
+    await mutex.runExclusive(async () => {
+        const wallet = inUseWallets.get(key);
+        inUseWallets.delete(key);
 
-    await mutex.runExclusive(() => {
-        if (requestQueue.length > 0) {
-            const resolve = requestQueue.shift();
-            if (resolve) {
-                return resolve({ key, wallet });
+        function addWallet(){
+            availableWallets.set(key, wallet);
+            if(requestQueue.length > 0){
+                requestQueue.shift();
             }
         }
-        wallets.set(key, wallet);
-    });
+        setTimeout(addWallet, 0);
 
-    reply.send({ success: true });
+        reply.send({ success: true });
+    });
 });
 
-fastify.listen({ port: 3001 }, () => console.log("Wallet API running on port 3001"));
+initializeWallets().then(() => {
+    fastify.listen({ port: 3001 }, () => {});
+}).catch((error) => {
+    console.error("Failed to initialize wallets:", error);
+    process.exit(1);
+});

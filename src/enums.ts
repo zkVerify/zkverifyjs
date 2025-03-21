@@ -1,6 +1,9 @@
 export enum TransactionType {
   Verify = 1,
   VKRegistration = 2,
+  DomainRegistration = 3,
+  DomainHold = 4,
+  DomainUnregister = 5,
 }
 
 export enum TransactionStatus {
@@ -20,9 +23,11 @@ export enum ZkVerifyEvents {
   AttestationConfirmed = 'attestationConfirmed',
   AttestationMissed = 'attestationMissed',
   Broadcast = 'broadcast',
+  DomainStateChanged = 'domainStateChanged',
   ErrorEvent = 'error',
   Finalized = 'finalized',
   IncludedInBlock = 'includedInBlock',
+  NewDomain = 'newDomain',
   Unsubscribe = 'unsubscribe',
 }
 
