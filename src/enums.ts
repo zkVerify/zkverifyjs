@@ -1,7 +1,7 @@
 export enum TransactionType {
   Verify = 1,
   VKRegistration = 2,
-  DomainRegistration = 3, // Is this something we're setting, or should match something in the aggregate pallet?
+  DomainRegistration = 3,
   DomainHold = 4,
   DomainUnregister = 5,
 }

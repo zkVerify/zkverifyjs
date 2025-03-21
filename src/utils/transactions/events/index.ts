@@ -1,29 +1,19 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
-import {
-  DomainTransactionInfo,
-  RegisterDomainTransactionInfo,
-  TransactionInfo,
-  VKRegistrationTransactionInfo,
-  VerifyTransactionInfo,
-} from '../../../types';
-
 import { DispatchInfo } from '@polkadot/types/interfaces';
 import { EventEmitter } from 'events';
 import { TransactionType } from '../../../enums';
 import { getProofPallet } from '../../helpers';
+import { TransactionInfoByType } from '../types';
+import { VKRegistrationTransactionInfo } from '../../../types';
 
-export const handleTransactionEvents = (
+export const handleTransactionEvents = <T extends TransactionType>(
   api: ApiPromise,
   events: SubmittableResult['events'],
-  transactionInfo: TransactionInfo,
+  transactionInfo: TransactionInfoByType[T],
   emitter: EventEmitter,
   setAttestationId: (id: number | undefined) => void,
-  transactionType: TransactionType,
-):
-  | VerifyTransactionInfo
-  | VKRegistrationTransactionInfo
-  | RegisterDomainTransactionInfo
-  | DomainTransactionInfo => {
+  transactionType: T,
+): TransactionInfoByType[T] => {
   let statementHash: string | undefined;
   let attestationId: number | undefined = undefined;
   let leafDigest: string | null = null;
@@ -77,8 +67,11 @@ export const handleTransactionEvents = (
 
     if (
       transactionType === TransactionType.VKRegistration &&
-      event.section == getProofPallet(transactionInfo.proofType!) &&
-      event.method == 'VkRegistered'
+      event.section ===
+        getProofPallet(
+          (transactionInfo as VKRegistrationTransactionInfo).proofType,
+        ) &&
+      event.method === 'VkRegistered'
     ) {
       statementHash = event.data[0].toString();
     }
@@ -103,35 +96,34 @@ export const handleTransactionEvents = (
     }
   });
 
-  if (transactionType === TransactionType.DomainRegistration) {
-    return {
-      ...transactionInfo,
-      domainId,
-    } as RegisterDomainTransactionInfo;
-  }
+  switch (transactionType) {
+    case TransactionType.DomainRegistration:
+      return {
+        ...transactionInfo,
+        domainId,
+      };
 
-  if (
-    transactionType === TransactionType.DomainHold ||
-    transactionType === TransactionType.DomainUnregister
-  ) {
-    return {
-      ...transactionInfo,
-      domainId,
-      domainState,
-    } as DomainTransactionInfo;
-  }
+    case TransactionType.DomainHold:
+    case TransactionType.DomainUnregister:
+      return {
+        ...transactionInfo,
+        domainId,
+        domainState,
+      };
 
-  if (transactionType === TransactionType.Verify) {
-    return {
-      ...transactionInfo,
-      attestationId,
-      leafDigest,
-      attestationConfirmed: false,
-    } as VerifyTransactionInfo;
-  }
+    case TransactionType.Verify:
+      return {
+        ...transactionInfo,
+        attestationId,
+        leafDigest,
+        attestationConfirmed: false,
+      };
 
-  return {
-    ...transactionInfo,
-    statementHash,
-  } as VKRegistrationTransactionInfo;
+    case TransactionType.VKRegistration:
+    default:
+      return {
+        ...transactionInfo,
+        statementHash,
+      };
+  }
 };

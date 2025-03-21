@@ -16,7 +16,6 @@ export interface ProofData {
 
 export interface TransactionInfo {
   blockHash: string;
-  proofType?: ProofType;
   status: TransactionStatus;
   txHash?: string;
   extrinsicIndex?: number;
@@ -34,6 +33,7 @@ export interface TransactionInfo {
 }
 
 export interface VerifyTransactionInfo extends TransactionInfo {
+  proofType: ProofType;
   attestationId: number | undefined;
   leafDigest: string | null;
   attestationConfirmed: boolean;
@@ -41,15 +41,16 @@ export interface VerifyTransactionInfo extends TransactionInfo {
 }
 
 export interface VKRegistrationTransactionInfo extends TransactionInfo {
+  proofType: ProofType;
   statementHash?: string;
 }
 
 export interface RegisterDomainTransactionInfo extends TransactionInfo {
-  domainId: number;
+  domainId: number | undefined;
 }
 
 export interface DomainTransactionInfo extends TransactionInfo {
-  domainId: number;
+  domainId: number | undefined;
   domainState: string;
 }
 
