@@ -30,7 +30,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
  * @emits ZkVerifyEvents.BeforeExpected - If the attestation ID from the event is less than expected.
  * @emits ZkVerifyEvents.ErrorEvent - If an error occurs.
  */
-export async function waitForNewAttestationEvent(
+export async function waitForNewAggregationReceipt(
   api: ApiPromise,
   attestationId: number | undefined,
   emitter: EventEmitter,

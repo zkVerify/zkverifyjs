@@ -4,23 +4,29 @@ import { EventEmitter } from 'events';
 import { TransactionType } from '../../../enums';
 import { getProofPallet } from '../../helpers';
 import { TransactionInfoByType } from '../types';
-import { VKRegistrationTransactionInfo } from '../../../types';
+import { VerifyTransactionInfo, VKRegistrationTransactionInfo } from '../../../types';
 
 export const handleTransactionEvents = <T extends TransactionType>(
   api: ApiPromise,
   events: SubmittableResult['events'],
   transactionInfo: TransactionInfoByType[T],
   emitter: EventEmitter,
-  setAttestationId: (id: number | undefined) => void,
+  setAggregationId: (id: number | undefined) => void,
   transactionType: T,
 ): TransactionInfoByType[T] => {
   let statementHash: string | undefined;
-  let attestationId: number | undefined = undefined;
-  let leafDigest: string | null = null;
+  let aggregationId: number | undefined = undefined;
+  let statement: string | undefined;
+  let receipt: string | undefined;
   let domainId: number | undefined;
   let domainState: string | undefined;
 
-  events.forEach(({ event, phase }) => {
+  events.forEach(({ event, phase }, index) => {
+
+    console.log(`Event #${index + 1}: [${event.section}.${event.method}]`);
+    console.log(`    Phase: ${phase.toString()}`);
+    console.log(`    Data:`, event.data.map((d) => d.toHuman()));
+
     if (phase.isApplyExtrinsic) {
       transactionInfo.extrinsicIndex = phase.asApplyExtrinsic.toNumber();
     }
@@ -56,13 +62,25 @@ export const handleTransactionEvents = <T extends TransactionType>(
     }
 
     if (
-      transactionType === TransactionType.Verify &&
-      event.section === 'poe' &&
-      event.method === 'NewElement'
+        transactionType === TransactionType.Verify &&
+        event.section ===
+        getProofPallet(
+            (transactionInfo as VerifyTransactionInfo).proofType,
+        ) &&
+        event.method === 'ProofVerified'
     ) {
-      attestationId = Number(event.data[1]);
-      leafDigest = event.data[0].toString();
-      setAttestationId(attestationId);
+      statement = event.data[0].toString();
+    }
+
+    if (
+        transactionType === TransactionType.Verify &&
+        event.section === 'aggregate' &&
+        event.method === 'NewProof'
+    ) {
+      const [eventStatement, eventDomainId, eventAggregationId] = event.data;
+      statement = eventStatement.toString();
+      domainId = Number(eventDomainId.toString());
+      aggregationId = Number(eventAggregationId.toString());
     }
 
     if (
@@ -114,9 +132,10 @@ export const handleTransactionEvents = <T extends TransactionType>(
     case TransactionType.Verify:
       return {
         ...transactionInfo,
-        attestationId,
-        leafDigest,
-        attestationConfirmed: false,
+        statement,
+        domainId,
+        aggregationId,
+        aggregationConfirmed: false,
       };
 
     case TransactionType.VKRegistration:

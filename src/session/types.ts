@@ -18,6 +18,7 @@ export interface VerifyOptions {
   nonce?: number;
   waitForNewAttestationEvent?: boolean;
   registeredVk?: boolean;
+  domainId?: number;
 }
 
 export interface ProofOptions {

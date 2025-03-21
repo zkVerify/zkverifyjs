@@ -71,7 +71,6 @@ export const performVerifyTransaction = async (
     publicSignals: any,
     vk: string,
     withAttestation: boolean,
-    validatePoe: boolean = false,
     version?: string
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
     try {
@@ -111,10 +110,6 @@ export const performVerifyTransaction = async (
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
             validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAttestation);
             validateEventResults(eventResults, withAttestation);
-
-            if (validatePoe) {
-                await validatePoE(session, transactionInfo.attestationId!, transactionInfo.leafDigest!);
-            }
 
             return { eventResults, transactionInfo };
         };
@@ -230,20 +225,6 @@ export const validateVKRegistrationTransactionInfo = (
 ): void => {
     validateTransactionInfo(transactionInfo, expectedProofType);
     expect(transactionInfo.statementHash).toBeDefined();
-};
-
-export const validatePoE = async (
-    session: zkVerifySession,
-    attestationId: number,
-    leafDigest: string
-): Promise<void> => {
-    const proofDetails = await session.poe(attestationId, leafDigest);
-
-    expect(proofDetails).toBeDefined();
-    expect(proofDetails.root).toBeDefined();
-    expect(proofDetails.leafIndex).toBeGreaterThanOrEqual(0);
-    expect(proofDetails.numberOfLeaves).toBeGreaterThanOrEqual(0);
-    expect(proofDetails.leaf).toBeDefined();
 };
 
 export const loadProofAndVK = (proofOptions: ProofOptions, version?: string) => {

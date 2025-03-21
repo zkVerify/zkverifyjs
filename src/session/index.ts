@@ -7,7 +7,6 @@ import { DomainManager } from './managers/domain';
 import { zkVerifySessionOptions } from './types';
 import { SupportedNetwork } from '../config';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
-import { PoEManager } from './managers/poe';
 import { FormatManager } from './managers/format';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import {
@@ -24,7 +23,6 @@ export class zkVerifySession {
   declare optimisticVerify: VerificationManager['optimisticVerify'];
   declare registerVerificationKey: VerificationKeyRegistrationManager['registerVerificationKey'];
   declare format: FormatManager['format'];
-  declare poe: PoEManager['poe'];
   declare subscribeToNewAttestations: EventManager['subscribe'];
   declare unsubscribe: EventManager['unsubscribe'];
   declare estimateCost: ExtrinsicManager['estimateCost'];
@@ -49,7 +47,6 @@ export class zkVerifySession {
       new VerificationKeyRegistrationManager(connectionManager),
       new EventManager(connectionManager),
       new ExtrinsicManager(connectionManager),
-      new PoEManager(connectionManager),
       new DomainManager(connectionManager),
       new FormatManager(),
       connectionManager,

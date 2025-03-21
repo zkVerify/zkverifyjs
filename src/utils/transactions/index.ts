@@ -7,7 +7,7 @@ import {
 } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { TransactionInfo } from '../../types';
-import { waitForNewAttestationEvent } from '../helpers';
+import { waitForNewAggregationReceipt } from '../helpers';
 import { handleTransactionEvents } from './events';
 import { VerifyOptions } from '../../session/types';
 import {
@@ -78,16 +78,20 @@ const handleFinalized = async <T extends TransactionType>(
 
   switch (transactionType) {
     case TransactionType.Verify: {
-      const info =
-        transactionInfo as TransactionInfoByType[TransactionType.Verify];
-      if (info.attestationId) {
+      const info = transactionInfo as TransactionInfoByType[TransactionType.Verify];
+
+      const hasDomainId = !!info.domainId;
+      const hasAggregationId = !!info.aggregationId;
+
+      if (!hasDomainId || hasAggregationId) {
         safeEmit(emitter, ZkVerifyEvents.Finalized, info);
       } else {
         safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
           ...info,
-          error: 'Finalized but no attestation ID found.',
+          error: 'Finalized but no aggregation ID found.',
         });
       }
+
       break;
     }
 
@@ -166,9 +170,10 @@ const initializeTransactionInfo = <T extends TransactionType>(
       return {
         ...baseInfo,
         proofType: options.proofOptions?.proofType,
-        attestationId: undefined,
-        leafDigest: null,
-        attestationConfirmed: false,
+        domainId: options.domainId,
+        aggregationId: undefined,
+        statement: null,
+        aggregationConfirmed: false
       } as TransactionInfoByType[T];
 
     case TransactionType.VKRegistration:
@@ -247,14 +252,14 @@ export const handleTransaction = async <T extends TransactionType>(
           const verifyInfo =
             transactionInfo as TransactionInfoByType[TransactionType.Verify];
 
-          if (verifyInfo.attestationId) {
+          if (verifyInfo.aggregationId) {
             try {
-              verifyInfo.attestationEvent = await waitForNewAttestationEvent(
+              verifyInfo.aggregationReceipt = await waitForNewAggregationReceipt(
                 api,
-                verifyInfo.attestationId,
+                verifyInfo.aggregationId,
                 emitter,
               );
-              verifyInfo.attestationConfirmed = true;
+              verifyInfo.aggregationConfirmed = true;
             } catch (error) {
               cancelTransaction(error);
             }
