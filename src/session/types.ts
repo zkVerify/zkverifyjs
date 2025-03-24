@@ -16,7 +16,6 @@ export interface VerifyOptions {
   proofOptions: ProofOptions;
   accountAddress?: string;
   nonce?: number;
-  waitForNewAttestationEvent?: boolean;
   registeredVk?: boolean;
   domainId?: number;
 }

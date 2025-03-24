@@ -13,18 +13,18 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { getSelectedAccount } from '../../utils/helpers';
 
 export const verify = async (
-    connection: AccountConnection | WalletConnection,
-    options: VerifyOptions,
-    emitter: EventEmitter,
-    input: VerifyInput,
+  connection: AccountConnection | WalletConnection,
+  options: VerifyOptions,
+  emitter: EventEmitter,
+  input: VerifyInput,
 ): Promise<VerifyTransactionInfo> => {
   const { api } = connection;
 
   try {
     const selectedAccount: KeyringPair | undefined =
-        'accounts' in connection
-            ? getSelectedAccount(connection, options.accountAddress)
-            : undefined;
+      'accounts' in connection
+        ? getSelectedAccount(connection, options.accountAddress)
+        : undefined;
 
     if (input.domainId != null) {
       options.domainId = input.domainId;
@@ -32,20 +32,21 @@ export const verify = async (
 
     const transaction: SubmittableExtrinsic<'promise'> = (() => {
       if ('proofData' in input && input.proofData) {
-        const { proof, publicSignals, vk, version } = input.proofData as ProofData;
+        const { proof, publicSignals, vk, version } =
+          input.proofData as ProofData;
         const formatted: FormattedProofData = format(
-            options.proofOptions,
-            proof,
-            publicSignals,
-            vk,
-            version,
-            options.registeredVk,
+          options.proofOptions,
+          proof,
+          publicSignals,
+          vk,
+          version,
+          options.registeredVk,
         );
         return createSubmitProofExtrinsic(
-            api,
-            options.proofOptions.proofType,
-            formatted,
-            input.domainId,
+          api,
+          options.proofOptions.proofType,
+          formatted,
+          input.domainId,
         );
       }
 
@@ -53,32 +54,34 @@ export const verify = async (
         return input.extrinsic;
       }
 
-      throw new Error('Invalid input: Either proofData or extrinsic must be provided.');
+      throw new Error(
+        'Invalid input: Either proofData or extrinsic must be provided.',
+      );
     })();
 
     const result = selectedAccount
+      ? await handleTransaction(
+          api,
+          transaction,
+          selectedAccount,
+          undefined,
+          emitter,
+          options,
+          TransactionType.Verify,
+        )
+      : 'injector' in connection
         ? await handleTransaction(
             api,
             transaction,
-            selectedAccount,
-            undefined,
+            connection.accountAddress,
+            connection.injector.signer,
             emitter,
             options,
             TransactionType.Verify,
-        )
-        : 'injector' in connection
-            ? await handleTransaction(
-                api,
-                transaction,
-                connection.accountAddress,
-                connection.injector.signer,
-                emitter,
-                options,
-                TransactionType.Verify,
-            )
-            : (() => {
-              throw new Error('Unsupported connection type.');
-            })();
+          )
+        : (() => {
+            throw new Error('Unsupported connection type.');
+          })();
 
     return result as VerifyTransactionInfo;
   } catch (error) {

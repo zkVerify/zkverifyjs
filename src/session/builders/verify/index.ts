@@ -14,7 +14,6 @@ export type ProofMethodMap = {
 export class VerificationBuilder {
   private readonly options: VerifyOptions;
   private nonceSet = false;
-  private waitForPublishedAttestationSet = false;
   private registeredVkSet = false;
 
   constructor(
@@ -37,15 +36,6 @@ export class VerificationBuilder {
     }
     this.nonceSet = true;
     this.options.nonce = nonce;
-    return this;
-  }
-
-  waitForPublishedAttestation(): this {
-    if (this.waitForPublishedAttestationSet) {
-      throw new Error('waitForPublishedAttestation can only be set once.');
-    }
-    this.waitForPublishedAttestationSet = true;
-    this.options.waitForNewAttestationEvent = true;
     return this;
   }
 

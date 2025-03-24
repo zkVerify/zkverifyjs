@@ -7,7 +7,6 @@ import {
 } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { TransactionInfo } from '../../types';
-import { waitForNewAggregationReceipt } from '../helpers';
 import { handleTransactionEvents } from './events';
 import { VerifyOptions } from '../../session/types';
 import {
@@ -36,7 +35,6 @@ const handleInBlock = async <T extends TransactionType>(
   api: ApiPromise,
   events: SubmittableResult['events'],
   transactionInfo: TransactionInfoByType[T],
-  setAttestationId: (id: number | undefined) => void,
   emitter: EventEmitter,
   transactionType: T,
 ): Promise<void> => {
@@ -49,7 +47,6 @@ const handleInBlock = async <T extends TransactionType>(
     events,
     transactionInfo,
     emitter,
-    setAttestationId,
     transactionType,
   );
 
@@ -78,7 +75,8 @@ const handleFinalized = async <T extends TransactionType>(
 
   switch (transactionType) {
     case TransactionType.Verify: {
-      const info = transactionInfo as TransactionInfoByType[TransactionType.Verify];
+      const info =
+        transactionInfo as TransactionInfoByType[TransactionType.Verify];
 
       const hasDomainId = !!info.domainId;
       const hasAggregationId = !!info.aggregationId;
@@ -173,7 +171,6 @@ const initializeTransactionInfo = <T extends TransactionType>(
         domainId: options.domainId,
         aggregationId: undefined,
         statement: null,
-        aggregationConfirmed: false
       } as TransactionInfoByType[T];
 
     case TransactionType.VKRegistration:
@@ -245,27 +242,6 @@ export const handleTransaction = async <T extends TransactionType>(
           transactionType,
         );
 
-        if (
-          transactionType === TransactionType.Verify &&
-          options.waitForNewAttestationEvent
-        ) {
-          const verifyInfo =
-            transactionInfo as TransactionInfoByType[TransactionType.Verify];
-
-          if (verifyInfo.aggregationId) {
-            try {
-              verifyInfo.aggregationReceipt = await waitForNewAggregationReceipt(
-                api,
-                verifyInfo.aggregationId,
-                emitter,
-              );
-              verifyInfo.aggregationConfirmed = true;
-            } catch (error) {
-              cancelTransaction(error);
-            }
-          }
-        }
-
         resolve(transactionInfo);
       } catch (error) {
         cancelTransaction(error);
@@ -293,7 +269,6 @@ export const handleTransaction = async <T extends TransactionType>(
               api,
               result.events,
               transactionInfo,
-              () => {},
               emitter,
               transactionType,
             );

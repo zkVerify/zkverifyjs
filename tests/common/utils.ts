@@ -1,19 +1,19 @@
 import {
-    zkVerifySession,
+    CurveType,
+    Library,
+    ProofOptions,
     ProofType,
     TransactionStatus,
+    TransactionType,
     VerifyTransactionInfo,
-    VKRegistrationTransactionInfo, CurveType, Library, ProofOptions
+    VKRegistrationTransactionInfo,
+    zkVerifySession
 } from '../../src';
-import {
-    handleCommonEvents,
-    handleEventsWithAttestation,
-    EventResults,
-} from './eventHandlers';
+import {EventResults, handleCommonEvents,} from './eventHandlers';
 import path from "path";
 import fs from "fs";
 import { TransactionInfoByType } from "../../src/utils/transactions/types";
-import { TransactionType } from "../../src";
+import { ZkVerifyEvents } from "../../src/enums";
 
 export interface ProofData {
     proof: any;
@@ -48,19 +48,11 @@ export const loadVerificationKey = (proofOptions: ProofOptions, version?: string
     return proofData.vk;
 };
 
-export const validateEventResults = (eventResults: EventResults, expectAttestation: boolean): void => {
+export const validateEventResults = (eventResults: EventResults): void => {
     expect(eventResults.broadcastEmitted).toBe(true);
     expect(eventResults.includedInBlockEmitted).toBe(true);
     expect(eventResults.finalizedEmitted).toBe(true);
     expect(eventResults.errorEventEmitted).toBe(false);
-
-    if (expectAttestation) {
-        expect(eventResults.attestationConfirmedEmitted).toBe(true);
-    } else {
-        expect(eventResults.attestationConfirmedEmitted).toBe(false);
-    }
-    expect(eventResults.attestationBeforeExpectedEmitted).toBe(false);
-    expect(eventResults.attestationMissedEmitted).toBe(false);
 };
 
 export const performVerifyTransaction = async (
@@ -70,7 +62,7 @@ export const performVerifyTransaction = async (
     proof: any,
     publicSignals: any,
     vk: string,
-    withAttestation: boolean,
+    withAggregation: boolean,
     version?: string
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
     try {
@@ -81,12 +73,17 @@ export const performVerifyTransaction = async (
             (proofOptions.curve ? ` with curve: ${proofOptions.curve}` : '')
         );
 
+        let domainId: number | undefined;
+
+        if(withAggregation) {
+            domainId = await performRegisterDomain(session, 1, 2);
+        }
+
         const verifyTransaction = async () => {
-            const verifier = session.verify(accountAddress)[proofOptions.proofType](
+            const verify = session.verify(accountAddress)[proofOptions.proofType](
                 proofOptions.library,
                 proofOptions.curve
             );
-            const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
 
             const { events, transactionResult } = await verify.execute({
                 proofData: {
@@ -95,11 +92,10 @@ export const performVerifyTransaction = async (
                     vk: vk,
                     version: version
                 },
+                domainId
             });
 
-            const eventResults = withAttestation
-                ? handleEventsWithAttestation(events, proofOptions.proofType, 'verify')
-                : handleCommonEvents(events, proofOptions.proofType, 'verify');
+            const eventResults = handleCommonEvents(events, proofOptions.proofType, TransactionType.Verify, withAggregation);
 
             console.log(
                 `[RESULT RECEIVED] ${accountAddress} ${proofOptions.proofType}` +
@@ -108,8 +104,15 @@ export const performVerifyTransaction = async (
             );
 
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
-            validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAttestation);
-            validateEventResults(eventResults, withAttestation);
+            validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAggregation);
+            validateEventResults(eventResults);
+
+            //TODO: Add this back when we are able to publish aggregations
+
+            // if(domainId !== undefined) {
+            //     await performHoldDomain(session, domainId);
+            //     await performUnregisterDomain(session, domainId);
+            // }
 
             return { eventResults, transactionInfo };
         };
@@ -152,12 +155,12 @@ export const performVKRegistrationAndVerification = async (
     const registerResults = handleCommonEvents(
         registerEvents,
         proofOptions.proofType,
-        'vkRegistration'
+        TransactionType.VKRegistration
     );
 
     const vkTransactionInfo: VKRegistrationTransactionInfo = await registerTransactionResult;
     validateVKRegistrationTransactionInfo(vkTransactionInfo, proofOptions.proofType);
-    validateEventResults(registerResults, false);
+    validateEventResults(registerResults);
 
     console.log(
         `${proofOptions.proofType} Executing verification using registered VK with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
@@ -176,11 +179,11 @@ export const performVKRegistrationAndVerification = async (
                 },
             });
 
-    const verifyResults = handleCommonEvents(verifyEvents, proofOptions.proofType, 'verify');
+    const verifyResults = handleCommonEvents(verifyEvents, proofOptions.proofType, TransactionType.Verify);
 
     const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
     validateVerifyTransactionInfo(verifyTransactionInfo, proofOptions.proofType, false);
-    validateEventResults(verifyResults, false);
+    validateEventResults(verifyResults);
 };
 
 export const validateTransactionInfo = (
@@ -188,34 +191,46 @@ export const validateTransactionInfo = (
     expectedProofType: string
 ): void => {
     expect(transactionInfo).toBeDefined();
-    expect(transactionInfo.blockHash).not.toBeNull();
+    expect(transactionInfo.blockHash).toBeDefined();
+    expect(typeof transactionInfo.blockHash).toBe('string');
+
     expect(transactionInfo.proofType).toBe(expectedProofType);
     expect(transactionInfo.status).toBe(TransactionStatus.Finalized);
+
     expect(transactionInfo.txHash).toBeDefined();
-    expect(transactionInfo.extrinsicIndex).toBeDefined();
+    expect(typeof transactionInfo.txHash).toBe('string');
+
+    expect(transactionInfo.extrinsicIndex).toBeGreaterThanOrEqual(0);
+
     expect(transactionInfo.feeInfo).toBeDefined();
+    expect(transactionInfo.feeInfo!.payer).toBeDefined();
+    expect(transactionInfo.feeInfo!.actualFee).toBeDefined();
+
     expect(transactionInfo.weightInfo).toBeDefined();
+    expect(transactionInfo.weightInfo!.refTime).toBeDefined();
+    expect(transactionInfo.weightInfo!.proofSize).toBeDefined();
+
     expect(transactionInfo.txClass).toBeDefined();
 };
 
 export const validateVerifyTransactionInfo = (
     transactionInfo: VerifyTransactionInfo,
     expectedProofType: string,
-    expectAttestation: boolean
+    expectAggregation: boolean
 ): void => {
     validateTransactionInfo(transactionInfo, expectedProofType);
 
-    expect(transactionInfo.attestationId).not.toBeNull();
-    expect(transactionInfo.leafDigest).not.toBeNull();
+    expect(transactionInfo.statement).toBeDefined();
+    expect(typeof transactionInfo.statement).toBe('string');
 
-    if(expectAttestation) {
-        expect(transactionInfo.attestationConfirmed).toBeTruthy();
-        expect(transactionInfo.attestationEvent).toBeDefined();
-        expect(transactionInfo.attestationEvent!.id).toBeDefined();
-        expect(transactionInfo.attestationEvent!.attestation).toBeDefined();
+    if (expectAggregation) {
+        expect(transactionInfo.domainId).toBeDefined();
+        expect(transactionInfo.aggregationId).toBeDefined();
+        expect(typeof transactionInfo.domainId).toBe('number');
+        expect(typeof transactionInfo.aggregationId).toBe('number');
     } else {
-        expect(transactionInfo.attestationConfirmed).toBeFalsy();
-        expect(transactionInfo.attestationEvent).not.toBeDefined();
+        expect(transactionInfo.domainId).toBeUndefined();
+        expect(transactionInfo.aggregationId).toBeUndefined();
     }
 };
 
@@ -261,3 +276,108 @@ const retryWithDelay = async <T>(
     }
     throw new Error("Retries exhausted");
 };
+
+
+export const performRegisterDomain = async (
+    session: zkVerifySession,
+    aggregationSize: number,
+    queueSize: number
+): Promise<number> => {
+    const { events, domainIdPromise } = session.registerDomain(aggregationSize, queueSize);
+
+    const eventResults = handleCommonEvents(
+        events,
+        'Domain',
+        TransactionType.DomainRegistration
+    );
+
+    let newDomainId: number | undefined;
+    let domainAssertionError: Error | null = null;
+
+    events.on(ZkVerifyEvents.NewDomain, (data) => {
+        try {
+            expect(data.domainId).toBeGreaterThan(0);
+            newDomainId = data.domainId;
+        } catch (err) {
+            domainAssertionError = err as Error;
+        }
+    });
+
+    const domainId = await domainIdPromise;
+
+    expect(domainId).toBeGreaterThan(0);
+    expect(domainId).toBe(newDomainId);
+    expect(eventResults.errorEventEmitted).toBe(false);
+    expect(eventResults.finalizedEmitted).toBe(true);
+    expect(eventResults.includedInBlockEmitted).toBe(true);
+
+    return domainId;
+};
+
+
+export const performHoldDomain = async (
+    session: zkVerifySession,
+    domainId: number
+): Promise<void> => {
+    const { events, result } = session.holdDomain(domainId);
+
+    const eventResults = handleCommonEvents(
+        events,
+        'Domain',
+        TransactionType.DomainHold
+    );
+
+    let domainStateAssertionError: Error | null = null;
+
+    events.on(ZkVerifyEvents.DomainStateChanged, (data) => {
+        try {
+            expect(data.domainId).toBe(domainId);
+            expect(data.domainState).toBe('Removable');
+        } catch (error) {
+            domainStateAssertionError = error as Error;
+        }
+    });
+
+    const success = await result;
+    expect(success).toBe(true);
+
+    if (domainStateAssertionError) throw domainStateAssertionError;
+
+    expect(eventResults.errorEventEmitted).toBe(false);
+    expect(eventResults.finalizedEmitted).toBe(true);
+    expect(eventResults.includedInBlockEmitted).toBe(true);
+};
+
+export const performUnregisterDomain = async (
+    session: zkVerifySession,
+    domainId: number
+): Promise<void> => {
+    const { events, result } = session.unregisterDomain(domainId);
+
+    const eventResults = handleCommonEvents(
+        events,
+        'Domain',
+        TransactionType.DomainUnregister
+    );
+
+    let assertionError: Error | null = null;
+
+    events.on(ZkVerifyEvents.DomainStateChanged, (data) => {
+        try {
+            expect(data.domainId).toBe(domainId);
+            expect(data.domainState).toBe('Removed');
+        } catch (e) {
+            assertionError = e as Error;
+        }
+    });
+
+    const success = await result;
+    expect(success).toBe(true);
+
+    if (assertionError) throw assertionError;
+
+    expect(eventResults.errorEventEmitted).toBe(false);
+    expect(eventResults.finalizedEmitted).toBe(true);
+    expect(eventResults.includedInBlockEmitted).toBe(true);
+};
+

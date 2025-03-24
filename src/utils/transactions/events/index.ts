@@ -4,29 +4,25 @@ import { EventEmitter } from 'events';
 import { TransactionType } from '../../../enums';
 import { getProofPallet } from '../../helpers';
 import { TransactionInfoByType } from '../types';
-import { VerifyTransactionInfo, VKRegistrationTransactionInfo } from '../../../types';
+import {
+  VerifyTransactionInfo,
+  VKRegistrationTransactionInfo,
+} from '../../../types';
 
 export const handleTransactionEvents = <T extends TransactionType>(
   api: ApiPromise,
   events: SubmittableResult['events'],
   transactionInfo: TransactionInfoByType[T],
   emitter: EventEmitter,
-  setAggregationId: (id: number | undefined) => void,
   transactionType: T,
 ): TransactionInfoByType[T] => {
   let statementHash: string | undefined;
   let aggregationId: number | undefined = undefined;
   let statement: string | undefined;
-  let receipt: string | undefined;
   let domainId: number | undefined;
   let domainState: string | undefined;
 
-  events.forEach(({ event, phase }, index) => {
-
-    console.log(`Event #${index + 1}: [${event.section}.${event.method}]`);
-    console.log(`    Phase: ${phase.toString()}`);
-    console.log(`    Data:`, event.data.map((d) => d.toHuman()));
-
+  events.forEach(({ event, phase }) => {
     if (phase.isApplyExtrinsic) {
       transactionInfo.extrinsicIndex = phase.asApplyExtrinsic.toNumber();
     }
@@ -62,20 +58,18 @@ export const handleTransactionEvents = <T extends TransactionType>(
     }
 
     if (
-        transactionType === TransactionType.Verify &&
-        event.section ===
-        getProofPallet(
-            (transactionInfo as VerifyTransactionInfo).proofType,
-        ) &&
-        event.method === 'ProofVerified'
+      transactionType === TransactionType.Verify &&
+      event.section ===
+        getProofPallet((transactionInfo as VerifyTransactionInfo).proofType) &&
+      event.method === 'ProofVerified'
     ) {
       statement = event.data[0].toString();
     }
 
     if (
-        transactionType === TransactionType.Verify &&
-        event.section === 'aggregate' &&
-        event.method === 'NewProof'
+      transactionType === TransactionType.Verify &&
+      event.section === 'aggregate' &&
+      event.method === 'NewProof'
     ) {
       const [eventStatement, eventDomainId, eventAggregationId] = event.data;
       statement = eventStatement.toString();
@@ -135,7 +129,6 @@ export const handleTransactionEvents = <T extends TransactionType>(
         statement,
         domainId,
         aggregationId,
-        aggregationConfirmed: false,
       };
 
     case TransactionType.VKRegistration:

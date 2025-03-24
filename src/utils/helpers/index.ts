@@ -1,10 +1,10 @@
 import 'dotenv/config';
 import { ApiPromise } from '@polkadot/api';
 import { EventEmitter } from 'events';
-import { AttestationEvent, ProofProcessor } from '../../types';
+import { NewAggregationReceipt, ProofProcessor } from '../../types';
 import { ZkVerifyEvents } from '../../enums';
 import { proofConfigurations, ProofType } from '../../config';
-import { subscribeToNewAttestations } from '../../api/attestation';
+import { subscribeToNewAggregationReceipts } from '../../api/aggregation';
 import { decodeDispatchError } from '../transactions/errors';
 import { DispatchError } from '@polkadot/types/interfaces';
 import {
@@ -15,51 +15,61 @@ import {
 import { KeyringPair } from '@polkadot/keyring/types';
 
 /**
- * Waits for a specific `NewAttestation` event and returns the associated data.
+ * Waits for a specific `NewAggregationReceipt` event and returns the associated data.
  *
  * @param {ApiPromise} api - The Polkadot.js API instance.
- * @param {number | undefined} attestationId - The attestation ID to wait for.
- * @param {EventEmitter} emitter - The EventEmitter instance for emitting events.
+ * @param {number | undefined} domainId - The domain ID to match.
+ * @param {number | undefined} aggregationId - The aggregation ID to wait for.
+ * @param {EventEmitter} emitter - The EventEmitter instance to emit test-level events.
  *
- * @returns {Promise<AttestationEvent>} Resolves with the attestation event data if confirmed, or rejects with an error.
+ * @returns {Promise<NewAggregationReceipt>} Resolves with the receipt event data if confirmed, or rejects with an error.
  *
- * @throws {Error} If the attestation ID is undefined or an error occurs during event subscription.
+ * @throws {Error} If aggregationId is provided without domainId, or an error occurs during subscription.
  *
- * @emits ZkVerifyEvents.AttestationConfirmed - When the specified attestation is confirmed.
- * @emits ZkVerifyEvents.AttestationMissed - If a later attestation ID is received.
- * @emits ZkVerifyEvents.BeforeExpected - If the attestation ID from the event is less than expected.
+ * @emits ZkVerifyEvents.AggregationMatched - When the specified aggregation receipt is confirmed.
+ * @emits ZkVerifyEvents.AggregationMissed - If a later aggregation ID is received before the expected one.
+ * @emits ZkVerifyEvents.AggregationBeforeExpected - If an earlier aggregation ID is received.
  * @emits ZkVerifyEvents.ErrorEvent - If an error occurs.
  */
 export async function waitForNewAggregationReceipt(
   api: ApiPromise,
-  attestationId: number | undefined,
+  domainId: number | undefined,
+  aggregationId: number | undefined,
   emitter: EventEmitter,
-): Promise<AttestationEvent> {
-  if (!attestationId) {
-    const error = new Error('No attestation ID found.');
+): Promise<NewAggregationReceipt> {
+  if (aggregationId !== undefined && domainId === undefined) {
+    const error = new Error('Cannot wait for aggregationId without domainId.');
     emitter.emit(ZkVerifyEvents.ErrorEvent, error);
     throw error;
   }
 
-  return new Promise<AttestationEvent>((resolve, reject) => {
-    const internalEmitter = subscribeToNewAttestations(
-      api,
-      () => {},
-      attestationId,
+  if (aggregationId === undefined || domainId === undefined) {
+    const error = new Error('Missing domainId or aggregationId.');
+    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+    throw error;
+  }
+
+  return new Promise<NewAggregationReceipt>((resolve, reject) => {
+    const internalEmitter = subscribeToNewAggregationReceipts(api, () => {}, {
+      domainId,
+      aggregationId,
+    });
+
+    internalEmitter.on(
+      ZkVerifyEvents.AggregationMatched,
+      (event: NewAggregationReceipt) => {
+        emitter.emit(ZkVerifyEvents.AggregationMatched, event);
+        resolve(event);
+      },
     );
 
-    internalEmitter.on(ZkVerifyEvents.AttestationConfirmed, (event) => {
-      emitter.emit(ZkVerifyEvents.AttestationConfirmed, event);
-      resolve(event);
+    internalEmitter.on(ZkVerifyEvents.AggregationMissed, (event) => {
+      emitter.emit(ZkVerifyEvents.AggregationMissed, event);
+      reject(new Error(`Missed expected aggregation ID ${aggregationId}.`));
     });
 
-    internalEmitter.on(ZkVerifyEvents.AttestationMissed, (event) => {
-      emitter.emit(ZkVerifyEvents.AttestationMissed, event);
-      reject(new Error(`Missed the attestation ID ${attestationId}.`));
-    });
-
-    internalEmitter.on(ZkVerifyEvents.AttestationBeforeExpected, (event) => {
-      emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, event);
+    internalEmitter.on(ZkVerifyEvents.AggregationBeforeExpected, (event) => {
+      emitter.emit(ZkVerifyEvents.AggregationBeforeExpected, event);
     });
 
     internalEmitter.on(ZkVerifyEvents.ErrorEvent, (error) => {

@@ -1,7 +1,13 @@
-import { zkVerifySession } from '../src';
+import {VerifyTransactionInfo, zkVerifySession} from '../src';
 import { walletPool } from './common/walletPool';
-import { loadProofAndVK } from "./common/utils";
+import {
+    loadProofAndVK,
+    performRegisterDomain,
+    validateVerifyTransactionInfo
+} from "./common/utils";
 import { ProofType } from "../src";
+import { handleCommonEvents } from "./common/eventHandlers";
+import { TransactionType } from "../src";
 
 jest.setTimeout(120000);
 describe('zkVerifySession class', () => {
@@ -17,10 +23,6 @@ describe('zkVerifySession class', () => {
 
     afterEach(async () => {
         if (session) {
-            // if (domainId) {
-            //     await session.holdDomain(domainId).result
-            //     await session.unregisterDomain(domainId).result
-            // }
             await session.close();
             expect(session.api.isConnected).toBe(false);
             expect(session['provider'].isConnected).toBe(false);
@@ -32,23 +34,41 @@ describe('zkVerifySession class', () => {
 
     it('should send a proof to a registered domain and get aggregation', async () => {
         try {
+            const expectAggregation = true;
             [envVar, wallet] = await walletPool.acquireWallet();
             const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk });
 
             session = await zkVerifySession.start().Testnet().withAccount(wallet);
 
-            domainId = await session.registerDomain(1, 1).domainIdPromise;
+            if(expectAggregation) {
+                domainId = await performRegisterDomain(session, 1, 1);
+            }
 
-            const { transactionResult } = await session.verify().ultraplonk().execute({
+            const { events, transactionResult } = await session.verify().ultraplonk().execute({
                 proofData: {
                     proof: proofData.proof.proof,
                     publicSignals: proofData.proof.publicSignals,
-                    vk: proofData.vk
+                    vk: proofData.vk,
                 },
-                domainId
+                domainId,
             });
 
-            await transactionResult;
+            const results = handleCommonEvents(
+                events,
+                'ultraplonk',
+                TransactionType.Verify,
+                expectAggregation
+            );
+
+            const transactionInfo: VerifyTransactionInfo = await transactionResult;
+
+            expect(results.includedInBlockEmitted).toBe(true);
+            expect(results.finalizedEmitted).toBe(true);
+            expect(results.errorEventEmitted).toBe(false);
+
+            validateVerifyTransactionInfo(transactionInfo, 'ultraplonk', expectAggregation)
+
+            //TODO:  Add publish aggregation and check for NewAggregationReceipt.
         } catch (error: unknown) {
             if (error instanceof Error) {
                 throw new Error(`Test failed with error: ${error.message}`);

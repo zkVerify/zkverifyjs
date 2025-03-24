@@ -23,7 +23,7 @@ export class zkVerifySession {
   declare optimisticVerify: VerificationManager['optimisticVerify'];
   declare registerVerificationKey: VerificationKeyRegistrationManager['registerVerificationKey'];
   declare format: FormatManager['format'];
-  declare subscribeToNewAttestations: EventManager['subscribe'];
+  declare subscribeToNewAggregationReceipts: EventManager['subscribe'];
   declare unsubscribe: EventManager['unsubscribe'];
   declare estimateCost: ExtrinsicManager['estimateCost'];
   declare createSubmitProofExtrinsic: ExtrinsicManager['createSubmitProofExtrinsic'];

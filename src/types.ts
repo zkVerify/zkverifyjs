@@ -37,8 +37,6 @@ export interface VerifyTransactionInfo extends TransactionInfo {
   domainId: number | undefined;
   aggregationId: number | undefined;
   statement: string | null;
-  aggregationConfirmed: boolean;
-  aggregationReceipt?: NewAggregationReceipt;
 }
 
 export interface VKRegistrationTransactionInfo extends TransactionInfo {
