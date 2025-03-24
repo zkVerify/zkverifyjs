@@ -1,7 +1,6 @@
 import {
     zkVerifySession,
     ProofType,
-    TransactionInfo,
     TransactionStatus,
     VerifyTransactionInfo,
     VKRegistrationTransactionInfo, CurveType, Library, ProofOptions
@@ -13,6 +12,8 @@ import {
 } from './eventHandlers';
 import path from "path";
 import fs from "fs";
+import { TransactionInfoByType } from "../../src/utils/transactions/types";
+import { TransactionType } from "../../src";
 
 export interface ProofData {
     proof: any;
@@ -188,7 +189,7 @@ export const performVKRegistrationAndVerification = async (
 };
 
 export const validateTransactionInfo = (
-    transactionInfo: TransactionInfo,
+    transactionInfo: TransactionInfoByType[TransactionType.Verify] | TransactionInfoByType[TransactionType.VKRegistration],
     expectedProofType: string
 ): void => {
     expect(transactionInfo).toBeDefined();

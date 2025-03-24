@@ -1,6 +1,6 @@
 {
   "name": "zkverifyjs",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "Horizen Labs <research@horizenlabs.io>",
   "license": "GPL-3.0",

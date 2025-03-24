@@ -1,5 +1,5 @@
-import { TransactionStatus } from './enums';
 import { ProofType } from './config';
+import { TransactionStatus } from './enums';
 
 export interface ProofProcessor {
   formatProof(proof: unknown, options?: unknown, version?: string): unknown;
@@ -16,7 +16,6 @@ export interface ProofData {
 
 export interface TransactionInfo {
   blockHash: string;
-  proofType: ProofType;
   status: TransactionStatus;
   txHash?: string;
   extrinsicIndex?: number;
@@ -34,6 +33,7 @@ export interface TransactionInfo {
 }
 
 export interface VerifyTransactionInfo extends TransactionInfo {
+  proofType: ProofType;
   attestationId: number | undefined;
   leafDigest: string | null;
   attestationConfirmed: boolean;
@@ -41,7 +41,17 @@ export interface VerifyTransactionInfo extends TransactionInfo {
 }
 
 export interface VKRegistrationTransactionInfo extends TransactionInfo {
+  proofType: ProofType;
   statementHash?: string;
+}
+
+export interface RegisterDomainTransactionInfo extends TransactionInfo {
+  domainId: number | undefined;
+}
+
+export interface DomainTransactionInfo extends TransactionInfo {
+  domainId: number | undefined;
+  domainState: string;
 }
 
 export interface AccountInfo {

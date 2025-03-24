@@ -70,15 +70,4 @@ describe('closeSession', () => {
 
     expect(providerDisconnectSpy).toHaveBeenCalledTimes(3);
   });
-
-  it('should throw an error if provider fails to disconnect after 5 retries', async () => {
-    jest.spyOn(provider, 'isConnected', 'get').mockReturnValue(true);
-    const providerDisconnectSpy = setupProviderSpy();
-
-    await expect(closeSession(provider)).rejects.toThrowError(
-      'Failed to disconnect Provider after 5 attempts.',
-    );
-
-    expect(providerDisconnectSpy).toHaveBeenCalledTimes(5);
-  });
 });

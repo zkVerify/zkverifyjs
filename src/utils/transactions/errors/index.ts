@@ -1,6 +1,7 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { EventEmitter } from 'events';
 import {
+  TransactionInfo,
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
 } from '../../../types';
@@ -15,7 +16,6 @@ export const decodeDispatchError = (
     try {
       const decoded = api.registry.findMetaError(dispatchError.asModule);
       const { docs, name, section } = decoded;
-
       return `${section}.${name}: ${docs.join(' ')}`;
     } catch {
       return `Unknown module error: ${dispatchError.toString()}`;
@@ -29,20 +29,25 @@ export const decodeDispatchError = (
   }
 };
 
-export const handleError = (
+export const handleError = <T extends TransactionInfo>(
   emitter: EventEmitter,
   api: ApiPromise,
-  transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo,
+  transactionInfo: T,
   error: unknown,
   shouldThrow = true,
   status?: SubmittableResult['status'],
 ): void | never => {
-  let decodedError;
+  let decodedError: string;
+
+  const hasProofType = (
+    info: TransactionInfo,
+  ): info is VerifyTransactionInfo | VKRegistrationTransactionInfo => {
+    return 'proofType' in info;
+  };
 
   if (error instanceof Error) {
     try {
       const parsedError = JSON.parse(error.message);
-
       if (parsedError.module && parsedError.module.index !== undefined) {
         const dispatchError = api.registry.createType(
           'DispatchError',
@@ -72,7 +77,9 @@ export const handleError = (
 
   if (emitter.listenerCount(ZkVerifyEvents.ErrorEvent) > 0) {
     emitter.emit(ZkVerifyEvents.ErrorEvent, {
-      proofType: transactionInfo.proofType,
+      ...(hasProofType(transactionInfo) && {
+        proofType: transactionInfo.proofType,
+      }),
       error: decodedError,
     });
   }
