@@ -29,7 +29,7 @@ Currently the following proof verifiers are supported:
     - [Registering a Verification Key & Submitting a proof with the Statement Hash](#registering-a-verification-key--submitting-a-proof-with-the-statement-hash)
     - [Listening to Events](#listening-to-events)
     - [Awaiting the Final Transaction Result](#awaiting-the-final-transaction-result)
-    - [Wait for the Attestation to be published](#wait-for-the-attestation-to-be-published)
+    - [Proof Aggregation](#domain-specific-proof-aggregation)
     - [Example Usage](#example-usage)
 - [API Reference](#api-reference)
     - [zkVerifySession.start](#zkverifysessionstart)
@@ -48,7 +48,7 @@ Currently the following proof verifiers are supported:
     - [zkVerifySession.addAccount](#zkverifysessionaddaccount)
     - [zkVerifySession.addAccounts](#zkverifysessionaddaccounts)
     - [zkVerifySession.removeAccount](#zkverifysessionremoveaccount)
-    - [zkVerifySession.subscribeToNewAttestations](#zkverifysessionsubscribetonewattestations)
+    - [zkVerifySession.subscribe](#zkverifysessionsubscribe)
     - [zkVerifySession.unsubscribe](#zkverifysessionunsubscribe)
     - [zkVerifySession.registerDomain](#zkverifysessionregisterdomain)
     - [zkVerifySession.holdDomain](#zkverifysessionholddomain)
@@ -140,7 +140,6 @@ const { events, transactionResult } = await session
   .verify() // Optionally provide account address to verify("myaddress") if connected with multple accounts
   .ultraplonk() // Select the proof type (e.g., ultraplonk)
   .nonce(1) // Set the nonce (optional)
-  .waitForPublishedAttestation() // Wait for the attestation to be published (optional)
   .withRegisteredVk() // Indicate that the verification key is already registered (optional)
   .execute({
     proofData: {
@@ -148,7 +147,7 @@ const { events, transactionResult } = await session
       proof: proof,
       publicSignals: publicSignals,
     },
-    domainId: 42, // Optional domain ID for proof categorization
+    domainId: 42, // Optional domain ID for proof aggregation
   }); // Execute the verification with the provided proof data
 ```
 
@@ -217,7 +216,6 @@ You can listen for transaction events using the events emitter. Common events in
 
 - `includedInBlock`: Triggered when the transaction is included in a block.
 - `finalized`: Triggered when the transaction is finalized.
-- `attestationConfirmed`: Triggered when the NewElement event is raised by the zkVerify chain.
 - `error`: Triggered if an error occurs during the transaction process.
 
 ```typescript
@@ -230,7 +228,7 @@ const { events, transactionResult } = await session
       proof: proof,
       publicSignals: publicSignals,
     },
-    domainId: 42, // Optional domain ID for proof categorization
+    domainId: 42, // Optional domain ID for proof aggregation
   });
 
 events.on('includedInBlock', (eventData) => {
@@ -239,10 +237,6 @@ events.on('includedInBlock', (eventData) => {
 
 events.on('finalized', (eventData) => {
     console.log('Transaction finalized:', eventData);
-});
-
-events.on('attestationConfirmed', (eventData) => {
-    console.log('Attestation Event Raised:', eventData);
 });
 
 events.on('error', (error) => {
@@ -264,36 +258,65 @@ const { events, transactionResult } = await session
       proof: proof,
       publicSignals: publicSignals,
     },
-    domainId: 42, // Optional domain ID for proof categorization
+    domainId: 42, // Optional domain ID for proof aggregation
   });
 
 const result = await transactionResult;
 console.log('Final transaction result:', result);
 ```
 
-## Wait for the Attestation to be published
+## Domain Specific Proof Aggregation
 
-Wait for the NewElement event to be published before the transaction info is returned back by the promise. Occurs around every ~60s.
+* Proofs can be aggregated by sending them to a specified Domains `domainId`.
+* Domains are registered with the following properties:
+  * `aggregationSize`: Maximum number of proofs to aggregate.  An integer smaller equal than 128.
+  * `queueSize` The maximum number of aggregated proofs that can be waiting for publication.  An optional integer smaller equal than 16. 16 if it’s null
+* Once proofs are sent to a Domain and the `aggregationSize` is reached, aggregate and placed into the Publish Queue.
+* Published aggregations emit a `NewAggregationReceipt` containing the following:
+  * `domainId`:  The domain where the aggregation was published from.
+  * `aggregationId`: The aggregation identifier
+  * `receipt`: The aggregation receipt (a merkle root)
+
+These `NewAggregationReceipt` events can then trigger aggregations to be published to a destination chain.
+
+
+### Waiting for a published Proof Aggregation Receipt
+
+In order to wait for a published aggregation receipt event `NewAggregationReceipt` the `subscribe` feature can be used:
 
 ```typescript
-const { events, transactionResult } = await session
-  .verify()
-  .risc0()
-  .waitForPublishedAttestation()
-  .execute({
-    proofData: {
-      vk: vk,
-      proof: proof,
-      publicSignals: publicSignals,
-    },
-    domainId: 42, // Optional domain ID for proof categorization
-  });
+// Pre-registered domain
+const domainId = 1;
+// Start session
+const session = await zkVerifySession.start().Testnet().withAccount(process.env.seedPhrase);
 
-const transactionInfo: VerifyTransactionInfo = await transactionResult;
+const { events, transactionResult } = await session.verify().ultraplonk().execute({
+  proofData: {
+    proof: proofData.proof.proof,
+    publicSignals: proofData.proof.publicSignals,
+    vk: proofData.vk,
+  },
+  domainId,
+});
 
-console.log(transactionInfo.attestationConfirmed); // Expect 'true'
-console.log(JSON.stringify(transactionInfo.attestationEvent)) // Attestation Event details.
+events.on(ZkVerifyEvents.IncludedInBlock, (eventData: any) => {
+  aggregationId = eventData.aggregationId;
+});
+
+session.subscribe(
+        (newAggregationReceipt: NewAggregationReceipt) => {
+          console.log('Aggregation receipt received:', newAggregationReceipt);
+          receipt = newAggregationReceipt;
+        },
+        { domainId, aggregationId } // Listen for a specific domainId and aggregationId.
+);
+
+const transactionInfo = await transactionResult;
+
+// Do something with transactionInfo and receipt
 ```
+
+* Note:  Verify transactions sent without a `domainId` will not be aggregated, there will be no `NewAggregationReceipt` containing the proof.
 
 ## Optimistic Proof Verification
 
@@ -330,7 +353,7 @@ const { success, message } = session
   });
 ```
 
-## Domains (Aggregate Pallet)
+## Domain Management (Aggregate Pallet)
 
 It is possible to define a domain that has some properties and an owner.  The following flow shows how to register, hold and unregister a domain:
 
@@ -355,10 +378,6 @@ registerEvents.on(ZkVerifyEvents.Finalized, (eventData) => {
   console.log("Finalized");
 });
 
-registerEvents.on(ZkVerifyEvents.NewDomain, (eventData) => {
-  console.log("NewDomain");
-});
-
 registerEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
   console.log("ErrorEvent");
 });
@@ -381,10 +400,6 @@ holdEvents.on(ZkVerifyEvents.Finalized, (eventData) => {
   console.log("Finalized");
 });
 
-holdEvents.on(ZkVerifyEvents.DomainStateChanged, (eventData) => {
-  console.log("DomainStateChanged");
-});
-
 holdEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
   console.log("ErrorEvent");
 });
@@ -405,10 +420,6 @@ unregisterEvents.on(ZkVerifyEvents.IncludedInBlock, () => {
 
 unregisterEvents.on(ZkVerifyEvents.Finalized, () => {
     console.log("Finalized");
-});
-
-unregisterEvents.on(ZkVerifyEvents.DomainStateChanged, (eventData) => {
-    console.log("DomainStateChanged");
 });
 
 unregisterEvents.on(ZkVerifyEvents.ErrorEvent, () => {
@@ -450,7 +461,6 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
 
   // Execute the verification transaction on zkVerify chain
   const { events, transactionResult } = await session.verify().risc0()
-          .waitForPublishedAttestation()
           .execute({ proofData: {
               vk: vk,
               proof: proof,
@@ -534,7 +544,6 @@ const { events, transactionResult } = await session
   .verify()
   .ultraplonk()
   .nonce(1)
-  .waitForPublishedAttestation()
   .withRegisteredVk()
   .execute({
     proofData: {
@@ -549,10 +558,9 @@ const { events, transactionResult } = await session
 
 - Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
 - Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
-- Attestation Option: `.waitForPublishedAttestation()` specifies that the transaction should wait for the attestation to be published before completing. This is optional.
 - Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
 - Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
-- Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result, including waiting for the `poe.NewElement` attestation confirmation if waitForPublishedAttestation is specified.
+- Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result.
 
 ## `zkVerifySession.optimisticVerify`
 
@@ -582,17 +590,6 @@ const { events, transactionResult } = await session.registerVerificationKey().ul
 
 - Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
 - Returns: A TransactionInfo object containing a statementHash  string.
-
-## `zkVerifySession.poe` (Proof of Existence)
-
-```typescript
-const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
-```
-
-- `attestationId`: A number representing the published attestation ID from which the proof path is to be retrieved.
-- `leafDigest`: A string representing the leaf digest to be used in the proof path retrieval.
-- `blockHash`: (Optional) A string representing the block hash at which the proof should be retrieved.
-- Returns: A Promise that resolves to a `MerkleProof` object containing the proof path details.
 
 ## `zkVerifySession.format`
 
@@ -714,20 +711,26 @@ const account2 = session.getAccount("myAccountAddress");
 - The account is used for signing transactions and interacting with the blockchain on behalf of the user. 
 - If no account is associated with the session (i.e., the session is in read-only mode) or account searched for does not exist, this will error.
 
-## `zkVerifySession.subscribeToNewAttestations`
+## `zkVerifySession.subscribe`
 
 ```typescript
-session.subscribeToNewAttestations(callback, attestationId);
+session.subscribe(callback, options);
 ```
-- `callback`: A Function to be called whenever a NewAttestation event occurs. The function receives an AttestationEvent object as its argument.
-- `attestationId`:  (Optional) A string representing the attestation ID to filter events by. If provided, the subscription will automatically unsubscribe after receiving the specified attestation event.
+- `callback`: A Function to be called whenever a NewAggregationReceipt event occurs. The function receives an NewAggregationReceipt object as its argument.
+- `options`:  An optional `NewAggregationEventSubscriptionOption` object used to filter which NewAggregationReceipt events to listen to when subscribing.
+
+Usage:
+
+- `undefined`: Subscribe to all NewAggregationReceipt events across all domains.
+- `{ domainId }`: Subscribe to all receipts for a specific domain.
+- `{ domainId, aggregationId }`: Subscribe to a specific aggregation within a specific domain. Automatically unsubscribes after receiving the matching event.
 
 ## `zkVerifySession.unsubscribe`
 
 ```typescript
 session.unsubscribe();
 ```
-- This method unsubscribes from any active NewAttestation event subscriptions. It is used to stop listening for NewAttestation events when they are no longer needed.
+- This method unsubscribes from any active NewAggregationReceipt event subscriptions. It is used to stop listening for NewAggregationReceipt events when they are no longer needed.
 
 ## `zkVerifySession.registerDomain`
 
