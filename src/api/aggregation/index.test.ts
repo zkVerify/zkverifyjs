@@ -1,13 +1,13 @@
 import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 import { EventEmitter } from 'events';
 import {
-  subscribeToNewAttestations,
-  unsubscribeFromNewAttestations,
+  subscribeToNewAggregationReceipts,
+  unsubscribeFromNewAggregationReceipts,
 } from './index';
 import { ZkVerifyEvents } from '../../enums';
 import { ApiPromise } from '@polkadot/api';
 
-describe('subscribeToNewAttestations', () => {
+describe('subscribeToNewAggregationReceipts', () => {
   let api: ApiPromise;
   let callback: jest.Mock;
 
@@ -23,13 +23,13 @@ describe('subscribeToNewAttestations', () => {
     callback = jest.fn();
   });
 
-  it('should emit AttestationMissed event when attestationId is lower than received and unsubscribe all listeners', async () => {
+  it('should emit AggregationMissed event when aggregationId is lower than received and unsubscribe all listeners', async () => {
     const events = [
       {
         event: {
-          section: 'poe',
-          method: 'NewAttestation',
-          data: ['3', 'attestationData'],
+          section: 'aggregate',
+          method: 'NewAggregationReceipt',
+          data: ['1', '3', 'aggregationData'],
         },
       },
     ];
@@ -41,12 +41,15 @@ describe('subscribeToNewAttestations', () => {
 
     api.query.system.events = mockEvents as any;
 
-    const emitter = subscribeToNewAttestations(api, callback, 1);
+    const emitter = subscribeToNewAggregationReceipts(api, callback, {
+      domainId: 1,
+      aggregationId: 1,
+    });
     const emitSpy = jest.spyOn(emitter, 'emit');
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.AttestationMissed, {
+    expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.AggregationMissed, {
       expectedId: 1,
       receivedId: 3,
       event: events[0].event,
@@ -55,13 +58,13 @@ describe('subscribeToNewAttestations', () => {
     expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.Unsubscribe);
   });
 
-  it('should emit AttestationBeforeExpected event when attestationId is higher than received', async () => {
+  it('should emit AggregationBeforeExpected event when aggregationId is higher than received', async () => {
     const events = [
       {
         event: {
-          section: 'poe',
-          method: 'NewAttestation',
-          data: ['1', 'attestationData'],
+          section: 'aggregate',
+          method: 'NewAggregationReceipt',
+          data: ['1', '1', '0xreceipt'],
         },
       },
     ];
@@ -73,13 +76,16 @@ describe('subscribeToNewAttestations', () => {
 
     api.query.system.events = mockEvents as any;
 
-    const emitter = subscribeToNewAttestations(api, callback, 3);
+    const emitter = subscribeToNewAggregationReceipts(api, callback, {
+      domainId: 1,
+      aggregationId: 3,
+    });
     const emitSpy = jest.spyOn(emitter, 'emit');
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(emitSpy).toHaveBeenCalledWith(
-      ZkVerifyEvents.AttestationBeforeExpected,
+      ZkVerifyEvents.AggregationBeforeExpected,
       {
         expectedId: 3,
         receivedId: 1,
@@ -88,13 +94,13 @@ describe('subscribeToNewAttestations', () => {
     );
   });
 
-  it('should emit AttestationConfirmed event when attestationId matches received', async () => {
+  it('should emit AggregationMatched event when aggregationId matches received', async () => {
     const events = [
       {
         event: {
-          section: 'poe',
-          method: 'NewAttestation',
-          data: ['2', 'attestationData'],
+          section: 'aggregate',
+          method: 'NewAggregationReceipt',
+          data: ['1', '2', '0xreceipt'],
         },
       },
     ];
@@ -106,31 +112,36 @@ describe('subscribeToNewAttestations', () => {
 
     api.query.system.events = mockEvents as any;
 
-    const emitter = subscribeToNewAttestations(api, callback, 2);
+    const emitter = subscribeToNewAggregationReceipts(api, callback, {
+      domainId: 1,
+      aggregationId: 2,
+    });
     const emitSpy = jest.spyOn(emitter, 'emit');
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(callback).toHaveBeenCalledWith({
-      id: 2,
-      attestation: 'attestationData',
+      domainId: 1,
+      aggregationId: 2,
+      receipt: '0xreceipt',
     });
 
-    expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.AttestationConfirmed, {
-      id: 2,
-      attestation: 'attestationData',
+    expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.AggregationMatched, {
+      domainId: 1,
+      aggregationId: 2,
+      receipt: '0xreceipt',
     });
 
     expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.Unsubscribe);
   });
 
-  it('should call callback without attestationId and not unsubscribe', async () => {
+  it('should call callback without aggregationId and not unsubscribe', async () => {
     const events = [
       {
         event: {
-          section: 'poe',
-          method: 'NewAttestation',
-          data: ['2', 'attestationData'],
+          section: 'aggregate',
+          method: 'NewAggregationReceipt',
+          data: ['1', '2', '0xaggregationReceipt'],
         },
       },
     ];
@@ -142,14 +153,15 @@ describe('subscribeToNewAttestations', () => {
 
     api.query.system.events = mockEvents as any;
 
-    const emitter = subscribeToNewAttestations(api, callback);
+    const emitter = subscribeToNewAggregationReceipts(api, callback);
     const emitSpy = jest.spyOn(emitter, 'emit');
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(callback).toHaveBeenCalledWith({
-      id: 2,
-      attestation: 'attestationData',
+      domainId: 1,
+      aggregationId: 2,
+      receipt: '0xaggregationReceipt',
     });
 
     expect(emitSpy).not.toHaveBeenCalledWith(ZkVerifyEvents.Unsubscribe);
@@ -161,7 +173,7 @@ describe('subscribeToNewAttestations', () => {
     const mockEvents = jest.fn().mockRejectedValue(error as never);
     api.query.system.events = mockEvents as any;
 
-    const emitter = subscribeToNewAttestations(api, callback);
+    const emitter = subscribeToNewAggregationReceipts(api, callback);
     const emitSpy = jest.spyOn(emitter, 'emit');
 
     await new Promise<void>((resolve) => {
@@ -175,9 +187,9 @@ describe('subscribeToNewAttestations', () => {
     const events = [
       {
         event: {
-          section: 'poe',
-          method: 'NewAttestation',
-          data: ['3', 'attestationData'],
+          section: 'aggregate',
+          method: 'NewAggregationReceipt',
+          data: ['1', '3', 'aggregationData'],
         },
       },
     ];
@@ -189,13 +201,16 @@ describe('subscribeToNewAttestations', () => {
 
     api.query.system.events = mockEvents as any;
 
-    const emitter = subscribeToNewAttestations(api, callback, 1);
+    const emitter = subscribeToNewAggregationReceipts(api, callback, {
+      domainId: 1,
+      aggregationId: 1,
+    });
     const emitSpy = jest.spyOn(emitter, 'emit');
     const removeListenersSpy = jest.spyOn(emitter, 'removeAllListeners');
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.AttestationMissed, {
+    expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.AggregationMissed, {
       expectedId: 1,
       receivedId: 3,
       event: events[0].event,
@@ -206,12 +221,22 @@ describe('subscribeToNewAttestations', () => {
     expect(removeListenersSpy).toHaveBeenCalled();
   });
 
-  it('unsubscribeFromNewAttestations should emit Unsubscribe event', async () => {
+  it('unsubscribeFromNewAggregationReceipts should emit Unsubscribe event', async () => {
     const emitter = new EventEmitter();
     const emitSpy = jest.spyOn(emitter, 'emit');
 
-    unsubscribeFromNewAttestations(emitter);
+    unsubscribeFromNewAggregationReceipts(emitter);
 
     expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.Unsubscribe);
+  });
+
+  it('should throw if aggregationId is provided without domainId', () => {
+    expect(() => {
+      subscribeToNewAggregationReceipts(api, callback, {
+        aggregationId: 1,
+      } as any);
+    }).toThrow(
+      'Cannot filter by aggregationId without also providing domainId.',
+    );
   });
 });

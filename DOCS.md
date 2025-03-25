@@ -5,8 +5,6 @@ The `zkverifyjs` package is a TypeScript library designed to facilitate sending 
 
 Currently the following proof verifiers are supported:
 
-* FFlonk
-
 * Groth16 (BN128, BN254, BLS12-381 elliptic curves)
   * Note - Must include `Library` and `CurveType` e.g. `.groth16(Library.gnark, CurveType.bn128)`
 
@@ -118,9 +116,8 @@ The zkVerifySession.verify method allows you to configure and execute a verifica
 ```typescript
 const { events, transactionResult } = await session
   .verify() // Optionally provide account address to verify("myaddress") if connected with multple accounts
-  .fflonk() // Select the proof type (e.g., fflonk)
+  .ultraplonk() // Select the proof type (e.g., ultraplonk)
   .nonce(1) // Set the nonce (optional)
-  .waitForPublishedAttestation() // Wait for the attestation to be published (optional)
   .withRegisteredVk() // Indicate that the verification key is already registered (optional)
   .execute({
     proofData: {
@@ -128,7 +125,7 @@ const { events, transactionResult } = await session
       proof: proof,
       publicSignals: publicSignals,
     },
-    domainId: 42, // Optional domain ID for proof categorization
+    domainId: 42, // Optional domain ID for proof aggregation
   }); // Execute the verification with the provided proof data
 ```
 
@@ -168,7 +165,7 @@ Register your Verification Key on chain and use it in future proof submissions b
 ```typescript
 const { events, transactionResult } = await session
   .registerVerificationKey()
-  .fflonk()
+  .ultraplonk()
   .execute(vk);
 const vkTransactionInfo: VKRegistrationTransactionInfo =
   await transactionResult;
@@ -176,7 +173,7 @@ const vkTransactionInfo: VKRegistrationTransactionInfo =
 const { events: verifyEvents, transactionResult: verifyTransactionResult } =
   await session
     .verify()
-    .fflonk()
+    .ultraplonk()
     .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
     .execute({
       proofData: {
@@ -197,7 +194,6 @@ You can listen for transaction events using the events emitter. Common events in
 
 * `includedInBlock`: Triggered when the transaction is included in a block.
 * `finalized`: Triggered when the transaction is finalized.
-* `attestationConfirmed`: Triggered when the NewElement event is raised by the zkVerify chain.
 * `error`: Triggered if an error occurs during the transaction process.
 
 ```typescript
@@ -210,7 +206,7 @@ const { events, transactionResult } = await session
       proof: proof,
       publicSignals: publicSignals,
     },
-    domainId: 42, // Optional domain ID for proof categorization
+    domainId: 42, // Optional domain ID for proof aggregation
   });
 
 events.on('includedInBlock', (eventData) => {
@@ -219,10 +215,6 @@ events.on('includedInBlock', (eventData) => {
 
 events.on('finalized', (eventData) => {
     console.log('Transaction finalized:', eventData);
-});
-
-events.on('attestationConfirmed', (eventData) => {
-    console.log('Attestation Event Raised:', eventData);
 });
 
 events.on('error', (error) => {
@@ -244,36 +236,64 @@ const { events, transactionResult } = await session
       proof: proof,
       publicSignals: publicSignals,
     },
-    domainId: 42, // Optional domain ID for proof categorization
+    domainId: 42, // Optional domain ID for proof aggregation
   });
 
 const result = await transactionResult;
 console.log('Final transaction result:', result);
 ```
 
-### Wait for the Attestation to be published
+### Domain Specific Proof Aggregation
 
-Wait for the NewElement event to be published before the transaction info is returned back by the promise. Occurs around every ~60s.
+* Proofs can be aggregated by sending them to a specified Domains `domainId`.
+* Domains are registered with the following properties:
+  * `aggregationSize`: Maximum number of proofs to aggregate.  An integer smaller equal than 128.
+  * `queueSize` The maximum number of aggregated proofs that can be waiting for publication.  An optional integer smaller equal than 16. 16 if it’s null
+* Once proofs are sent to a Domain and the `aggregationSize` is reached, aggregate and placed into the Publish Queue.
+* Published aggregations emit a `NewAggregationReceipt` containing the following:
+  * `domainId`:  The domain where the aggregation was published from.
+  * `aggregationId`: The aggregation identifier
+  * `receipt`: The aggregation receipt (a merkle root)
+
+These `NewAggregationReceipt` events can then trigger aggregations to be published to a destination chain.
+
+### Waiting for a published Proof Aggregation Receipt
+
+In order to wait for a published aggregation receipt event `NewAggregationReceipt` the `subscribe` feature can be used:
 
 ```typescript
-const { events, transactionResult } = await session
-  .verify()
-  .risc0()
-  .waitForPublishedAttestation()
-  .execute({
-    proofData: {
-      vk: vk,
-      proof: proof,
-      publicSignals: publicSignals,
-    },
-    domainId: 42, // Optional domain ID for proof categorization
-  });
+// Pre-registered domain
+const domainId = 1;
+// Start session
+const session = await zkVerifySession.start().Testnet().withAccount(process.env.seedPhrase);
 
-const transactionInfo: VerifyTransactionInfo = await transactionResult;
+const { events, transactionResult } = await session.verify().ultraplonk().execute({
+  proofData: {
+    proof: proofData.proof.proof,
+    publicSignals: proofData.proof.publicSignals,
+    vk: proofData.vk,
+  },
+  domainId,
+});
 
-console.log(transactionInfo.attestationConfirmed); // Expect 'true'
-console.log(JSON.stringify(transactionInfo.attestationEvent)) // Attestation Event details.
+events.on(ZkVerifyEvents.IncludedInBlock, (eventData: any) => {
+  aggregationId = eventData.aggregationId;
+});
+
+session.subscribe(
+        (newAggregationReceipt: NewAggregationReceipt) => {
+          console.log('Aggregation receipt received:', newAggregationReceipt);
+          receipt = newAggregationReceipt;
+        },
+        { domainId, aggregationId } // Listen for a specific domainId and aggregationId.
+);
+
+const transactionInfo = await transactionResult;
+
+// Do something with transactionInfo and receipt
 ```
+
+* Note:  Verify transactions sent without a `domainId` will not be aggregated, there will be no `NewAggregationReceipt` containing the proof.
 
 ### Optimistic Proof Verification
 
@@ -310,7 +330,7 @@ const { success, message } = session
   });
 ```
 
-### Domains (Aggregate Pallet)
+### Domain Management (Aggregate Pallet)
 
 It is possible to define a domain that has some properties and an owner.  The following flow shows how to register, hold and unregister a domain:
 
@@ -335,10 +355,6 @@ registerEvents.on(ZkVerifyEvents.Finalized, (eventData) => {
   console.log("Finalized");
 });
 
-registerEvents.on(ZkVerifyEvents.NewDomain, (eventData) => {
-  console.log("NewDomain");
-});
-
 registerEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
   console.log("ErrorEvent");
 });
@@ -348,7 +364,7 @@ const domainId = await domainIdPromise;
 
 // Hold a Domain
 // Without events
-const result = await session.unregisterDomain(domainId).result;
+const result = await session.unregisterDomain(domainId).done;
 // With events
 const { events: holdEvents, result: holdResult } = session.holdDomain(domainId);
 
@@ -361,10 +377,6 @@ holdEvents.on(ZkVerifyEvents.Finalized, (eventData) => {
   console.log("Finalized");
 });
 
-holdEvents.on(ZkVerifyEvents.DomainStateChanged, (eventData) => {
-  console.log("DomainStateChanged");
-});
-
 holdEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
   console.log("ErrorEvent");
 });
@@ -374,7 +386,7 @@ const wasSuccessful = await holdResult;
 
 // Unregister a Domain
 // Without events
-const result = await session.unregisterDomain(domainId).result;
+const result = await session.unregisterDomain(domainId).done;
 // With events
 const { events: unregisterEvents, result: unregisterResult } = session.unregisterDomain(domainId);
 
@@ -385,10 +397,6 @@ unregisterEvents.on(ZkVerifyEvents.IncludedInBlock, () => {
 
 unregisterEvents.on(ZkVerifyEvents.Finalized, () => {
     console.log("Finalized");
-});
-
-unregisterEvents.on(ZkVerifyEvents.DomainStateChanged, (eventData) => {
-    console.log("DomainStateChanged");
 });
 
 unregisterEvents.on(ZkVerifyEvents.ErrorEvent, () => {
@@ -430,7 +438,6 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
 
   // Execute the verification transaction on zkVerify chain
   const { events, transactionResult } = await session.verify().risc0()
-          .waitForPublishedAttestation()
           .execute({ proofData: {
               vk: vk,
               proof: proof,
@@ -513,9 +520,8 @@ await session.close();
 ```typescript
 const { events, transactionResult } = await session
   .verify()
-  .fflonk()
+  .ultraplonk()
   .nonce(1)
-  .waitForPublishedAttestation()
   .withRegisteredVk()
   .execute({
     proofData: {
@@ -528,12 +534,11 @@ const { events, transactionResult } = await session
 // .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
 ```
 
-* Proof Type: `.fflonk()` specifies the type of proof to be used. Options available for all supported proof types.
+* Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
 * Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
-* Attestation Option: `.waitForPublishedAttestation()` specifies that the transaction should wait for the attestation to be published before completing. This is optional.
 * Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
 * Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
-* Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result, including waiting for the `poe.NewElement` attestation confirmation if waitForPublishedAttestation is specified.
+* Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result.
 
 ### `zkVerifySession.optimisticVerify`
 
@@ -558,22 +563,11 @@ const { success, message } = session
 ### `zkVerifySession.registerVerificationKey`
 
 ```typescript
-const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
+const { events, transactionResult } = await session.registerVerificationKey().ultraplonk().execute(vk);
 ```
 
-* Proof Type: `.fflonk()` specifies the type of proof to be used. Options available for all supported proof types.
+* Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
 * Returns: A TransactionInfo object containing a statementHash  string.
-
-### `zkVerifySession.poe` (Proof of Existence)
-
-```typescript
-const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
-```
-
-* `attestationId`: A number representing the published attestation ID from which the proof path is to be retrieved.
-* `leafDigest`: A string representing the leaf digest to be used in the proof path retrieval.
-* `blockHash`: (Optional) A string representing the block hash at which the proof should be retrieved.
-* Returns: A Promise that resolves to a `MerkleProof` object containing the proof path details.
 
 ### `zkVerifySession.format`
 
@@ -698,14 +692,20 @@ const account2 = session.getAccount("myAccountAddress");
 * The account is used for signing transactions and interacting with the blockchain on behalf of the user.
 * If no account is associated with the session (i.e., the session is in read-only mode) or account searched for does not exist, this will error.
 
-### `zkVerifySession.subscribeToNewAttestations`
+### `zkVerifySession.subscribe`
 
 ```typescript
-session.subscribeToNewAttestations(callback, attestationId);
+session.subscribe(callback, options);
 ```
 
-* `callback`: A Function to be called whenever a NewAttestation event occurs. The function receives an AttestationEvent object as its argument.
-* `attestationId`:  (Optional) A string representing the attestation ID to filter events by. If provided, the subscription will automatically unsubscribe after receiving the specified attestation event.
+* `callback`: A Function to be called whenever a NewAggregationReceipt event occurs. The function receives an NewAggregationReceipt object as its argument.
+* `options`:  An optional `NewAggregationEventSubscriptionOption` object used to filter which NewAggregationReceipt events to listen to when subscribing.
+
+Usage:
+
+* `undefined`: Subscribe to all NewAggregationReceipt events across all domains.
+* `{ domainId }`: Subscribe to all receipts for a specific domain.
+* `{ domainId, aggregationId }`: Subscribe to a specific aggregation within a specific domain. Automatically unsubscribes after receiving the matching event.
 
 ### `zkVerifySession.unsubscribe`
 
@@ -713,44 +713,46 @@ session.subscribeToNewAttestations(callback, attestationId);
 session.unsubscribe();
 ```
 
-* This method unsubscribes from any active NewAttestation event subscriptions. It is used to stop listening for NewAttestation events when they are no longer needed.
+* This method unsubscribes from any active NewAggregationReceipt event subscriptions. It is used to stop listening for NewAggregationReceipt events when they are no longer needed.
 
 ### `zkVerifySession.registerDomain`
 
 ```typescript
-session.registerDomain(aggregationSize, queueSize);
+session.registerDomain(aggregationSize, queueSize, accountAddress?);
 ```
 
 * register a new domain where the owner is the signer that emits a new aggregation every aggregationSize proofs and where there could be at most  queueSize aggregation in waiting for publication state.
 
-- @param {number} aggregationSize - The size of the aggregation, integer equal to or less than 128.
-- @param {number} queueSize: an optional integer smaller equal than 16. 16 if it’s null.
-- Returns: `{ events: EventEmitter; domainIdPromise: Promise<number> }`
+- @param `{number}` aggregationSize - The size of the aggregation, integer equal to or less than 128.
+- @param `{number}` queueSize: an optional integer smaller equal than 16. 16 if it’s null.
+- @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
+- @returns `{ events: EventEmitter; domainIdPromise: Promise<number> }`
 
 Note: Need to hold the currency proportional to the size of aggregations and queue. The currency will be returned if the domain is unregistered
 
 ### `zkVerifySession.holdDomain`
 
 ```typescript
-session.holdDomain(domainId);
+session.holdDomain(domainId, accountAddress?);
 ```
 
 * put the domain in Hold or Removable state. The state depends if there are some statements that need to be aggregated yet in this domain;  in these states the domain doesn’t accept any other proof but it still remains active for aggregating till there are some aggregations to aggregate. Only the Domain’s owner and the manager can call it
 
-- @param {number} domainId - The ID of the domain to hold.
-- Returns: `{ events: EventEmitter; domainIdPromise: Promise<boolean> }`
+- @param `{number}` domainId - The ID of the domain to hold.
+- @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
+- Returns `{ events: EventEmitter; result: Promise<boolean> }`
 
 ### `zkVerifySession.unregisterDomain`
 
 ```typescript
-session.unregisterDomain(domainId);
+session.unregisterDomain(domainId, accountAddress?);
 ```
 
 * remove a registered domain in the "Removable" state, refund the owner with the held currency. If everything is ok it will emit a DomainStateChanged event with Removed state.
-  @param {number} domainId - The ID of the domain to unregister.
 
-- Returns: `{ events: EventEmitter; domainIdPromise: Promise<boolean> }`
-- An object containing an event emitter and a promise that resolves to a boolean indicating success.
+- @param `{number}` domainId - The ID of the domain to unregister.
+- @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
+- Returns `{ events: EventEmitter; result: Promise<boolean> }`
 
 ### `zkVerifySession.api`
 

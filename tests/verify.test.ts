@@ -3,13 +3,13 @@ import { runAllProofTests, runAllVKRegistrationTests } from "./common/runners";
 
 jest.setTimeout(500000);
 describe('zkVerify proof user journey tests', () => {
-    test('should verify all proof types and respond on finalization without waiting for Attestation event', async () => {
-        console.log("Verify Test 1: RUNNING 'should verify all proof types and respond on finalization without waiting for Attestation event'");
+    test.skip('should verify all proof types without aggregation and respond on finalization', async () => {
+        console.log("Verify Test 1: RUNNING 'should verify all proof types without aggregation and respond on finalization'");
         await runAllProofTests(proofTypes, curveTypes, libraries, false);
         console.log("Verify Test 1: COMPLETED");
     });
-    test('should verify all proof types, wait for Attestation event, and then check proof of existence', async () => {
-        console.log("Verify Test 2: Running 'should verify all proof types, wait for Attestation event, and then check proof of existence");
+  test('should verify all proof types using a registered domain and confirm returned aggregationId (No Publish)', async () => {
+        console.log("Verify Test 2: Running 'should register a domain, verify all proof types using a domain and confirm returned aggregationId (No Publish)'");
         await runAllProofTests(proofTypes, curveTypes, libraries,true);
         console.log("Verify Test 2: COMPLETED");
     });

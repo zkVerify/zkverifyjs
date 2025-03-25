@@ -1,10 +1,11 @@
 import {
-  subscribeToNewAttestations,
-  unsubscribeFromNewAttestations,
-} from '../../../api/attestation';
+  subscribeToNewAggregationReceipts,
+  unsubscribeFromNewAggregationReceipts,
+} from '../../../api/aggregation';
 import { EventEmitter } from 'events';
 import { ConnectionManager } from '../connection';
-import { AttestationEvent } from '../../../types';
+import { NewAggregationReceipt } from '../../../types';
+import { NewAggregationEventSubscriptionOptions } from '../../../api/aggregation/types';
 
 export class EventManager {
   private connectionManager: ConnectionManager;
@@ -15,29 +16,29 @@ export class EventManager {
   }
 
   /**
-   * Subscribes to NewAttestation events.
-   * @param {Function} callback - The function to call with the event data when a NewAttestation event occurs.
-   * @param {string} [attestationId] - Optional attestation ID to filter events by and unsubscribe after.
+   * Subscribes to NewAggregationReceipt events.
+   * @param {Function} callback - The function to call with the event data when a NewAggregationReceipt event occurs.
+   * @param options - NewAggregationEventSubscriptionOptions subscription options
    */
   subscribe(
-    callback: (data: AttestationEvent) => void,
-    attestationId?: number,
+    callback: (data: NewAggregationReceipt) => void,
+    options: NewAggregationEventSubscriptionOptions,
   ): EventEmitter {
-    this.emitter = subscribeToNewAttestations(
+    this.emitter = subscribeToNewAggregationReceipts(
       this.connectionManager.api,
       callback,
-      attestationId,
+      options,
     );
     return this.emitter;
   }
 
   /**
-   * Unsubscribes from NewAttestation events.
-   * Emits the 'unsubscribe' event which causes removeAllListeners() on the newAttestationEmitter
+   * Unsubscribes from NewAggregationReceipt events.
+   * Emits the 'unsubscribe' event which causes removeAllListeners()
    */
   unsubscribe(): void {
     if (this.emitter) {
-      unsubscribeFromNewAttestations(this.emitter);
+      unsubscribeFromNewAggregationReceipts(this.emitter);
     }
   }
 }

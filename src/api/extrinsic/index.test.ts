@@ -96,8 +96,8 @@ describe('extrinsic utilities', () => {
 
     it('should throw an error if the proof type is unsupported', () => {
       expect(() => {
-        createSubmitProofExtrinsic(mockApi, ProofType.fflonk, proofParams);
-      }).toThrow('Unsupported proof type: fflonk');
+        createSubmitProofExtrinsic(mockApi, ProofType.ultraplonk, proofParams);
+      }).toThrow('Unsupported proof type: ultraplonk');
     });
 
     it('should throw a formatted error if extrinsic creation fails', () => {
@@ -175,8 +175,8 @@ describe('extrinsic utilities', () => {
 
     it('should throw an error if proof type is unsupported in hex generation', () => {
       expect(() =>
-        createExtrinsicHex(mockApi, ProofType.fflonk, proofParams),
-      ).toThrow('Unsupported proof type: fflonk');
+        createExtrinsicHex(mockApi, ProofType.ultraplonk, proofParams),
+      ).toThrow('Unsupported proof type: ultraplonk');
     });
 
     it('should throw a formatted error if hex generation fails', () => {

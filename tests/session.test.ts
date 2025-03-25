@@ -1,4 +1,4 @@
-import { CurveType, Library, zkVerifySession } from '../src';
+import {CurveType, Library, SupportedNetwork, zkVerifySession} from '../src';
 import { EventEmitter } from 'events';
 import { ProofMethodMap } from "../src/session/builders/verify";
 import { walletPool } from './common/walletPool';
@@ -42,27 +42,27 @@ describe('zkVerifySession class', () => {
     });
 
     it('should establish a connection and close it successfully', async () => {
-        session = await zkVerifySession.start().Testnet().readOnly();
+        session = await zkVerifySession.start().Volta().readOnly();
         expect(session).toBeDefined();
         expect(session.api).toBeDefined();
         expect(session['provider']).toBeDefined();
     });
 
     it('should start a session in read-only mode when no seed phrase is provided', async () => {
-        session = await zkVerifySession.start().Testnet().readOnly();
+        session = await zkVerifySession.start().Volta().readOnly();
         expect(session.readOnly).toBe(true);
         expect(session.api).toBeDefined();
     });
 
     it('should start a session with an account when seed phrase is provided', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
-        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+        session = await zkVerifySession.start().Volta().withAccount(wallet);
         expect(session.readOnly).toBe(false);
         expect(session.api).toBeDefined();
     });
 
     it('should start a session with a custom WebSocket URL in read-only mode when no seed phrase is provided', async () => {
-        session = await zkVerifySession.start().Custom("wss://testnet-rpc.zkverify.io").readOnly();
+        session = await zkVerifySession.start().Custom(SupportedNetwork.Volta).readOnly();
         expect(session).toBeDefined();
         expect(session.readOnly).toBe(true);
         expect(session.api).toBeDefined();
@@ -71,7 +71,7 @@ describe('zkVerifySession class', () => {
 
     it('should start a session with a custom WebSocket URL and an account when seed phrase is provided', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
-        session = await zkVerifySession.start().Custom("wss://testnet-rpc.zkverify.io").withAccount(wallet);
+        session = await zkVerifySession.start().Custom(SupportedNetwork.Volta).withAccount(wallet);
         expect(session).toBeDefined();
         expect(session.readOnly).toBe(false);
         expect(session.api).toBeDefined();
@@ -80,7 +80,7 @@ describe('zkVerifySession class', () => {
 
     it('should correctly handle adding, removing, and re-adding an account', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
-        session = await zkVerifySession.start().Testnet().readOnly();
+        session = await zkVerifySession.start().Volta().readOnly();
         expect(session.readOnly).toBe(true);
 
         await session.addAccount(wallet);
@@ -98,7 +98,7 @@ describe('zkVerifySession class', () => {
 
     it('should throw an error when adding an account to a session that already has been added', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
-        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+        session = await zkVerifySession.start().Volta().withAccount(wallet);
 
         expect(session.readOnly).toBe(false);
         await expect(session.addAccount(wallet!))
@@ -107,7 +107,7 @@ describe('zkVerifySession class', () => {
 
     it('should throw an error when trying to remove a non-existent account', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
-        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+        session = await zkVerifySession.start().Volta().withAccount(wallet);
 
         const nonExistentAddress = '5FakeAddressDoesNotExist12345';
 
@@ -117,18 +117,18 @@ describe('zkVerifySession class', () => {
 
     it('should allow verification when an account is active', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
-        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+        session = await zkVerifySession.start().Volta().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
         const mockBuilder = {
-            fflonk: jest.fn(() => ({
+            ultraplonk: jest.fn(() => ({
                 execute: mockVerifyExecution
             })),
         } as unknown as ProofMethodMap;
 
         session.verify = jest.fn(() => mockBuilder);
 
-        const { events, transactionResult } = await session.verify().fflonk().execute({
+        const { events, transactionResult } = await session.verify().ultraplonk().execute({
             proofData: {
                 proof: 'proofData',
                 publicSignals: 'publicSignals',
@@ -142,7 +142,7 @@ describe('zkVerifySession class', () => {
 
     it('should return account information when an account is active', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
-        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+        session = await zkVerifySession.start().Volta().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
         const accountInfo = await session.getAccountInfo();
@@ -156,18 +156,18 @@ describe('zkVerifySession class', () => {
 
     it('should handle multiple verify calls concurrently', async () => {
             [envVar, wallet] = await walletPool.acquireWallet();
-            session = await zkVerifySession.start().Testnet().withAccount(wallet);
+            session = await zkVerifySession.start().Volta().withAccount(wallet);
             expect(session.readOnly).toBe(false);
 
             const mockBuilder = {
-                fflonk: jest.fn(() => ({ execute: mockVerifyExecution })),
+                ultraplonk: jest.fn(() => ({ execute: mockVerifyExecution })),
                 groth16: jest.fn(() => ({ execute: mockVerifyExecution })),
             } as unknown as ProofMethodMap;
 
             session.verify = jest.fn(() => mockBuilder);
 
             const [result1, result2] = await Promise.all([
-                session.verify().fflonk().execute({ proofData: {
+                session.verify().ultraplonk().execute({ proofData: {
                     proof: 'proofData',
                     publicSignals: 'publicSignals',
                     vk: 'vk'
@@ -190,7 +190,7 @@ describe('zkVerifySession class', () => {
     it('withAccounts should add only one account when attempting to add the same account twice', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
 
-        session = await zkVerifySession.start().Testnet().withAccounts([wallet, wallet])
+        session = await zkVerifySession.start().Volta().withAccounts([wallet, wallet])
 
         let accountsInfo = await session.getAccountInfo();
         expect(accountsInfo.length).toBe(1);
@@ -200,7 +200,7 @@ describe('zkVerifySession class', () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         [envVar2, wallet2] = await walletPool.acquireWallet();
 
-        session = await zkVerifySession.start().Testnet().withAccounts([wallet, wallet2]);
+        session = await zkVerifySession.start().Volta().withAccounts([wallet, wallet2]);
 
         let accountsInfo = await session.getAccountInfo();
 
@@ -226,16 +226,16 @@ describe('zkVerifySession class', () => {
     it('should handle setting nonces for multiple concurrent same-session calls', async () => {
         try {
             [envVar, wallet] = await walletPool.acquireWallet();
-            const proofData = loadProofAndVK({ proofType: ProofType.fflonk });
+            const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk });
 
-            session = await zkVerifySession.start().Testnet().withAccount(wallet);
+            session = await zkVerifySession.start().Volta().withAccount(wallet);
 
             const accountInfo = await session.getAccountInfo();
             const startingNonce = accountInfo[0].nonce;
 
             const [tx1, tx2] = await Promise.all([
                 (async () => {
-                    const { events, transactionResult } = await session.verify().fflonk().nonce(startingNonce).execute({
+                    const { events, transactionResult } = await session.verify().ultraplonk().nonce(startingNonce).execute({
                         proofData: {
                             proof: proofData.proof.proof,
                             publicSignals: proofData.proof.publicSignals,
@@ -246,7 +246,7 @@ describe('zkVerifySession class', () => {
                     return { events, transactionResult };
                 })(),
                 (async () => {
-                    const { events, transactionResult } = await session.verify().fflonk().nonce(startingNonce + 1).execute({
+                    const { events, transactionResult } = await session.verify().ultraplonk().nonce(startingNonce + 1).execute({
                         proofData: {
                             proof: proofData.proof.proof,
                             publicSignals: proofData.proof.publicSignals,

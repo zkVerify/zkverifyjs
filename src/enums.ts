@@ -19,15 +19,21 @@ export enum TransactionStatus {
 }
 
 export enum ZkVerifyEvents {
-  AttestationBeforeExpected = 'attestationBeforeExpected',
-  AttestationConfirmed = 'attestationConfirmed',
-  AttestationMissed = 'attestationMissed',
+  AggregationBeforeExpected = 'aggregationBeforeExpected',
+  AggregationComplete = 'aggregationComplete',
+  AggregationMatched = 'aggregationMatched',
+  AggregationMissed = 'aggregationMissed',
+  AggregationReceipt = 'aggregationReceipt',
   Broadcast = 'broadcast',
+  CannotAggregate = 'cannotAggregate',
+  DomainFull = 'domainFull',
   DomainStateChanged = 'domainStateChanged',
   ErrorEvent = 'error',
   Finalized = 'finalized',
   IncludedInBlock = 'includedInBlock',
   NewDomain = 'newDomain',
+  NewProof = 'newProof',
+  ProofVerified = 'proofVerified',
   Unsubscribe = 'unsubscribe',
 }
 

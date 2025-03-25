@@ -7,7 +7,6 @@ import {
 } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { TransactionInfo } from '../../types';
-import { waitForNewAttestationEvent } from '../helpers';
 import { handleTransactionEvents } from './events';
 import { VerifyOptions } from '../../session/types';
 import {
@@ -36,7 +35,6 @@ const handleInBlock = async <T extends TransactionType>(
   api: ApiPromise,
   events: SubmittableResult['events'],
   transactionInfo: TransactionInfoByType[T],
-  setAttestationId: (id: number | undefined) => void,
   emitter: EventEmitter,
   transactionType: T,
 ): Promise<void> => {
@@ -49,7 +47,6 @@ const handleInBlock = async <T extends TransactionType>(
     events,
     transactionInfo,
     emitter,
-    setAttestationId,
     transactionType,
   );
 
@@ -80,12 +77,15 @@ const handleFinalized = async <T extends TransactionType>(
     case TransactionType.Verify: {
       const info =
         transactionInfo as TransactionInfoByType[TransactionType.Verify];
-      if (info.attestationId) {
+      const hasDomainId = !!info.domainId;
+      const hasAggregationId = !!info.aggregationId;
+
+      if (!hasDomainId || hasAggregationId) {
         safeEmit(emitter, ZkVerifyEvents.Finalized, info);
       } else {
         safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
           ...info,
-          error: 'Finalized but no attestation ID found.',
+          error: 'Finalized but no aggregation ID found.',
         });
       }
       break;
@@ -166,9 +166,9 @@ const initializeTransactionInfo = <T extends TransactionType>(
       return {
         ...baseInfo,
         proofType: options.proofOptions?.proofType,
-        attestationId: undefined,
-        leafDigest: null,
-        attestationConfirmed: false,
+        domainId: options.domainId,
+        aggregationId: undefined,
+        statement: null,
       } as TransactionInfoByType[T];
 
     case TransactionType.VKRegistration:
@@ -240,27 +240,6 @@ export const handleTransaction = async <T extends TransactionType>(
           transactionType,
         );
 
-        if (
-          transactionType === TransactionType.Verify &&
-          options.waitForNewAttestationEvent
-        ) {
-          const verifyInfo =
-            transactionInfo as TransactionInfoByType[TransactionType.Verify];
-
-          if (verifyInfo.attestationId) {
-            try {
-              verifyInfo.attestationEvent = await waitForNewAttestationEvent(
-                api,
-                verifyInfo.attestationId,
-                emitter,
-              );
-              verifyInfo.attestationConfirmed = true;
-            } catch (error) {
-              cancelTransaction(error);
-            }
-          }
-        }
-
         resolve(transactionInfo);
       } catch (error) {
         cancelTransaction(error);
@@ -288,7 +267,6 @@ export const handleTransaction = async <T extends TransactionType>(
               api,
               result.events,
               transactionInfo,
-              () => {},
               emitter,
               transactionType,
             );

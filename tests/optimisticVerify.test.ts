@@ -45,7 +45,7 @@ describe('optimisticVerify functionality', () => {
     });
 
     it('should throw an error if optimisticVerify is called on a non-custom network', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(wallet!);
+        session = await zkVerifySession.start().Volta().withAccount(wallet!);
 
         const input = {
             proofData: {

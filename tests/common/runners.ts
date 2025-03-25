@@ -22,8 +22,7 @@ const logTestDetails = (proofOptions: ProofOptions, testType: string, version?: 
 export const runVerifyTest = async (
     session: zkVerifySession,
     proofOptions: ProofOptions,
-    withAttestation: boolean = false,
-    checkExistence: boolean = false,
+    withAggregation: boolean = false,
     version?: string
 ) => {
     let seedPhrase: string | undefined;
@@ -43,8 +42,7 @@ export const runVerifyTest = async (
             proof.proof,
             proof.publicSignals,
             vk,
-            withAttestation,
-            checkExistence,
+            withAggregation,
             version
         );
     } catch (error) {
@@ -140,15 +138,15 @@ export const runAllProofTests = async (
     proofTypes: ProofType[],
     curveTypes: CurveType[],
     libraries: Library[],
-    withAttestation: boolean
+    withAggregation: boolean
 ) => {
     let session: zkVerifySession | undefined;
 
     try {
-        session = await zkVerifySession.start().Testnet().readOnly();
+        session = await zkVerifySession.start().Volta().readOnly();
 
         const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, (proofOptions, version) =>
-            runVerifyTest(session!, proofOptions, withAttestation, false, version)
+            runVerifyTest(session!, proofOptions, withAggregation, version)
         );
 
         const results = await Promise.allSettled(testPromises);
@@ -172,7 +170,7 @@ export const runAllVKRegistrationTests = async (
     curveTypes: CurveType[],
     libraries: Library[]
 ) => {
-    const session = await zkVerifySession.start().Testnet().readOnly();
+    const session = await zkVerifySession.start().Volta().readOnly();
 
     try {
         const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, (proofOptions, version) =>

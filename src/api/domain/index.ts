@@ -1,6 +1,6 @@
 import { AccountConnection, WalletConnection } from '../connection/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { getSelectedAccount } from '../../utils/helpers';
+import { getKeyringAccountIfAvailable } from '../../utils/helpers';
 import EventEmitter from 'events';
 import { RegisterDomainTransactionInfo } from '../../types';
 import { VerifyOptions } from '../../session/types';
@@ -19,11 +19,10 @@ export const registerDomain = (
     throw new Error(`registerDomain queueSize must be between 1 and 16`);
 
   const { api } = connection;
-  let selectedAccount: KeyringPair | undefined;
-
-  if ('accounts' in connection) {
-    selectedAccount = getSelectedAccount(connection, accountAddress);
-  }
+  const selectedAccount: KeyringPair | undefined = getKeyringAccountIfAvailable(
+    connection,
+    accountAddress,
+  );
 
   const registerExtrinsic = api.tx.aggregate.registerDomain(
     aggregationSize,
@@ -85,21 +84,20 @@ export const holdDomain = (
   connection: AccountConnection | WalletConnection,
   domainId: number,
   accountAddress?: string,
-): { events: EventEmitter; result: Promise<boolean> } => {
+): { events: EventEmitter; done: Promise<void> } => {
   if (domainId < 0)
     throw new Error(`holdDomain domainId must be greater than 0`);
 
   const { api } = connection;
-  let selectedAccount: KeyringPair | undefined;
+  const selectedAccount: KeyringPair | undefined = getKeyringAccountIfAvailable(
+    connection,
+    accountAddress,
+  );
   const emitter = new EventEmitter();
-
-  if ('accounts' in connection) {
-    selectedAccount = getSelectedAccount(connection, accountAddress);
-  }
 
   const holdExtrinsic = api.tx.aggregate.holdDomain(domainId);
 
-  const result = new Promise<boolean>((resolve, reject) => {
+  const done = new Promise<void>((resolve, reject) => {
     (async () => {
       try {
         await (async () => {
@@ -130,37 +128,36 @@ export const holdDomain = (
         })();
 
         emitter.removeAllListeners();
-        resolve(true);
+        resolve();
       } catch (error) {
         emitter.emit(ZkVerifyEvents.ErrorEvent, error);
         emitter.removeAllListeners();
-        reject(false);
+        reject(error);
       }
     })();
   });
 
-  return { events: emitter, result };
+  return { events: emitter, done };
 };
 
 export const unregisterDomain = (
   connection: AccountConnection | WalletConnection,
   domainId: number,
   accountAddress?: string,
-): { events: EventEmitter; result: Promise<boolean> } => {
+): { events: EventEmitter; done: Promise<void> } => {
   if (domainId < 0)
     throw new Error(`unregisterDomain domainId must be greater than 0`);
 
   const { api } = connection;
-  let selectedAccount: KeyringPair | undefined;
+  const selectedAccount: KeyringPair | undefined = getKeyringAccountIfAvailable(
+    connection,
+    accountAddress,
+  );
   const emitter = new EventEmitter();
-
-  if ('accounts' in connection) {
-    selectedAccount = getSelectedAccount(connection, accountAddress);
-  }
 
   const unregisterExtrinsic = api.tx.aggregate.unregisterDomain(domainId);
 
-  const result = new Promise<boolean>((resolve, reject) => {
+  const done = new Promise<void>((resolve, reject) => {
     (async () => {
       try {
         await (async () => {
@@ -191,14 +188,14 @@ export const unregisterDomain = (
         })();
 
         emitter.removeAllListeners();
-        resolve(true);
+        resolve();
       } catch (error) {
         emitter.emit(ZkVerifyEvents.ErrorEvent, error);
         emitter.removeAllListeners();
-        reject(false);
+        reject(error);
       }
     })();
   });
 
-  return { events: emitter, result };
+  return { events: emitter, done };
 };

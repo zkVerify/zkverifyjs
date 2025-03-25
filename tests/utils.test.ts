@@ -12,7 +12,7 @@ describe('zkVerifySession - estimateCost', () => {
 
     beforeAll(async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
-        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+        session = await zkVerifySession.start().Volta().withAccount(wallet);
     });
 
     afterAll(async () => {
@@ -53,7 +53,7 @@ describe('zkVerifySession - estimateCost', () => {
 
     it('should throw an error when estimating cost in a read-only session', async () => {
         const extrinsic = await getTestExtrinsic();
-        const readOnlySession = await zkVerifySession.start().Testnet().readOnly();
+        const readOnlySession = await zkVerifySession.start().Volta().readOnly();
 
         try {
             await expect(readOnlySession.estimateCost(extrinsic)).rejects.toThrow(

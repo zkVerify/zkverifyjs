@@ -18,6 +18,7 @@ jest.mock('../../utils/helpers', () => ({
   getProofProcessor: jest.fn(),
   validateProofVersion: jest.fn(),
   getSelectedAccount: jest.fn(),
+  getKeyringAccountIfAvailable: jest.fn(),
 }));
 jest.mock('../../utils/transactions', () => ({
   handleTransaction: jest.fn(),
@@ -40,6 +41,12 @@ describe('verify', () => {
         jest.requireActual('../../utils/helpers').getSelectedAccount,
       );
 
+    jest
+      .spyOn(helpers, 'getKeyringAccountIfAvailable')
+      .mockImplementation(
+        jest.requireActual('../../utils/helpers').getKeyringAccountIfAvailable,
+      );
+
     mockAccountConnection = {
       api: { method: jest.fn() },
       provider: {},
@@ -57,7 +64,7 @@ describe('verify', () => {
 
     mockOptions = {
       proofOptions: {
-        proofType: ProofType.fflonk,
+        proofType: ProofType.groth16,
         library: Library.snarkjs,
         curve: CurveType.bls12381,
       },

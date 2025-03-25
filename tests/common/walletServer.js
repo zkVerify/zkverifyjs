@@ -41,14 +41,15 @@ async function initializeWallets() {
 
     console.log(`-- Wallet Pool Initialized -- `);
     console.log(`- Total Seed Phrases Found: ${total}`);
-    console.log(`- ✅---   Valid Wallets: ${valid}`);
-    console.log(`- ❌---   Invalid Wallets: ${invalidKeys.length}`);
+
+    console.log(`- ✅   Valid Wallets: ${valid}`);
+    console.log(`- ❌   Invalid Wallets: ${invalidKeys.length}`);
     if (invalidKeys.length > 0) {
         console.log(`- Invalid Env Keys: ${invalidKeys.join(', ')}`);
     }
 
     if (valid === 0) {
-        console.error("🚨---   No valid wallets available. Shutting down.");
+        console.error("🚨  No valid wallets available. Shutting down.");
         process.exit(1);
     }
 }

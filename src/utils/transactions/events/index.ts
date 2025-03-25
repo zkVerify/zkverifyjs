@@ -4,19 +4,21 @@ import { EventEmitter } from 'events';
 import { TransactionType } from '../../../enums';
 import { getProofPallet } from '../../helpers';
 import { TransactionInfoByType } from '../types';
-import { VKRegistrationTransactionInfo } from '../../../types';
+import {
+  VerifyTransactionInfo,
+  VKRegistrationTransactionInfo,
+} from '../../../types';
 
 export const handleTransactionEvents = <T extends TransactionType>(
   api: ApiPromise,
   events: SubmittableResult['events'],
   transactionInfo: TransactionInfoByType[T],
   emitter: EventEmitter,
-  setAttestationId: (id: number | undefined) => void,
   transactionType: T,
 ): TransactionInfoByType[T] => {
   let statementHash: string | undefined;
-  let attestationId: number | undefined = undefined;
-  let leafDigest: string | null = null;
+  let aggregationId: number | undefined = undefined;
+  let statement: string | undefined;
   let domainId: number | undefined;
   let domainState: string | undefined;
 
@@ -57,12 +59,22 @@ export const handleTransactionEvents = <T extends TransactionType>(
 
     if (
       transactionType === TransactionType.Verify &&
-      event.section === 'poe' &&
-      event.method === 'NewElement'
+      event.section ===
+        getProofPallet((transactionInfo as VerifyTransactionInfo).proofType) &&
+      event.method === 'ProofVerified'
     ) {
-      attestationId = Number(event.data[1]);
-      leafDigest = event.data[0].toString();
-      setAttestationId(attestationId);
+      statement = event.data[0].toString();
+    }
+
+    if (
+      transactionType === TransactionType.Verify &&
+      event.section === 'aggregate' &&
+      event.method === 'NewProof'
+    ) {
+      const [eventStatement, eventDomainId, eventAggregationId] = event.data;
+      statement = eventStatement.toString();
+      domainId = Number(eventDomainId.toString());
+      aggregationId = Number(eventAggregationId.toString());
     }
 
     if (
@@ -114,9 +126,9 @@ export const handleTransactionEvents = <T extends TransactionType>(
     case TransactionType.Verify:
       return {
         ...transactionInfo,
-        attestationId,
-        leafDigest,
-        attestationConfirmed: false,
+        statement,
+        domainId,
+        aggregationId,
       };
 
     case TransactionType.VKRegistration:

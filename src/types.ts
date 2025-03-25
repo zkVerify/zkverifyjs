@@ -34,10 +34,9 @@ export interface TransactionInfo {
 
 export interface VerifyTransactionInfo extends TransactionInfo {
   proofType: ProofType;
-  attestationId: number | undefined;
-  leafDigest: string | null;
-  attestationConfirmed: boolean;
-  attestationEvent?: AttestationEvent;
+  domainId: number | undefined;
+  aggregationId: number | undefined;
+  statement: string | null;
 }
 
 export interface VKRegistrationTransactionInfo extends TransactionInfo {
@@ -61,9 +60,10 @@ export interface AccountInfo {
   reservedBalance: string;
 }
 
-export interface AttestationEvent {
-  id: number;
-  attestation: string;
+export interface NewAggregationReceipt {
+  domainId: number;
+  aggregationId: number;
+  receipt: string;
 }
 
 export interface MerkleProof {

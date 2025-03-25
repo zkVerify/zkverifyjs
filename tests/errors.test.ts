@@ -39,7 +39,7 @@ describe('verify with bad data', () => {
         const badProof = { ...groth16Data.proof, pi_a: 'bad_data' };
         const { publicSignals, vk } = groth16Data;
 
-        session = await zkVerifySession.start().Testnet().withAccount(wallet!);
+        session = await zkVerifySession.start().Volta().withAccount(wallet!);
 
         let errorEventEmitted = false;
 
@@ -72,7 +72,7 @@ describe('verify with bad data', () => {
 
         const { proof, publicSignals, vk } = groth16Data;
 
-        session = await zkVerifySession.start().Testnet().withAccount(wallet!);
+        session = await zkVerifySession.start().Volta().withAccount(wallet!);
 
         let errorEventEmitted = false;
 

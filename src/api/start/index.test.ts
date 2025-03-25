@@ -56,7 +56,7 @@ describe('startSession', () => {
     (setupAccount as jest.Mock).mockReturnValue(mockAccount);
 
     mockOptions = {
-      host: SupportedNetwork.Testnet,
+      host: SupportedNetwork.Volta,
       seedPhrases: ['testSeedPhrase'],
       customWsUrl: 'ws://custom-url',
     };
@@ -82,7 +82,7 @@ describe('startSession', () => {
     Object.defineProperty(global, 'window', { value: {}, writable: true });
 
     mockOptions = {
-      host: SupportedNetwork.Testnet,
+      host: SupportedNetwork.Volta,
     };
 
     await expect(startSession(mockOptions)).rejects.toThrow(
@@ -94,7 +94,7 @@ describe('startSession', () => {
     (global as any).window = undefined;
 
     mockOptions = {
-      host: SupportedNetwork.Testnet,
+      host: SupportedNetwork.Volta,
       customWsUrl: 'ws://custom-url',
     };
 

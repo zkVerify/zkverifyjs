@@ -1,19 +1,19 @@
 import {
-    zkVerifySession,
+    CurveType,
+    Library,
+    ProofOptions,
     ProofType,
     TransactionStatus,
+    TransactionType,
     VerifyTransactionInfo,
-    VKRegistrationTransactionInfo, CurveType, Library, ProofOptions
+    VKRegistrationTransactionInfo,
+    zkVerifySession
 } from '../../src';
-import {
-    handleCommonEvents,
-    handleEventsWithAttestation,
-    EventResults,
-} from './eventHandlers';
+import {EventResults, handleCommonEvents,} from './eventHandlers';
 import path from "path";
 import fs from "fs";
 import { TransactionInfoByType } from "../../src/utils/transactions/types";
-import { TransactionType } from "../../src";
+import { ZkVerifyEvents } from "../../src";
 
 export interface ProofData {
     proof: any;
@@ -48,19 +48,11 @@ export const loadVerificationKey = (proofOptions: ProofOptions, version?: string
     return proofData.vk;
 };
 
-export const validateEventResults = (eventResults: EventResults, expectAttestation: boolean): void => {
+export const validateEventResults = (eventResults: EventResults): void => {
     expect(eventResults.broadcastEmitted).toBe(true);
     expect(eventResults.includedInBlockEmitted).toBe(true);
     expect(eventResults.finalizedEmitted).toBe(true);
     expect(eventResults.errorEventEmitted).toBe(false);
-
-    if (expectAttestation) {
-        expect(eventResults.attestationConfirmedEmitted).toBe(true);
-    } else {
-        expect(eventResults.attestationConfirmedEmitted).toBe(false);
-    }
-    expect(eventResults.attestationBeforeExpectedEmitted).toBe(false);
-    expect(eventResults.attestationMissedEmitted).toBe(false);
 };
 
 export const performVerifyTransaction = async (
@@ -70,10 +62,12 @@ export const performVerifyTransaction = async (
     proof: any,
     publicSignals: any,
     vk: string,
-    withAttestation: boolean,
-    validatePoe: boolean = false,
+    withAggregation: boolean,
     version?: string
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
+    // 0 = Volta / Ethereum Sepolia
+    const domainId: number | undefined = withAggregation ? 0 : undefined;
+
     try {
         console.log(
             `[IN PROGRESS] ${accountAddress} ${proofOptions.proofType}` +
@@ -83,11 +77,10 @@ export const performVerifyTransaction = async (
         );
 
         const verifyTransaction = async () => {
-            const verifier = session.verify(accountAddress)[proofOptions.proofType](
+            const verify = session.verify(accountAddress)[proofOptions.proofType](
                 proofOptions.library,
                 proofOptions.curve
             );
-            const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
 
             const { events, transactionResult } = await verify.execute({
                 proofData: {
@@ -96,11 +89,10 @@ export const performVerifyTransaction = async (
                     vk: vk,
                     version: version
                 },
+                domainId
             });
 
-            const eventResults = withAttestation
-                ? handleEventsWithAttestation(events, proofOptions.proofType, 'verify')
-                : handleCommonEvents(events, proofOptions.proofType, 'verify');
+            const eventResults = handleCommonEvents(events, proofOptions.proofType, TransactionType.Verify, withAggregation);
 
             console.log(
                 `[RESULT RECEIVED] ${accountAddress} ${proofOptions.proofType}` +
@@ -109,12 +101,23 @@ export const performVerifyTransaction = async (
             );
 
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
-            validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAttestation);
-            validateEventResults(eventResults, withAttestation);
+            console.log(
+                `[VALIDATING] ${accountAddress} ${proofOptions.proofType}` +
+                (version ? `:${version}` : '') +
+                ` validateVerifyTransactionInfo`
+            );
+            validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAggregation);
+            console.log(
+                `[VALIDATING] ${accountAddress} ${proofOptions.proofType}` +
+                (version ? `:${version}` : '') +
+                ` validateEventResults`
+            );
+            validateEventResults(eventResults);
 
-            if (validatePoe) {
-                await validatePoE(session, transactionInfo.attestationId!, transactionInfo.leafDigest!);
-            }
+            expect(transactionInfo.domainId).toBeGreaterThanOrEqual(0);
+            expect(transactionInfo.domainId).toBe(domainId);
+
+            //TODO: Publish aggregation call and checks
 
             return { eventResults, transactionInfo };
         };
@@ -157,12 +160,12 @@ export const performVKRegistrationAndVerification = async (
     const registerResults = handleCommonEvents(
         registerEvents,
         proofOptions.proofType,
-        'vkRegistration'
+        TransactionType.VKRegistration
     );
 
     const vkTransactionInfo: VKRegistrationTransactionInfo = await registerTransactionResult;
     validateVKRegistrationTransactionInfo(vkTransactionInfo, proofOptions.proofType);
-    validateEventResults(registerResults, false);
+    validateEventResults(registerResults);
 
     console.log(
         `${proofOptions.proofType} Executing verification using registered VK with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
@@ -181,11 +184,11 @@ export const performVKRegistrationAndVerification = async (
                 },
             });
 
-    const verifyResults = handleCommonEvents(verifyEvents, proofOptions.proofType, 'verify');
+    const verifyResults = handleCommonEvents(verifyEvents, proofOptions.proofType, TransactionType.Verify);
 
     const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
     validateVerifyTransactionInfo(verifyTransactionInfo, proofOptions.proofType, false);
-    validateEventResults(verifyResults, false);
+    validateEventResults(verifyResults);
 };
 
 export const validateTransactionInfo = (
@@ -193,34 +196,46 @@ export const validateTransactionInfo = (
     expectedProofType: string
 ): void => {
     expect(transactionInfo).toBeDefined();
-    expect(transactionInfo.blockHash).not.toBeNull();
+    expect(transactionInfo.blockHash).toBeDefined();
+    expect(typeof transactionInfo.blockHash).toBe('string');
+
     expect(transactionInfo.proofType).toBe(expectedProofType);
     expect(transactionInfo.status).toBe(TransactionStatus.Finalized);
+
     expect(transactionInfo.txHash).toBeDefined();
-    expect(transactionInfo.extrinsicIndex).toBeDefined();
+    expect(typeof transactionInfo.txHash).toBe('string');
+
+    expect(transactionInfo.extrinsicIndex).toBeGreaterThanOrEqual(0);
+
     expect(transactionInfo.feeInfo).toBeDefined();
+    expect(transactionInfo.feeInfo!.payer).toBeDefined();
+    expect(transactionInfo.feeInfo!.actualFee).toBeDefined();
+
     expect(transactionInfo.weightInfo).toBeDefined();
+    expect(transactionInfo.weightInfo!.refTime).toBeDefined();
+    expect(transactionInfo.weightInfo!.proofSize).toBeDefined();
+
     expect(transactionInfo.txClass).toBeDefined();
 };
 
 export const validateVerifyTransactionInfo = (
     transactionInfo: VerifyTransactionInfo,
     expectedProofType: string,
-    expectAttestation: boolean
+    expectAggregation: boolean
 ): void => {
     validateTransactionInfo(transactionInfo, expectedProofType);
 
-    expect(transactionInfo.attestationId).not.toBeNull();
-    expect(transactionInfo.leafDigest).not.toBeNull();
+    expect(transactionInfo.statement).toBeDefined();
+    expect(typeof transactionInfo.statement).toBe('string');
 
-    if(expectAttestation) {
-        expect(transactionInfo.attestationConfirmed).toBeTruthy();
-        expect(transactionInfo.attestationEvent).toBeDefined();
-        expect(transactionInfo.attestationEvent!.id).toBeDefined();
-        expect(transactionInfo.attestationEvent!.attestation).toBeDefined();
+    if (expectAggregation) {
+        expect(transactionInfo.domainId).toBeDefined();
+        expect(transactionInfo.aggregationId).toBeDefined();
+        expect(typeof transactionInfo.domainId).toBe('number');
+        expect(typeof transactionInfo.aggregationId).toBe('number');
     } else {
-        expect(transactionInfo.attestationConfirmed).toBeFalsy();
-        expect(transactionInfo.attestationEvent).not.toBeDefined();
+        expect(transactionInfo.domainId).toBeUndefined();
+        expect(transactionInfo.aggregationId).toBeUndefined();
     }
 };
 
@@ -230,20 +245,6 @@ export const validateVKRegistrationTransactionInfo = (
 ): void => {
     validateTransactionInfo(transactionInfo, expectedProofType);
     expect(transactionInfo.statementHash).toBeDefined();
-};
-
-export const validatePoE = async (
-    session: zkVerifySession,
-    attestationId: number,
-    leafDigest: string
-): Promise<void> => {
-    const proofDetails = await session.poe(attestationId, leafDigest);
-
-    expect(proofDetails).toBeDefined();
-    expect(proofDetails.root).toBeDefined();
-    expect(proofDetails.leafIndex).toBeGreaterThanOrEqual(0);
-    expect(proofDetails.numberOfLeaves).toBeGreaterThanOrEqual(0);
-    expect(proofDetails.leaf).toBeDefined();
 };
 
 export const loadProofAndVK = (proofOptions: ProofOptions, version?: string) => {
@@ -280,3 +281,108 @@ const retryWithDelay = async <T>(
     }
     throw new Error("Retries exhausted");
 };
+
+export const performRegisterDomain = async (
+    session: zkVerifySession,
+    aggregationSize: number,
+    queueSize: number,
+    accountAddress?: string
+): Promise<number> => {
+    const { events, domainIdPromise } = session.registerDomain(aggregationSize, queueSize, accountAddress);
+
+    const eventResults = handleCommonEvents(
+        events,
+        'Domain',
+        TransactionType.DomainRegistration
+    );
+
+    let newDomainId: number | undefined;
+    let domainAssertionError: Error | null = null;
+
+    events.on(ZkVerifyEvents.NewDomain, (data) => {
+        try {
+            expect(data.domainId).toBeGreaterThan(0);
+            newDomainId = data.domainId;
+        } catch (err) {
+            domainAssertionError = err as Error;
+        }
+    });
+
+    const domainId = await domainIdPromise;
+
+    expect(domainId).toBeGreaterThan(0);
+    expect(domainId).toBe(newDomainId);
+    expect(eventResults.errorEventEmitted).toBe(false);
+    expect(eventResults.finalizedEmitted).toBe(true);
+    expect(eventResults.includedInBlockEmitted).toBe(true);
+
+    return domainId;
+};
+
+export const performHoldDomain = async (
+    session: zkVerifySession,
+    domainId: number,
+    accountAddress?: string
+): Promise<void> => {
+    const { events, done } = session.holdDomain(domainId, accountAddress);
+
+    const eventResults = handleCommonEvents(
+        events,
+        'Domain',
+        TransactionType.DomainHold
+    );
+
+    let domainStateAssertionError: Error | null = null;
+
+    events.on(ZkVerifyEvents.DomainStateChanged, (data) => {
+        try {
+            expect(data.domainId).toBe(domainId);
+            expect(data.domainState).toBe('Hold');
+        } catch (error) {
+            domainStateAssertionError = error as Error;
+        }
+    });
+
+    await done;
+
+    if (domainStateAssertionError) throw domainStateAssertionError;
+
+    expect(eventResults.errorEventEmitted).toBe(false);
+    expect(eventResults.finalizedEmitted).toBe(true);
+    expect(eventResults.includedInBlockEmitted).toBe(true);
+};
+
+export const performUnregisterDomain = async (
+    session: zkVerifySession,
+    domainId: number,
+    accountAddress?: string
+): Promise<void> => {
+    const { events, done } = session.unregisterDomain(domainId, accountAddress);
+
+    const eventResults = handleCommonEvents(
+        events,
+        'Domain',
+        TransactionType.DomainUnregister
+    );
+
+    let assertionError: Error | null = null;
+
+    events.on(ZkVerifyEvents.DomainStateChanged, (data) => {
+        try {
+            expect(data.domainId).toBe(domainId);
+            expect(data.domainState).toBe('Removed');
+        } catch (e) {
+            assertionError = e as Error;
+        }
+    });
+
+    await done;
+
+    if (assertionError) throw assertionError;
+
+    expect(eventResults.errorEventEmitted).toBe(false);
+    expect(eventResults.finalizedEmitted).toBe(true);
+    expect(eventResults.includedInBlockEmitted).toBe(true);
+};
+
+// TODO Perform aggregation publish, check Domain State Changed event as well to confirm Removable after Hold call.

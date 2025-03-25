@@ -1,6 +1,5 @@
 import { ProofProcessor } from '../types';
 import {
-  FflonkProcessor,
   Groth16Processor,
   ProofOfSqlProcessor,
   Risc0Processor,
@@ -9,13 +8,13 @@ import {
 import { Risc0Version } from '../enums';
 
 export enum SupportedNetwork {
-  Testnet = 'wss://testnet-rpc.zkverify.io',
+  Volta = 'wss://volta-rpc.zkverify.io',
   Custom = 'custom',
+  Testnet = 'wss://testnet-rpc.zkverify.io',
   // ADD_NEW_SUPPORTED_NETWORK
 }
 
 export enum ProofType {
-  fflonk = 'fflonk',
   groth16 = 'groth16',
   risc0 = 'risc0',
   ultraplonk = 'ultraplonk',
@@ -43,13 +42,6 @@ interface ProofConfig {
 }
 
 export const proofConfigurations: Record<ProofType, ProofConfig> = {
-  [ProofType.fflonk]: {
-    pallet: 'settlementFFlonkPallet',
-    processor: FflonkProcessor,
-    supportedVersions: [],
-    requiresLibrary: false,
-    requiresCurve: false,
-  },
   [ProofType.groth16]: {
     pallet: 'settlementGroth16Pallet',
     processor: Groth16Processor,
