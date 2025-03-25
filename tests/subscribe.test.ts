@@ -39,7 +39,7 @@ describe('zkVerifySession class', () => {
             let receipt: NewAggregationReceipt | undefined;
 
             // Start session
-            const session = await zkVerifySession.start().Testnet().withAccount(process.env.seedPhrase);
+            session = await zkVerifySession.start().Volta().withAccount(wallet);
 
             const { events, transactionResult } = await session.verify().ultraplonk().execute({
                 proofData: {

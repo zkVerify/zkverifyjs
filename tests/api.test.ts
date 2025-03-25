@@ -6,7 +6,7 @@ describe('zkVerifySession Integration Test - Polkadot API', () => {
     let session: zkVerifySession;
 
     beforeAll(async () => {
-        session = await zkVerifySession.start().Testnet().readOnly();
+        session = await zkVerifySession.start().Volta().readOnly();
     });
 
     afterAll(async () => {

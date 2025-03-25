@@ -21,7 +21,7 @@ describe('zkVerifySession - accountInfo', () => {
 
         try {
             [envVar, wallet] = await walletPool.acquireWallet();
-            session = await zkVerifySession.start().Testnet().withAccount(wallet);
+            session = await zkVerifySession.start().Volta().withAccount(wallet);
 
             const accountInfo: AccountInfo[] = await session.getAccountInfo();
             expect(accountInfo).toBeDefined();
@@ -55,7 +55,7 @@ describe('zkVerifySession - accountInfo', () => {
 
         try {
             [envVar, wallet] = await walletPool.acquireWallet();
-            session = await zkVerifySession.start().Testnet().readOnly();
+            session = await zkVerifySession.start().Volta().readOnly();
 
             await expectSessionToBeReadOnly(session);
 

@@ -143,7 +143,7 @@ export const runAllProofTests = async (
     let session: zkVerifySession | undefined;
 
     try {
-        session = await zkVerifySession.start().Testnet().readOnly();
+        session = await zkVerifySession.start().Volta().readOnly();
 
         const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, (proofOptions, version) =>
             runVerifyTest(session!, proofOptions, withAggregation, version)
@@ -170,7 +170,7 @@ export const runAllVKRegistrationTests = async (
     curveTypes: CurveType[],
     libraries: Library[]
 ) => {
-    const session = await zkVerifySession.start().Testnet().readOnly();
+    const session = await zkVerifySession.start().Volta().readOnly();
 
     try {
         const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, (proofOptions, version) =>

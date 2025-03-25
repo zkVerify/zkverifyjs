@@ -11,6 +11,7 @@ jest.mock('../../config', () => ({
   SupportedNetwork: {
     Testnet: 'wss://testnet-rpc.zkverify.io',
     Custom: 'custom',
+    Volta: 'wss://volta-rpc.zkverify.io',
   },
 }));
 
@@ -55,10 +56,10 @@ describe('establishConnection', () => {
     );
   };
 
-  it('should establish a connection successfully on a predefined network (Testnet)', async () => {
-    const result = await establishConnection(SupportedNetwork.Testnet);
+  it('should establish a connection successfully on a predefined network (Volta)', async () => {
+    const result = await establishConnection(SupportedNetwork.Volta);
 
-    expect(WsProvider).toHaveBeenCalledWith(SupportedNetwork.Testnet);
+    expect(WsProvider).toHaveBeenCalledWith(SupportedNetwork.Volta);
     expectApiPromiseCreateToHaveBeenCalledWith();
     expect(waitForNodeToSync).toHaveBeenCalledWith(result.api);
     expect(result.api).toBeDefined();
@@ -87,7 +88,7 @@ describe('establishConnection', () => {
 
   it('should throw an error if a custom WebSocket URL is provided but the host is not custom', async () => {
     await expect(
-      establishConnection(SupportedNetwork.Testnet, 'ws://custom-url'),
+      establishConnection(SupportedNetwork.Volta, 'ws://custom-url'),
     ).rejects.toThrow(
       'Custom WebSocket URL provided. Please select "custom" as the host if you want to use a custom WebSocket endpoint.',
     );
@@ -98,15 +99,15 @@ describe('establishConnection', () => {
       new Error('API creation failed'),
     );
 
-    await expect(establishConnection(SupportedNetwork.Testnet)).rejects.toThrow(
-      'Failed to establish connection to wss://testnet-rpc.zkverify.io: API creation failed',
+    await expect(establishConnection(SupportedNetwork.Volta)).rejects.toThrow(
+      'Failed to establish connection to wss://volta-rpc.zkverify.io: API creation failed',
     );
   });
 
   it('should throw a generic error if an unknown error occurs during connection', async () => {
     mockApiPromiseCreate.mockRejectedValueOnce('Unknown error');
 
-    await expect(establishConnection(SupportedNetwork.Testnet)).rejects.toThrow(
+    await expect(establishConnection(SupportedNetwork.Volta)).rejects.toThrow(
       'Failed to establish connection due to an unknown error.',
     );
   });

@@ -65,6 +65,9 @@ export const performVerifyTransaction = async (
     withAggregation: boolean,
     version?: string
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
+    // 0 = Volta / Ethereum Sepolia
+    const domainId: number | undefined = withAggregation ? 0 : undefined;
+
     try {
         console.log(
             `[IN PROGRESS] ${accountAddress} ${proofOptions.proofType}` +
@@ -72,20 +75,6 @@ export const performVerifyTransaction = async (
             (proofOptions.library ? ` with library: ${proofOptions.library}` : '') +
             (proofOptions.curve ? ` with curve: ${proofOptions.curve}` : '')
         );
-
-        let domainId: number | undefined;
-
-        if(withAggregation) {
-            console.log(
-                `[REGISTER DOMAIN] ${accountAddress} ${proofOptions.proofType}` +
-                (version ? `:${version}` : '')
-            );
-            domainId = await performRegisterDomain(session, 1, 1, accountAddress);
-            console.log(
-                `[DOMAIN REGISTERED] ( ${domainId} ) ${accountAddress} ${proofOptions.proofType}` +
-                (version ? `:${version}` : '')
-            );
-        }
 
         const verifyTransaction = async () => {
             const verify = session.verify(accountAddress)[proofOptions.proofType](
@@ -125,24 +114,8 @@ export const performVerifyTransaction = async (
             );
             validateEventResults(eventResults);
 
-            // TODO: In order to hold and cause a removable state the queue needs publishing.  Requires aggregate adding to zkverifyjs.
-            // if(withAggregation && domainId !== undefined) {
-            //     console.log(
-            //         `[HOLD DOMAIN] ( ${domainId} ) ${accountAddress} ${proofOptions.proofType}` +
-            //         (version ? `:${version}` : '')
-            //     );
-            //     await performHoldDomain(session, domainId, accountAddress);
-            //     console.log(
-            //         `[UNREGISTER DOMAIN] ( ${domainId} ) ${accountAddress} ${proofOptions.proofType}` +
-            //         (version ? `:${version}` : '')
-            //     );
-            //     await performUnregisterDomain(session, domainId, accountAddress)
-            //     console.log(
-            //         `[UNREGISTER DOMAIN] ( ${domainId} ) ${accountAddress} ${proofOptions.proofType}` +
-            //         (version ? `:${version}` : '') +
-            //         ` SUCCESS`
-            //     );
-            // }
+            expect(transactionInfo.domainId).toBeGreaterThanOrEqual(0);
+            expect(transactionInfo.domainId).toBe(domainId);
 
             //TODO: Publish aggregation call and checks
 

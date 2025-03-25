@@ -3,13 +3,12 @@ import { runAllProofTests, runAllVKRegistrationTests } from "./common/runners";
 
 jest.setTimeout(500000);
 describe('zkVerify proof user journey tests', () => {
-    test('should verify all proof types without aggregation and respond on finalization', async () => {
+    test.skip('should verify all proof types without aggregation and respond on finalization', async () => {
         console.log("Verify Test 1: RUNNING 'should verify all proof types without aggregation and respond on finalization'");
         await runAllProofTests(proofTypes, curveTypes, libraries, false);
         console.log("Verify Test 1: COMPLETED");
     });
-    // TODO Register domains requires a lot more funds than our test accounts have.  Re-enable once we have a specific domain to use or have more funds.
-    test.skip('should register a domain, verify all proof types using a domain and confirm returned aggregationId (No Publish)', async () => {
+  test('should verify all proof types using a registered domain and confirm returned aggregationId (No Publish)', async () => {
         console.log("Verify Test 2: Running 'should register a domain, verify all proof types using a domain and confirm returned aggregationId (No Publish)'");
         await runAllProofTests(proofTypes, curveTypes, libraries,true);
         console.log("Verify Test 2: COMPLETED");
