@@ -24,13 +24,20 @@ export function subscribeToNewAggregationReceipts(
   options?: NewAggregationEventSubscriptionOptions,
 ): EventEmitter {
   const emitter = new EventEmitter();
-  const domainId = options?.domainId;
-  const aggregationId = (options as { aggregationId?: number })?.aggregationId;
+  let domainId: number | undefined;
+  let aggregationId: number | undefined;
 
-  if (aggregationId !== undefined && domainId === undefined) {
-    throw new Error(
-      'Cannot filter by aggregationId without also providing domainId.',
-    );
+  if (options && 'aggregationId' in options) {
+    domainId = options.domainId;
+    aggregationId = options.aggregationId;
+
+    if (domainId === undefined) {
+      throw new Error(
+        'Cannot filter by aggregationId without also providing domainId.',
+      );
+    }
+  } else if (options && 'domainId' in options) {
+    domainId = options.domainId;
   }
 
   api.query.system
@@ -55,18 +62,20 @@ export function subscribeToNewAggregationReceipts(
             return;
           }
 
-          if (domainId !== undefined && aggregationId === undefined) {
-            if (currentDomainId === domainId) {
-              callback({
-                domainId: currentDomainId,
-                aggregationId: currentAggregationId,
-                receipt,
-              });
-            }
+          if (
+            domainId !== undefined &&
+            aggregationId === undefined &&
+            currentDomainId === domainId
+          ) {
+            callback({
+              domainId: currentDomainId,
+              aggregationId: currentAggregationId,
+              receipt,
+            });
             return;
           }
 
-          if (currentAggregationId < aggregationId!) {
+          if (currentAggregationId < aggregationId) {
             emitter.emit(ZkVerifyEvents.AggregationBeforeExpected, {
               expectedId: aggregationId,
               receivedId: currentAggregationId,
@@ -75,8 +84,8 @@ export function subscribeToNewAggregationReceipts(
             return;
           }
 
-          if (currentAggregationId === aggregationId! + 1) {
-            scanLastNBlocksForReceipt(api, domainId!, aggregationId!, 30)
+          if (currentAggregationId === aggregationId + 1) {
+            scanLastNBlocksForReceipt(api, domainId!, aggregationId, 30)
               .then((found) => {
                 if (!found) {
                   emitter.emit(ZkVerifyEvents.AggregationMissed, {
@@ -94,7 +103,7 @@ export function subscribeToNewAggregationReceipts(
             return;
           }
 
-          if (currentAggregationId > aggregationId! + 1) {
+          if (currentAggregationId > aggregationId + 1) {
             emitter.emit(ZkVerifyEvents.AggregationMissed, {
               expectedId: aggregationId,
               receivedId: currentAggregationId,
