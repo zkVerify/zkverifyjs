@@ -41,6 +41,7 @@ async function initializeWallets() {
 
     console.log(`-- Wallet Pool Initialized -- `);
     console.log(`- Total Seed Phrases Found: ${total}`);
+
     console.log(`- ✅   Valid Wallets: ${valid}`);
     console.log(`- ❌   Invalid Wallets: ${invalidKeys.length}`);
     if (invalidKeys.length > 0) {

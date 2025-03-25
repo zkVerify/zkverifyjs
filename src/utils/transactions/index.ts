@@ -77,7 +77,6 @@ const handleFinalized = async <T extends TransactionType>(
     case TransactionType.Verify: {
       const info =
         transactionInfo as TransactionInfoByType[TransactionType.Verify];
-
       const hasDomainId = !!info.domainId;
       const hasAggregationId = !!info.aggregationId;
 
@@ -89,7 +88,6 @@ const handleFinalized = async <T extends TransactionType>(
           error: 'Finalized but no aggregation ID found.',
         });
       }
-
       break;
     }
 

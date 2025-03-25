@@ -60,5 +60,4 @@ describe('Domain interaction tests', () => {
         await performHoldDomain(session, domainId);
         await performUnregisterDomain(session, domainId);
     });
-
 });

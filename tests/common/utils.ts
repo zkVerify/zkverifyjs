@@ -13,7 +13,7 @@ import {EventResults, handleCommonEvents,} from './eventHandlers';
 import path from "path";
 import fs from "fs";
 import { TransactionInfoByType } from "../../src/utils/transactions/types";
-import { ZkVerifyEvents } from "../../src/enums";
+import { ZkVerifyEvents } from "../../src";
 
 export interface ProofData {
     proof: any;
