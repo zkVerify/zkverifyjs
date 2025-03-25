@@ -10,7 +10,7 @@ import { VerifyInput } from './types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { getSelectedAccount } from '../../utils/helpers';
+import { getKeyringAccountIfAvailable } from '../../utils/helpers';
 
 export const verify = async (
   connection: AccountConnection | WalletConnection,
@@ -22,9 +22,7 @@ export const verify = async (
 
   try {
     const selectedAccount: KeyringPair | undefined =
-      'accounts' in connection
-        ? getSelectedAccount(connection, options.accountAddress)
-        : undefined;
+      getKeyringAccountIfAvailable(connection, options.accountAddress);
 
     if (input.domainId != null) {
       options.domainId = input.domainId;

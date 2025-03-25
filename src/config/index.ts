@@ -8,8 +8,9 @@ import {
 import { Risc0Version } from '../enums';
 
 export enum SupportedNetwork {
-  Testnet = 'wss://testnet-rpc.zkverify.io',
+  Volta = 'wss://volta-rpc.zkverify.io',
   Custom = 'custom',
+  Testnet = 'wss://testnet-rpc.zkverify.io',
   // ADD_NEW_SUPPORTED_NETWORK
 }
 

@@ -249,3 +249,23 @@ export const getSelectedAccount = (
 
   return selectedAccount;
 };
+
+/**
+ * Retrieves the selected `KeyringPair` from the given connection if it is an `AccountConnection`.
+ *
+ * - If the connection has local `accounts` (i.e., it's an `AccountConnection`), it uses the provided `accountAddress`
+ *   to select the appropriate account via `getSelectedAccount`.
+ * - If the connection is a `WalletConnection`, returns `undefined`.
+ *
+ * @param {AccountConnection | WalletConnection} connection - The connection object which may contain accounts.
+ * @param {string} [accountAddress] - Optional address of the account to select.
+ * @returns {KeyringPair | undefined} - The selected `KeyringPair` if available, otherwise `undefined`.
+ */
+export function getKeyringAccountIfAvailable(
+  connection: AccountConnection | WalletConnection,
+  accountAddress?: string,
+): KeyringPair | undefined {
+  return 'accounts' in connection
+    ? getSelectedAccount(connection, accountAddress)
+    : undefined;
+}

@@ -8,7 +8,8 @@ describe('zkVerify proof user journey tests', () => {
         await runAllProofTests(proofTypes, curveTypes, libraries, false);
         console.log("Verify Test 1: COMPLETED");
     });
-    test('should register a domain, verify all proof types using a domain and confirm returned aggregationId (No Publish)', async () => {
+    // TODO Register domains requires a lot more funds than our test accounts have.  Re-enable once we have a specific domain to use or have more funds.
+    test.skip('should register a domain, verify all proof types using a domain and confirm returned aggregationId (No Publish)', async () => {
         console.log("Verify Test 2: Running 'should register a domain, verify all proof types using a domain and confirm returned aggregationId (No Publish)'");
         await runAllProofTests(proofTypes, curveTypes, libraries,true);
         console.log("Verify Test 2: COMPLETED");

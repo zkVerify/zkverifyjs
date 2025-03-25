@@ -27,6 +27,7 @@ export class DomainManager {
    * Registers a new domain with the given aggregation and queue sizes.
    * @param {number} aggregationSize - The size of the aggregation.
    * @param {number} [queueSize=16] - The queue size (default is 16).
+   * @param accountAddress - optional address of the account making the transaction
    * @returns {{ events: EventEmitter; domainIdPromise: Promise<number> }}
    * An object containing an event emitter and a promise that resolves to the domain ID.
    * @throws {Error} If the connection is read-only.
@@ -34,6 +35,7 @@ export class DomainManager {
   registerDomain(
     aggregationSize: number,
     queueSize: number = 16,
+    accountAddress?: string,
   ): { events: EventEmitter; domainIdPromise: Promise<number> } {
     checkReadOnly(this.connectionManager.connectionDetails);
 
@@ -43,19 +45,24 @@ export class DomainManager {
         | WalletConnection,
       aggregationSize,
       queueSize,
+      accountAddress,
     );
   }
 
   /**
    * Places a hold on a domain.
    * @param {number} domainId - The ID of the domain to hold.
+   * @param accountAddress - optional address of the account making the transaction
    * @returns {{ events: EventEmitter; result: Promise<boolean> }}
-   * An object containing an event emitter and a promise that resolves to a boolean indicating success.
+   * An object containing an event emitter and a promise that resolves when the call completes.
    * @throws {Error} If the connection is read-only.
    */
-  holdDomain(domainId: number): {
+  holdDomain(
+    domainId: number,
+    accountAddress?: string,
+  ): {
     events: EventEmitter;
-    result: Promise<boolean>;
+    done: Promise<void>;
   } {
     checkReadOnly(this.connectionManager.connectionDetails);
 
@@ -64,19 +71,24 @@ export class DomainManager {
         | AccountConnection
         | WalletConnection,
       domainId,
+      accountAddress,
     );
   }
 
   /**
    * Unregisters a domain.
    * @param {number} domainId - The ID of the domain to unregister.
-   * @returns {{ events: EventEmitter; result: Promise<boolean> }}
-   * An object containing an event emitter and a promise that resolves to a boolean indicating success.
+   * @param accountAddress - optional address of the account making the transaction
+   * @returns {{ events: EventEmitter; done: Promise<void> }}
+   * An object containing an event emitter and a promise that resolves when the call completes.
    * @throws {Error} If the connection is read-only.
    */
-  unregisterDomain(domainId: number): {
+  unregisterDomain(
+    domainId: number,
+    accountAddress?: string,
+  ): {
     events: EventEmitter;
-    result: Promise<boolean>;
+    done: Promise<void>;
   } {
     checkReadOnly(this.connectionManager.connectionDetails);
 
@@ -85,6 +97,7 @@ export class DomainManager {
         | AccountConnection
         | WalletConnection,
       domainId,
+      accountAddress,
     );
   }
 }

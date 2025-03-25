@@ -76,7 +76,15 @@ export const performVerifyTransaction = async (
         let domainId: number | undefined;
 
         if(withAggregation) {
-            domainId = await performRegisterDomain(session, 1, 2);
+            console.log(
+                `[REGISTER DOMAIN] ${accountAddress} ${proofOptions.proofType}` +
+                (version ? `:${version}` : '')
+            );
+            domainId = await performRegisterDomain(session, 1, 1, accountAddress);
+            console.log(
+                `[DOMAIN REGISTERED] ( ${domainId} ) ${accountAddress} ${proofOptions.proofType}` +
+                (version ? `:${version}` : '')
+            );
         }
 
         const verifyTransaction = async () => {
@@ -104,15 +112,39 @@ export const performVerifyTransaction = async (
             );
 
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
+            console.log(
+                `[VALIDATING] ${accountAddress} ${proofOptions.proofType}` +
+                (version ? `:${version}` : '') +
+                ` validateVerifyTransactionInfo`
+            );
             validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAggregation);
+            console.log(
+                `[VALIDATING] ${accountAddress} ${proofOptions.proofType}` +
+                (version ? `:${version}` : '') +
+                ` validateEventResults`
+            );
             validateEventResults(eventResults);
 
-            //TODO: Add this back when we are able to publish aggregations
-
-            // if(domainId !== undefined) {
-            //     await performHoldDomain(session, domainId);
-            //     await performUnregisterDomain(session, domainId);
+            // TODO: In order to hold and cause a removable state the queue needs publishing.  Requires aggregate adding to zkverifyjs.
+            // if(withAggregation && domainId !== undefined) {
+            //     console.log(
+            //         `[HOLD DOMAIN] ( ${domainId} ) ${accountAddress} ${proofOptions.proofType}` +
+            //         (version ? `:${version}` : '')
+            //     );
+            //     await performHoldDomain(session, domainId, accountAddress);
+            //     console.log(
+            //         `[UNREGISTER DOMAIN] ( ${domainId} ) ${accountAddress} ${proofOptions.proofType}` +
+            //         (version ? `:${version}` : '')
+            //     );
+            //     await performUnregisterDomain(session, domainId, accountAddress)
+            //     console.log(
+            //         `[UNREGISTER DOMAIN] ( ${domainId} ) ${accountAddress} ${proofOptions.proofType}` +
+            //         (version ? `:${version}` : '') +
+            //         ` SUCCESS`
+            //     );
             // }
+
+            //TODO: Publish aggregation call and checks
 
             return { eventResults, transactionInfo };
         };
@@ -277,13 +309,13 @@ const retryWithDelay = async <T>(
     throw new Error("Retries exhausted");
 };
 
-
 export const performRegisterDomain = async (
     session: zkVerifySession,
     aggregationSize: number,
-    queueSize: number
+    queueSize: number,
+    accountAddress?: string
 ): Promise<number> => {
-    const { events, domainIdPromise } = session.registerDomain(aggregationSize, queueSize);
+    const { events, domainIdPromise } = session.registerDomain(aggregationSize, queueSize, accountAddress);
 
     const eventResults = handleCommonEvents(
         events,
@@ -314,12 +346,12 @@ export const performRegisterDomain = async (
     return domainId;
 };
 
-
 export const performHoldDomain = async (
     session: zkVerifySession,
-    domainId: number
+    domainId: number,
+    accountAddress?: string
 ): Promise<void> => {
-    const { events, result } = session.holdDomain(domainId);
+    const { events, done } = session.holdDomain(domainId, accountAddress);
 
     const eventResults = handleCommonEvents(
         events,
@@ -332,14 +364,13 @@ export const performHoldDomain = async (
     events.on(ZkVerifyEvents.DomainStateChanged, (data) => {
         try {
             expect(data.domainId).toBe(domainId);
-            expect(data.domainState).toBe('Removable');
+            expect(data.domainState).toBe('Hold');
         } catch (error) {
             domainStateAssertionError = error as Error;
         }
     });
 
-    const success = await result;
-    expect(success).toBe(true);
+    await done;
 
     if (domainStateAssertionError) throw domainStateAssertionError;
 
@@ -350,9 +381,10 @@ export const performHoldDomain = async (
 
 export const performUnregisterDomain = async (
     session: zkVerifySession,
-    domainId: number
+    domainId: number,
+    accountAddress?: string
 ): Promise<void> => {
-    const { events, result } = session.unregisterDomain(domainId);
+    const { events, done } = session.unregisterDomain(domainId, accountAddress);
 
     const eventResults = handleCommonEvents(
         events,
@@ -371,8 +403,7 @@ export const performUnregisterDomain = async (
         }
     });
 
-    const success = await result;
-    expect(success).toBe(true);
+    await done;
 
     if (assertionError) throw assertionError;
 
@@ -381,3 +412,4 @@ export const performUnregisterDomain = async (
     expect(eventResults.includedInBlockEmitted).toBe(true);
 };
 
+// TODO Perform aggregation publish, check Domain State Changed event as well to confirm Removable after Hold call.

@@ -36,7 +36,7 @@ describe('Domain interaction tests', () => {
         }
 
         try {
-            await session.unregisterDomain(9999999992).result;
+            await session.unregisterDomain(9999999992).done;
             fail("Expected an error but none was thrown.");
         } catch (error) {
             expect(error).toBeInstanceOf(Error);
@@ -44,7 +44,7 @@ describe('Domain interaction tests', () => {
         }
 
         try {
-            await session.holdDomain(9999993).result;
+            await session.holdDomain(9999993).done;
             fail("Expected an error but none was thrown.");
         } catch (error) {
             expect(error).toBeInstanceOf(Error);

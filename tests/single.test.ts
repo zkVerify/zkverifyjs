@@ -38,7 +38,7 @@ describe('zkVerifySession class', () => {
             [envVar, wallet] = await walletPool.acquireWallet();
             const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk });
 
-            session = await zkVerifySession.start().Testnet().withAccount(wallet);
+            session = await zkVerifySession.start().Volta().withAccount(wallet);
 
             if(expectAggregation) {
                 domainId = await performRegisterDomain(session, 1, 1);
