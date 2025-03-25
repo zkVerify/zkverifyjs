@@ -723,9 +723,9 @@ session.registerDomain(aggregationSize, queueSize, accountAddress?);
 
 * register a new domain where the owner is the signer that emits a new aggregation every aggregationSize proofs and where there could be at most  queueSize aggregation in waiting for publication state.
 
-- @param {number} aggregationSize - The size of the aggregation, integer equal to or less than 128.
-- @param {number} queueSize: an optional integer smaller equal than 16. 16 if it’s null.
-- @param {number} accountAddress - Optionally provide an account address attached to the session to send the transaction from.
+- @param `{number}` aggregationSize - The size of the aggregation, integer equal to or less than 128.
+- @param `{number}` queueSize: an optional integer smaller equal than 16. 16 if it’s null.
+- @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
 - @returns `{ events: EventEmitter; domainIdPromise: Promise<number> }`
 
 Note: Need to hold the currency proportional to the size of aggregations and queue. The currency will be returned if the domain is unregistered
@@ -738,8 +738,8 @@ session.holdDomain(domainId, accountAddress?);
 
 * put the domain in Hold or Removable state. The state depends if there are some statements that need to be aggregated yet in this domain;  in these states the domain doesn’t accept any other proof but it still remains active for aggregating till there are some aggregations to aggregate. Only the Domain’s owner and the manager can call it
 
-- @param {number} domainId - The ID of the domain to hold.
-- @param {number} accountAddress - Optionally provide an account address attached to the session to send the transaction from.
+- @param `{number}` domainId - The ID of the domain to hold.
+- @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
 - Returns `{ events: EventEmitter; result: Promise<boolean> }`
 
 ### `zkVerifySession.unregisterDomain`
@@ -750,8 +750,8 @@ session.unregisterDomain(domainId, accountAddress?);
 
 * remove a registered domain in the "Removable" state, refund the owner with the held currency. If everything is ok it will emit a DomainStateChanged event with Removed state.
 
-- @param {number} domainId - The ID of the domain to unregister.
-- @param {number} accountAddress - Optionally provide an account address attached to the session to send the transaction from.
+- @param `{number}` domainId - The ID of the domain to unregister.
+- @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
 - Returns `{ events: EventEmitter; result: Promise<boolean> }`
 
 ### `zkVerifySession.api`
