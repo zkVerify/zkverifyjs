@@ -11,6 +11,7 @@ import {
   AccountConnection,
   WalletConnection,
 } from '../../../api/connection/types';
+import { DomainOptions } from '../../../types';
 
 export class DomainManager {
   private readonly connectionManager: ConnectionManager;
@@ -24,18 +25,21 @@ export class DomainManager {
   }
 
   /**
-   * Registers a new domain with the given aggregation and queue sizes.
-   * @param {number} aggregationSize - The size of the aggregation.
-   * @param {number} [queueSize=16] - The queue size (default is 16).
-   * @param accountAddress - optional address of the account making the transaction
-   * @returns {{ events: EventEmitter; domainIdPromise: Promise<number> }}
-   * An object containing an event emitter and a promise that resolves to the domain ID.
-   * @throws {Error} If the connection is read-only.
+   * Registers a new domain with the given configuration.
+   *
+   * @param aggregationSize - Number of statements per aggregation.
+   * @param queueSize - Max number of aggregations in the queue (default is 16).
+   * @param domainOptions - options object containing additional params such as destination and security rules.
+   * @param signerAccount - Optional address of the account signing the transaction if multiple have been added to the session.
+   *
+   * @returns An object with an EventEmitter and a domain ID promise.
+   * @throws {Error} If the session is read-only.
    */
   registerDomain(
     aggregationSize: number,
     queueSize: number = 16,
-    accountAddress?: string,
+    domainOptions: DomainOptions,
+    signerAccount?: string,
   ): { events: EventEmitter; domainIdPromise: Promise<number> } {
     checkReadOnly(this.connectionManager.connectionDetails);
 
@@ -45,7 +49,8 @@ export class DomainManager {
         | WalletConnection,
       aggregationSize,
       queueSize,
-      accountAddress,
+      domainOptions,
+      signerAccount,
     );
   }
 

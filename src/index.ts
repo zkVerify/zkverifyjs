@@ -11,6 +11,8 @@ export {
   TransactionStatus,
   TransactionType,
   Risc0Version,
+  AggregateSecurityRules,
+  Destination,
 } from './enums';
 export {
   ProofData,
@@ -24,6 +26,9 @@ export {
   NewAggregationReceipt,
   NetworkConfig,
   CustomNetworkConfig,
+  Delivery,
+  DeliveryInput,
+  DomainOptions,
 } from './types';
 export { ExtrinsicCostEstimate } from './api/estimate/types';
 export { FormattedProofData } from './api/format/types';

@@ -1,6 +1,7 @@
 import { zkVerifySession } from '../src';
 import { walletPool } from './common/walletPool';
 import { performHoldDomain, performRegisterDomain, performUnregisterDomain } from "./common/utils";
+import { AggregateSecurityRules, Destination } from "../src/enums";
 
 jest.setTimeout(120000);
 describe('Domain interaction tests', () => {
@@ -28,7 +29,7 @@ describe('Domain interaction tests', () => {
         session = await zkVerifySession.start().Volta().readOnly();
 
         try {
-            await session.registerDomain(1, 1).domainIdPromise;
+            await session.registerDomain(1, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted }).domainIdPromise;
             fail("Expected an error but none was thrown.");
         } catch (error) {
             expect(error).toBeInstanceOf(Error);
@@ -52,13 +53,12 @@ describe('Domain interaction tests', () => {
         }
     });
 
-    // TODO:  Seems to be a change to number of inputs for registering a domain.
-    it.skip('should register, hold, and unregister a domain', async () => {
+    it('should register, hold, and unregister a domain', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Volta().withAccount(wallet);
 
-        const domainId = await performRegisterDomain(session, 1, 2);
-        await performHoldDomain(session, domainId);
+        const domainId = await performRegisterDomain(session, 1, 2, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted});
+        await performHoldDomain(session, domainId, true);
         await performUnregisterDomain(session, domainId);
     });
 });

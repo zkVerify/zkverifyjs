@@ -1,8 +1,11 @@
 import { AccountConnection, WalletConnection } from '../connection/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { getKeyringAccountIfAvailable } from '../../utils/helpers';
+import {
+  getKeyringAccountIfAvailable,
+  normalizeDeliveryFromOptions,
+} from '../../utils/helpers';
 import EventEmitter from 'events';
-import { RegisterDomainTransactionInfo } from '../../types';
+import { DomainOptions, RegisterDomainTransactionInfo } from '../../types';
 import { VerifyOptions } from '../../session/types';
 import { handleTransaction } from '../../utils/transactions';
 import { KeyringPair } from '@polkadot/keyring/types';
@@ -11,22 +14,32 @@ export const registerDomain = (
   connection: AccountConnection | WalletConnection,
   aggregationSize: number,
   queueSize: number = 16,
-  accountAddress?: string,
+  domainOptions: DomainOptions,
+  signerAccount?: string,
 ): { events: EventEmitter; domainIdPromise: Promise<number> } => {
   if (aggregationSize <= 0 || aggregationSize > 128)
     throw new Error(`registerDomain aggregationSize must be between 1 and 128`);
   if (queueSize <= 0 || queueSize > 16)
     throw new Error(`registerDomain queueSize must be between 1 and 16`);
+  if (domainOptions.aggregateRules === undefined)
+    throw new Error(
+      `registerDomain deliveryOptions.aggregateRules must be defined`,
+    );
+
+  const delivery = normalizeDeliveryFromOptions(domainOptions);
 
   const { api } = connection;
   const selectedAccount: KeyringPair | undefined = getKeyringAccountIfAvailable(
     connection,
-    accountAddress,
+    signerAccount,
   );
 
   const registerExtrinsic = api.tx.aggregate.registerDomain(
     aggregationSize,
     queueSize,
+    domainOptions.aggregateRules,
+    delivery,
+    domainOptions.deliveryOwner,
   );
 
   const emitter = new EventEmitter();

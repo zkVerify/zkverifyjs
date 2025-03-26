@@ -351,9 +351,9 @@ session = await zkVerifySession
 
 // Register a Domain
 // Without needing events
-const domainId = await session.registerDomain(1, 1).domainIdPromise
+const domainId = await session.registerDomain(1, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted }).domainIdPromise
 // If you want to listen to events and also get the domainIdPromise
-const { events: registerEvents, domainIdPromise } = session.registerDomain(1, 2);
+const { events: registerEvents, domainIdPromise } = session.registerDomain(1, 2, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted });
 
 // Listen for events if needed
 registerEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
@@ -733,13 +733,14 @@ session.unsubscribe();
 ### `zkVerifySession.registerDomain`
 
 ```typescript
-session.registerDomain(aggregationSize, queueSize, accountAddress?);
+session.registerDomain(aggregationSize, queueSize, domainOptions, accountAddress?);
 ```
 
 * register a new domain where the owner is the signer that emits a new aggregation every aggregationSize proofs and where there could be at most  queueSize aggregation in waiting for publication state.
 
 - @param `{number}` aggregationSize - The size of the aggregation, integer equal to or less than 128.
 - @param `{number}` queueSize: an optional integer smaller equal than 16. 16 if it’s null.
+- @param `{DomainOptions}` domainOptions: additional options required to register the domain.
 - @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
 - @returns `{ events: EventEmitter; domainIdPromise: Promise<number> }`
 

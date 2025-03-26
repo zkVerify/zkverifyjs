@@ -42,3 +42,14 @@ export enum Risc0Version {
   V1_1 = 'V1_1',
   V1_2 = 'V1_2',
 }
+
+export enum AggregateSecurityRules {
+  Untrusted = 'Untrusted',
+  OnlyOwner = 'OnlyOwner',
+  OnlyOwnerUncompleted = 'OnlyOwnerUncompleted',
+}
+
+export enum Destination {
+  None = 'None',
+  Hyperbridge = 'Hyperbridge',
+}

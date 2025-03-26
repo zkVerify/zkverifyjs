@@ -14,6 +14,7 @@ import path from "path";
 import fs from "fs";
 import { TransactionInfoByType } from "../../src/utils/transactions/types";
 import { ZkVerifyEvents } from "../../src";
+import { DomainOptions } from "../../src/types";
 
 export interface ProofData {
     proof: any;
@@ -286,9 +287,10 @@ export const performRegisterDomain = async (
     session: zkVerifySession,
     aggregationSize: number,
     queueSize: number,
-    accountAddress?: string
+    deliveryOptions: DomainOptions,
+    signerAccount?: string
 ): Promise<number> => {
-    const { events, domainIdPromise } = session.registerDomain(aggregationSize, queueSize, accountAddress);
+    const { events, domainIdPromise } = session.registerDomain(aggregationSize, queueSize, deliveryOptions, signerAccount);
 
     const eventResults = handleCommonEvents(
         events,
@@ -322,6 +324,7 @@ export const performRegisterDomain = async (
 export const performHoldDomain = async (
     session: zkVerifySession,
     domainId: number,
+    expectRemovable: boolean,
     accountAddress?: string
 ): Promise<void> => {
     const { events, done } = session.holdDomain(domainId, accountAddress);
@@ -337,7 +340,12 @@ export const performHoldDomain = async (
     events.on(ZkVerifyEvents.DomainStateChanged, (data) => {
         try {
             expect(data.domainId).toBe(domainId);
-            expect(data.domainState).toBe('Hold');
+            if(expectRemovable) {
+                expect(data.domainState).toBe('Removable');
+            } else {
+                expect(data.domainState).toBe('Hold');
+            }
+
         } catch (error) {
             domainStateAssertionError = error as Error;
         }

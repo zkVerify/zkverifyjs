@@ -1,5 +1,9 @@
 import { ProofType, SupportedNetwork } from './config';
-import { TransactionStatus } from './enums';
+import {
+  AggregateSecurityRules,
+  Destination,
+  TransactionStatus,
+} from './enums';
 
 export interface ProofProcessor {
   formatProof(proof: unknown, options?: unknown, version?: string): unknown;
@@ -81,3 +85,38 @@ export type NetworkConfig = {
 };
 
 export type CustomNetworkConfig = Omit<NetworkConfig, 'host'>;
+
+export type DeliveryInput = {
+  price: number;
+  destinationChain: { Evm: number };
+  destination_module: string;
+  timeout: number;
+};
+
+export type DomainOptions =
+  | {
+      destination: Destination.None;
+      deliveryOwner?: string;
+      aggregateRules: AggregateSecurityRules;
+    }
+  | {
+      destination: Destination.Hyperbridge;
+      deliveryInput: DeliveryInput;
+      deliveryOwner?: string;
+      aggregateRules: AggregateSecurityRules;
+    };
+
+export type Delivery =
+  | { None: null }
+  | {
+      destination: {
+        Hyperbridge: {
+          destinationChain: {
+            Evm: number;
+          };
+          destination_module: string;
+          timeout: number;
+        };
+      };
+      price: number;
+    };
