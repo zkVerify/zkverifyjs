@@ -22,6 +22,8 @@ export {
   MerkleProof,
   AccountInfo,
   NewAggregationReceipt,
+  NetworkConfig,
+  CustomNetworkConfig,
 } from './types';
 export { ExtrinsicCostEstimate } from './api/estimate/types';
 export { FormattedProofData } from './api/format/types';

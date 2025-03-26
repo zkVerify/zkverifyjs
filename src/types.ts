@@ -1,4 +1,4 @@
-import { ProofType } from './config';
+import { ProofType, SupportedNetwork } from './config';
 import { TransactionStatus } from './enums';
 
 export interface ProofProcessor {
@@ -73,3 +73,11 @@ export interface MerkleProof {
   leafIndex: number;
   leaf: string;
 }
+
+export type NetworkConfig = {
+  host: SupportedNetwork;
+  websocket: string;
+  rpc: string;
+};
+
+export type CustomNetworkConfig = Omit<NetworkConfig, 'host'>;

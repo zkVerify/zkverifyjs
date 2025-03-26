@@ -5,7 +5,7 @@ import { EventManager } from './managers/events';
 import { ExtrinsicManager } from './managers/extrinsic';
 import { DomainManager } from './managers/domain';
 import { zkVerifySessionOptions } from './types';
-import { SupportedNetwork } from '../config';
+import { SupportedNetwork, SupportedNetworkConfig } from '../config';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
 import { FormatManager } from './managers/format';
 import { ApiPromise, WsProvider } from '@polkadot/api';
@@ -15,6 +15,7 @@ import {
   EstablishedConnection,
 } from '../api/connection/types';
 import { bindMethods } from '../utils/helpers';
+import { CustomNetworkConfig } from '../types';
 
 export class zkVerifySession {
   private readonly connectionManager: ConnectionManager;
@@ -60,17 +61,30 @@ export class zkVerifySession {
    * @returns {SupportedNetworkMap} A map of supported networks.
    */
   static start(): SupportedNetworkMap {
-    return Object.fromEntries(
-      Object.entries(SupportedNetwork).map(([networkKey, networkValue]) => [
-        networkKey,
-        (customWsUrl?: string) =>
+    const map = {} as SupportedNetworkMap;
+
+    for (const [key, config] of Object.entries(SupportedNetworkConfig)) {
+      const network = key as SupportedNetwork;
+
+      if (network === SupportedNetwork.Custom) {
+        map[network] = (partialConfig: CustomNetworkConfig) =>
           new NetworkBuilder(
             zkVerifySession._startSession.bind(zkVerifySession),
-            networkValue,
-            customWsUrl,
-          ),
-      ]),
-    ) as SupportedNetworkMap;
+            {
+              ...partialConfig,
+              host: SupportedNetwork.Custom,
+            },
+          );
+      } else {
+        map[network] = () =>
+          new NetworkBuilder(
+            zkVerifySession._startSession.bind(zkVerifySession),
+            config,
+          );
+      }
+    }
+
+    return map;
   }
 
   /**
@@ -122,7 +136,7 @@ export class zkVerifySession {
       return new zkVerifySession(connectionManager);
     } catch (error) {
       console.debug(
-        `❌ Failed to start session for network: ${options.host}`,
+        `❌ Failed to start session for network: ${options.networkConfig.host}`,
         error,
       );
       throw error;

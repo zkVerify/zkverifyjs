@@ -12,7 +12,6 @@ import { TransactionType } from "../src";
 jest.setTimeout(120000);
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
-    let domainId: number | undefined;
     let wallet: string | null = null;
     let envVar: string | null = null;
 
@@ -33,7 +32,7 @@ describe('zkVerifySession class', () => {
     });
 
     // Just used for local testing a single proof easily.
-    it.skip('should send a proof to a registered domain and get aggregation', async () => {
+    it('should send a proof to a registered domain and get aggregation', async () => {
         try {
             const expectAggregation = true;
             [envVar, wallet] = await walletPool.acquireWallet();
@@ -41,17 +40,13 @@ describe('zkVerifySession class', () => {
 
             session = await zkVerifySession.start().Volta().withAccount(wallet);
 
-            if(expectAggregation) {
-                domainId = await performRegisterDomain(session, 1, 1);
-            }
-
             const { events, transactionResult } = await session.verify().ultraplonk().execute({
                 proofData: {
                     proof: proofData.proof.proof,
                     publicSignals: proofData.proof.publicSignals,
                     vk: proofData.vk,
                 },
-                domainId,
+                domainId: 0,
             });
 
             const results = handleCommonEvents(

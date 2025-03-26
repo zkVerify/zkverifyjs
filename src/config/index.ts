@@ -1,4 +1,4 @@
-import { ProofProcessor } from '../types';
+import { NetworkConfig, ProofProcessor } from '../types';
 import {
   Groth16Processor,
   ProofOfSqlProcessor,
@@ -8,11 +8,30 @@ import {
 import { Risc0Version } from '../enums';
 
 export enum SupportedNetwork {
-  Volta = 'wss://volta-rpc.zkverify.io',
-  Custom = 'custom',
-  Testnet = 'wss://testnet-rpc.zkverify.io',
+  Volta = 'Volta',
+  Custom = 'Custom',
+  Testnet = 'Testnet',
   // ADD_NEW_SUPPORTED_NETWORK
 }
+
+export const SupportedNetworkConfig: Record<SupportedNetwork, NetworkConfig> = {
+  [SupportedNetwork.Volta]: {
+    host: SupportedNetwork.Volta,
+    websocket: 'wss://volta-rpc.zkverify.io',
+    rpc: 'https://volta-rpc.zkverify.io',
+  },
+  [SupportedNetwork.Testnet]: {
+    host: SupportedNetwork.Testnet,
+    websocket: 'wss://testnet-rpc.zkverify.io',
+    rpc: 'https://testnet-rpc.zkverify.io',
+  },
+  // ADD_NEW_SUPPORTED_NETWORK
+  [SupportedNetwork.Custom]: {
+    host: SupportedNetwork.Custom,
+    websocket: '',
+    rpc: '',
+  },
+};
 
 export enum ProofType {
   groth16 = 'groth16',

@@ -1,11 +1,15 @@
 import { WalletOptions, zkVerifySessionOptions } from '../../types';
 import { zkVerifySession } from '../../index';
 import { SupportedNetwork } from '../../../config';
+import { CustomNetworkConfig, NetworkConfig } from '../../../types';
 
 export type SupportedNetworkMap = {
-  [K in keyof typeof SupportedNetwork]: (
-    customWsUrl?: string,
-  ) => NetworkBuilder;
+  [K in Exclude<
+    SupportedNetwork,
+    SupportedNetwork.Custom
+  >]: () => NetworkBuilder;
+} & {
+  [SupportedNetwork.Custom]: (config: CustomNetworkConfig) => NetworkBuilder;
 };
 
 export class NetworkBuilder {
@@ -15,17 +19,9 @@ export class NetworkBuilder {
     private readonly startSession: (
       options: zkVerifySessionOptions,
     ) => Promise<zkVerifySession>,
-    network: SupportedNetwork,
-    customWsUrl?: string,
+    config: NetworkConfig,
   ) {
-    this.options.host = network;
-
-    if (network === SupportedNetwork.Custom) {
-      if (!customWsUrl) {
-        throw new Error('Custom network requires a WebSocket URL.');
-      }
-      this.options.customWsUrl = customWsUrl;
-    }
+    this.options.networkConfig = config;
   }
 
   /**
