@@ -4,6 +4,7 @@ export enum TransactionType {
   DomainRegistration = 3,
   DomainHold = 4,
   DomainUnregister = 5,
+  Aggregate = 6,
 }
 
 export enum TransactionStatus {

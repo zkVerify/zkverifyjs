@@ -191,6 +191,10 @@ const initializeTransactionInfo = <T extends TransactionType>(
         domainId: undefined,
         domainState: '',
       } as TransactionInfoByType[T];
+    case TransactionType.Aggregate:
+      return {
+        ...baseInfo,
+      } as TransactionInfoByType[T];
 
     default:
       throw new Error(`Unsupported transaction type: ${transactionType}`);

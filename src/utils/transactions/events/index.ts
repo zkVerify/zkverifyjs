@@ -23,6 +23,11 @@ export const handleTransactionEvents = <T extends TransactionType>(
   let domainState: string | undefined;
 
   events.forEach(({ event, phase }) => {
+    console.log(`[Event] ${event.section}::${event.method}`, {
+      data: event.data.toHuman?.() ?? event.data.toString(),
+      phase: phase.toString(),
+    });
+
     if (phase.isApplyExtrinsic) {
       transactionInfo.extrinsicIndex = phase.asApplyExtrinsic.toNumber();
     }

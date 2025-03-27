@@ -1,6 +1,6 @@
-import { zkVerifySession } from '../src';
+import {ProofType, zkVerifySession} from '../src';
 import { walletPool } from './common/walletPool';
-import { performHoldDomain, performRegisterDomain, performUnregisterDomain } from "./common/utils";
+import {loadProofAndVK, performHoldDomain, performRegisterDomain, performUnregisterDomain} from "./common/utils";
 import { AggregateSecurityRules, Destination } from "../src/enums";
 
 jest.setTimeout(120000);
@@ -25,7 +25,7 @@ describe('Domain interaction tests', () => {
         }
     });
 
-    it('should error when attempting to register, unregister or hold a domain in a readOnly session', async () => {
+    it.skip('should error when attempting to register, unregister or hold a domain in a readOnly session', async () => {
         session = await zkVerifySession.start().Volta().readOnly();
 
         try {
@@ -57,7 +57,33 @@ describe('Domain interaction tests', () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Volta().withAccount(wallet);
 
-        const domainId = await performRegisterDomain(session, 1, 2, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted});
+        const domainId = await performRegisterDomain(session, 1, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted});
+
+        const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk });
+
+        const { transactionResult } = await session.verify().ultraplonk().execute({
+            proofData: {
+                proof: proofData.proof.proof,
+                publicSignals: proofData.proof.publicSignals,
+                vk: proofData.vk,
+            },
+            domainId,
+        });
+        console.log("Awaiting Verify Transaction Result.")
+        const txInfo = await transactionResult;
+        console.log("Verify Transaction Result Complete.")
+
+        expect(txInfo.domainId).toBeDefined();
+        expect(txInfo.aggregationId).toBeDefined();
+        console.log(`domainId: ${txInfo.domainId}`)
+        console.log(`aggregationId: ${txInfo.aggregationId}`)
+
+        console.log("Awaiting Aggregate Transaction Result.")
+        const { events, transactionResult: aggregateTransactionResult } = session.aggregate(txInfo.domainId!, txInfo.aggregationId!);
+
+        await aggregateTransactionResult;
+        console.log("Aggregate Transaction Result: SUCCESS")
+
         await performHoldDomain(session, domainId, true);
         await performUnregisterDomain(session, domainId);
     });

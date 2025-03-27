@@ -5,7 +5,11 @@ import {
   normalizeDeliveryFromOptions,
 } from '../../utils/helpers';
 import EventEmitter from 'events';
-import { DomainOptions, RegisterDomainTransactionInfo } from '../../types';
+import {
+  AggregateTransactionInfo,
+  DomainOptions,
+  RegisterDomainTransactionInfo,
+} from '../../types';
 import { VerifyOptions } from '../../session/types';
 import { handleTransaction } from '../../utils/transactions';
 import { KeyringPair } from '@polkadot/keyring/types';
@@ -211,4 +215,63 @@ export const unregisterDomain = (
   });
 
   return { events: emitter, done };
+};
+
+export const aggregate = (
+  connection: AccountConnection | WalletConnection,
+  domainId: number,
+  aggregationId: number,
+  signerAccount?: string,
+): {
+  events: EventEmitter;
+  transactionResult: Promise<AggregateTransactionInfo>;
+} => {
+  const { api } = connection;
+  const selectedAccount: KeyringPair | undefined = getKeyringAccountIfAvailable(
+    connection,
+    signerAccount,
+  );
+
+  const registerExtrinsic = api.tx.aggregate.aggregate(domainId, aggregationId);
+  const emitter = new EventEmitter();
+
+  const transactionResult = (async (): Promise<AggregateTransactionInfo> => {
+    try {
+      const result = await (async () => {
+        if (selectedAccount) {
+          return await handleTransaction(
+            api,
+            registerExtrinsic,
+            selectedAccount,
+            undefined,
+            emitter,
+            {} as VerifyOptions,
+            TransactionType.Aggregate,
+          );
+        } else if ('injector' in connection) {
+          const { signer } = connection.injector;
+          return await handleTransaction(
+            api,
+            registerExtrinsic,
+            connection.accountAddress,
+            signer,
+            emitter,
+            {} as VerifyOptions,
+            TransactionType.Aggregate,
+          );
+        } else {
+          throw new Error('Unsupported connection type.');
+        }
+      })();
+
+      emitter.removeAllListeners();
+      return result as AggregateTransactionInfo;
+    } catch (error) {
+      emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+      emitter.removeAllListeners();
+      throw error;
+    }
+  })();
+
+  return { events: emitter, transactionResult };
 };

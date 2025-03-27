@@ -39,6 +39,7 @@ export class zkVerifySession {
   declare registerDomain: DomainManager['registerDomain'];
   declare unregisterDomain: DomainManager['unregisterDomain'];
   declare holdDomain: DomainManager['holdDomain'];
+  declare aggregate: DomainManager['aggregate'];
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;

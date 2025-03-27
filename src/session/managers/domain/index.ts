@@ -1,4 +1,5 @@
 import {
+  aggregate,
   holdDomain,
   registerDomain,
   unregisterDomain,
@@ -11,7 +12,7 @@ import {
   AccountConnection,
   WalletConnection,
 } from '../../../api/connection/types';
-import { DomainOptions } from '../../../types';
+import { AggregateTransactionInfo, DomainOptions } from '../../../types';
 
 export class DomainManager {
   private readonly connectionManager: ConnectionManager;
@@ -50,6 +51,26 @@ export class DomainManager {
       aggregationSize,
       queueSize,
       domainOptions,
+      signerAccount,
+    );
+  }
+
+  aggregate(
+    domainId: number,
+    aggregationId: number,
+    signerAccount?: string,
+  ): {
+    events: EventEmitter;
+    transactionResult: Promise<AggregateTransactionInfo>;
+  } {
+    checkReadOnly(this.connectionManager.connectionDetails);
+
+    return aggregate(
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
+      domainId,
+      aggregationId,
       signerAccount,
     );
   }
