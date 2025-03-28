@@ -3,7 +3,7 @@ import { runAllProofTests, runAllVKRegistrationTests } from "./common/runners";
 
 jest.setTimeout(500000);
 describe('zkVerify proof user journey tests', () => {
-    test.skip('should verify all proof types without aggregation and respond on finalization', async () => {
+    test('should verify all proof types without aggregation and respond on finalization', async () => {
         console.log("Verify Test 1: RUNNING 'should verify all proof types without aggregation and respond on finalization'");
         await runAllProofTests(proofTypes, curveTypes, libraries, false);
         console.log("Verify Test 1: COMPLETED");

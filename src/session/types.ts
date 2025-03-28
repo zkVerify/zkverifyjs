@@ -1,9 +1,9 @@
-import { CurveType, Library, ProofType, SupportedNetwork } from '../config';
+import { CurveType, Library, ProofType } from '../config';
+import { NetworkConfig } from '../types';
 
 export interface zkVerifySessionOptions {
-  host: SupportedNetwork;
+  networkConfig: NetworkConfig;
   seedPhrases?: string[];
-  customWsUrl?: string;
   wallet?: WalletOptions;
 }
 

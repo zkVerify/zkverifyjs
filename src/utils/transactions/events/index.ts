@@ -1,8 +1,8 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { DispatchInfo } from '@polkadot/types/interfaces';
 import { EventEmitter } from 'events';
-import { TransactionType } from '../../../enums';
-import { getProofPallet } from '../../helpers';
+import { TransactionType, ZkVerifyEvents } from '../../../enums';
+import { getProofPallet, safeEmit } from '../../helpers';
 import { TransactionInfoByType } from '../types';
 import {
   VerifyTransactionInfo,
@@ -17,14 +17,25 @@ export const handleTransactionEvents = <T extends TransactionType>(
   transactionType: T,
 ): TransactionInfoByType[T] => {
   let statementHash: string | undefined;
-  let aggregationId: number | undefined = undefined;
+  let aggregationId: number | undefined;
   let statement: string | undefined;
   let domainId: number | undefined;
   let domainState: string | undefined;
+  let receipt: string | undefined;
+
+  let myExtrinsicIndex: number | undefined;
 
   events.forEach(({ event, phase }) => {
-    if (phase.isApplyExtrinsic) {
-      transactionInfo.extrinsicIndex = phase.asApplyExtrinsic.toNumber();
+    if (phase.isApplyExtrinsic && myExtrinsicIndex === undefined) {
+      myExtrinsicIndex = phase.asApplyExtrinsic.toNumber();
+      transactionInfo.extrinsicIndex = myExtrinsicIndex;
+    }
+
+    if (
+      !phase.isApplyExtrinsic ||
+      phase.asApplyExtrinsic.toNumber() !== transactionInfo.extrinsicIndex
+    ) {
+      return;
     }
 
     if (
@@ -64,6 +75,7 @@ export const handleTransactionEvents = <T extends TransactionType>(
       event.method === 'ProofVerified'
     ) {
       statement = event.data[0].toString();
+      safeEmit(emitter, ZkVerifyEvents.ProofVerified, { statement });
     }
 
     if (
@@ -75,6 +87,11 @@ export const handleTransactionEvents = <T extends TransactionType>(
       statement = eventStatement.toString();
       domainId = Number(eventDomainId.toString());
       aggregationId = Number(eventAggregationId.toString());
+      safeEmit(emitter, ZkVerifyEvents.NewProof, {
+        statement,
+        domainId,
+        aggregationId,
+      });
     }
 
     if (
@@ -86,6 +103,7 @@ export const handleTransactionEvents = <T extends TransactionType>(
       event.method === 'VkRegistered'
     ) {
       statementHash = event.data[0].toString();
+      safeEmit(emitter, ZkVerifyEvents.VkRegistered, { statementHash });
     }
 
     if (
@@ -97,6 +115,10 @@ export const handleTransactionEvents = <T extends TransactionType>(
       const [eventDomainId, state] = event.data;
       domainId = Number(eventDomainId.toString());
       domainState = state.toString();
+      safeEmit(emitter, ZkVerifyEvents.DomainStateChanged, {
+        domainId,
+        domainState,
+      });
     }
 
     if (
@@ -105,10 +127,36 @@ export const handleTransactionEvents = <T extends TransactionType>(
       event.method === 'NewDomain'
     ) {
       domainId = Number(event.data[0].toString());
+      safeEmit(emitter, ZkVerifyEvents.NewDomain, { domainId });
+    }
+
+    if (
+      transactionType === TransactionType.Aggregate &&
+      event.section === 'aggregate' &&
+      event.method === 'NewAggregationReceipt'
+    ) {
+      const [eventDomainId, eventAggregationId, eventReceipt] = event.data;
+      domainId = Number(eventDomainId.toString());
+      aggregationId = Number(eventAggregationId.toString());
+      receipt = eventReceipt.toString();
+
+      safeEmit(emitter, ZkVerifyEvents.NewAggregationReceipt, {
+        domainId,
+        aggregationId,
+        receipt,
+      });
     }
   });
 
   switch (transactionType) {
+    case TransactionType.Aggregate:
+      return {
+        ...transactionInfo,
+        domainId,
+        aggregationId,
+        receipt,
+      };
+
     case TransactionType.DomainRegistration:
       return {
         ...transactionInfo,

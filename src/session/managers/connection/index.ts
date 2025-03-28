@@ -11,8 +11,9 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { accountInfo } from '../../../api/accountInfo';
 import { setupAccount } from '../../../api/account';
 import { checkReadOnly } from '../../../utils/helpers';
-import { AccountInfo } from '../../../types';
+import { AccountInfo, NetworkConfig } from '../../../types';
 import { Mutex } from 'async-mutex';
+import { SupportedNetwork } from '../../../config';
 
 export class ConnectionManager {
   private accountMutex = new Mutex();
@@ -25,10 +26,10 @@ export class ConnectionManager {
 
   constructor(
     connection: AccountConnection | WalletConnection | EstablishedConnection,
-    customNetwork?: string,
+    config: NetworkConfig,
   ) {
     this.connection = connection;
-    this.customNetwork = !!customNetwork;
+    this.customNetwork = config.host === SupportedNetwork.Custom;
     this.readOnly =
       !('accounts' in connection) &&
       !('injector' in connection) &&
@@ -48,7 +49,7 @@ export class ConnectionManager {
       ? await startWalletSession(options)
       : await startSession(options);
 
-    return new ConnectionManager(connection, options.customWsUrl);
+    return new ConnectionManager(connection, options.networkConfig);
   }
 
   /**

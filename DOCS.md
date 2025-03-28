@@ -47,11 +47,14 @@ const session = await zkVerifySession.start()
 // No full account session as .withAccount() or .withAccounts() has not been used.
 ```
 
-2. Read-Only Session with Custom WebSocket:
+2. Read-Only Session with Custom Network Configuration:
 
 ```typescript
 const session = await zkVerifySession.start()
-        .Custom("wss://testnet-rpc.zkverify.io"); // Custom network
+        .Custom( {
+          websocket: "wss://testnet-rpc.zkverify.io",
+          rpc: "https://testnet-rpc.zkverify.io"
+        }); // Custom network
 // No full account session as .withAccount() or withAccounts() has not been used.
 ```
 
@@ -92,7 +95,10 @@ const session = await zkVerifySession.start()
 
 ```typescript
 const session = await zkVerifySession.start()
-        .Custom("wss://testnet-rpc.zkverify.io") // Custom network
+        .Custom( {
+          websocket: "wss://testnet-rpc.zkverify.io",
+          rpc: "https://testnet-rpc.zkverify.io"
+        }) // Custom network
         .withWallet({
           source: selectedWallet,
           accountAddress: selectedAccount,
@@ -314,7 +320,10 @@ Connect to your custom node that has the unsafe flags set, and send the proof:
 // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
 const session = await zkVerifySession
   .start()
-  .Custom('ws://my-custom-node')
+        .Custom( {
+          websocket: "wss://my-custom-node",
+          rpc: "https://my-custom-node"
+        })
   .withAccount('your-seed-phrase');
 
 const { success, message } = session
@@ -342,9 +351,10 @@ session = await zkVerifySession
 
 // Register a Domain
 // Without needing events
-const domainId = await session.registerDomain(1, 1).domainIdPromise
+const transactionResult = await session.registerDomain(1, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted }).transactionResult;
+console.log(transactionResult.domainId);
 // If you want to listen to events and also get the domainIdPromise
-const { events: registerEvents, domainIdPromise } = session.registerDomain(1, 2);
+const { events: registerEvents, transactionResult } = session.registerDomain(1, 2, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted });
 
 // Listen for events if needed
 registerEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
@@ -359,14 +369,15 @@ registerEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
   console.log("ErrorEvent");
 });
 
-// await the domainId result
-const domainId = await domainIdPromise;
+// await the transactionResult
+const transactionInfo = await transactionResult;
+console.log(transactionInfo.domainId);
 
 // Hold a Domain
 // Without events
-const result = await session.unregisterDomain(domainId).done;
+const result = await session.unregisterDomain(domainId).transactionResult;
 // With events
-const { events: holdEvents, result: holdResult } = session.holdDomain(domainId);
+const { events: holdEvents, transactionResult: holdResult } = session.holdDomain(domainId);
 
 // Listen for events if needed
 holdEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
@@ -381,14 +392,15 @@ holdEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
   console.log("ErrorEvent");
 });
 
-// await boolean success
-const wasSuccessful = await holdResult;
+// await transaction
+const transactionInfo = await transactionResult;
+console.log(transactionInfo.domainState);
 
 // Unregister a Domain
 // Without events
-const result = await session.unregisterDomain(domainId).done;
+const transactionInfo = await session.unregisterDomain(domainId).transactionResult;
 // With events
-const { events: unregisterEvents, result: unregisterResult } = session.unregisterDomain(domainId);
+const { events: unregisterEvents, transactionResult: unregisterResult } = session.unregisterDomain(domainId);
 
 // Listen for events if needed
 unregisterEvents.on(ZkVerifyEvents.IncludedInBlock, () => {
@@ -403,8 +415,9 @@ unregisterEvents.on(ZkVerifyEvents.ErrorEvent, () => {
     console.log("ErrorEvent");
 });
 
-// await boolean success
-const unregisterSuccessful = await unregisterResult;
+// await transactionResult
+const transactionInfo = await transactionResult;
+console.log(transactionInfo.domainState);
 ```
 
 ### Example Usage
@@ -413,9 +426,12 @@ const unregisterSuccessful = await unregisterResult;
 import { zkVerifySession, ZkVerifyEvents, TransactionStatus, VerifyTransactionInfo } from 'zkverifyjs';
 
 async function executeVerificationTransaction(proof: unknown, publicSignals: unknown, vk: unknown) {
-  // Start a new zkVerifySession on a Custom network (replace 'your-seed-phrase' with actual value)
+  // Start a new zkVerifySession on a Custom network (replace 'your-seed-phrase' and 'my-custom-node' with actual value)
   const session = await zkVerifySession.start()
-          .Custom('ws://my-custom-node')
+          .Custom( {
+            websocket: "ws://my-custom-node",
+            rpc: "https://my-custom-node"
+          })
           .withAccount('your-seed-phrase');
   
   // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
@@ -493,7 +509,10 @@ executeVerificationTransaction(proof, publicSignals, vk);
 ```typescript
 await zkVerifySession.start()
         .Testnet() // 1. Either preconfigured network selection
-        .Custom('wss://custom') // 2. Or specify a custom network selection
+        .Custom( {
+          websocket: "ws://my-custom-node",
+          rpc: "https://my-custom-node"
+        }) // 2. Or specify a custom network selection
         .withAccount(process.env.SEED_PHRASE!) // Optional
         .withWallet({
           source: selectedWallet,
@@ -502,7 +521,7 @@ await zkVerifySession.start()
         .readOnly() // Optional
 ```
 
-* Network Selection: Preconfigured options such as `.Testnet()` or provide your own websocket url using `.Custom('wss://custom')`.
+* Network Selection: Preconfigured options such as `.Testnet()` or provide your own network config using `.Custom( { websocket: "", rpc: ""})`.
 * withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase, cannot be used with `withWallet()`.
 * withWallet : Establish connection to a browser extension based substrate wallet like talisman or subwallet, cannot be used with `withAccount()`;
 * readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
@@ -715,18 +734,33 @@ session.unsubscribe();
 
 * This method unsubscribes from any active NewAggregationReceipt event subscriptions. It is used to stop listening for NewAggregationReceipt events when they are no longer needed.
 
+### `zkVerifySession.aggregate`
+
+```typescript
+session.aggregate(domainId, aggregationId);
+```
+
+* publish aggregation for a specified `domainId` and `aggregationId`.
+
+- @param `{number}` domainId - The domain to publish.
+- @param `{number}` aggregationId: The aggregationId to publish.
+- Returns `{ events: EventEmitter; transactionResult: Promise<AggregateTransactionInfo> }`
+
+AggregateTransactionInfo contains a `receipt` populated by the `NewAggregationReceipt` event.
+
 ### `zkVerifySession.registerDomain`
 
 ```typescript
-session.registerDomain(aggregationSize, queueSize, accountAddress?);
+session.registerDomain(aggregationSize, queueSize, domainOptions, accountAddress?);
 ```
 
 * register a new domain where the owner is the signer that emits a new aggregation every aggregationSize proofs and where there could be at most  queueSize aggregation in waiting for publication state.
 
 - @param `{number}` aggregationSize - The size of the aggregation, integer equal to or less than 128.
 - @param `{number}` queueSize: an optional integer smaller equal than 16. 16 if it’s null.
+- @param `{DomainOptions}` domainOptions: additional options required to register the domain.
 - @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
-- @returns `{ events: EventEmitter; domainIdPromise: Promise<number> }`
+- Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
 
 Note: Need to hold the currency proportional to the size of aggregations and queue. The currency will be returned if the domain is unregistered
 
@@ -740,7 +774,7 @@ session.holdDomain(domainId, accountAddress?);
 
 - @param `{number}` domainId - The ID of the domain to hold.
 - @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
-- Returns `{ events: EventEmitter; result: Promise<boolean> }`
+- Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
 
 ### `zkVerifySession.unregisterDomain`
 
@@ -752,7 +786,7 @@ session.unregisterDomain(domainId, accountAddress?);
 
 - @param `{number}` domainId - The ID of the domain to unregister.
 - @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
-- Returns `{ events: EventEmitter; result: Promise<boolean> }`
+- Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
 
 ### `zkVerifySession.api`
 

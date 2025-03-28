@@ -1,5 +1,6 @@
 import { TransactionType } from '../../enums';
 import {
+  AggregateTransactionInfo,
   DomainTransactionInfo,
   RegisterDomainTransactionInfo,
   VerifyTransactionInfo,
@@ -12,4 +13,5 @@ export type TransactionInfoByType = {
   [TransactionType.DomainRegistration]: RegisterDomainTransactionInfo;
   [TransactionType.DomainHold]: DomainTransactionInfo;
   [TransactionType.DomainUnregister]: DomainTransactionInfo;
+  [TransactionType.Aggregate]: AggregateTransactionInfo;
 };

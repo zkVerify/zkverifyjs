@@ -4,6 +4,7 @@ import { ProofMethodMap } from "../src/session/builders/verify";
 import { walletPool } from './common/walletPool';
 import { loadProofAndVK } from "./common/utils";
 import { ProofType } from "../src";
+import { SupportedNetworkConfig } from "../src/config"
 
 jest.setTimeout(120000);
 describe('zkVerifySession class', () => {
@@ -62,7 +63,9 @@ describe('zkVerifySession class', () => {
     });
 
     it('should start a session with a custom WebSocket URL in read-only mode when no seed phrase is provided', async () => {
-        session = await zkVerifySession.start().Custom(SupportedNetwork.Volta).readOnly();
+        const { host: _omit, ...customConfig } = SupportedNetworkConfig[SupportedNetwork.Volta];
+
+        session = await zkVerifySession.start().Custom(customConfig).readOnly();
         expect(session).toBeDefined();
         expect(session.readOnly).toBe(true);
         expect(session.api).toBeDefined();
@@ -70,8 +73,9 @@ describe('zkVerifySession class', () => {
     });
 
     it('should start a session with a custom WebSocket URL and an account when seed phrase is provided', async () => {
+        const { host: _omit, ...customConfig } = SupportedNetworkConfig[SupportedNetwork.Volta];
         [envVar, wallet] = await walletPool.acquireWallet();
-        session = await zkVerifySession.start().Custom(SupportedNetwork.Volta).withAccount(wallet);
+        session = await zkVerifySession.start().Custom(customConfig).withAccount(wallet);
         expect(session).toBeDefined();
         expect(session.readOnly).toBe(false);
         expect(session.api).toBeDefined();

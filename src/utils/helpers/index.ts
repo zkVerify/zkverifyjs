@@ -1,8 +1,13 @@
 import 'dotenv/config';
 import { ApiPromise } from '@polkadot/api';
 import { EventEmitter } from 'events';
-import { NewAggregationReceipt, ProofProcessor } from '../../types';
-import { ZkVerifyEvents } from '../../enums';
+import {
+  Delivery,
+  DomainOptions,
+  NewAggregationReceipt,
+  ProofProcessor,
+} from '../../types';
+import { Destination, ZkVerifyEvents } from '../../enums';
 import { proofConfigurations, ProofType } from '../../config';
 import { subscribeToNewAggregationReceipts } from '../../api/aggregation';
 import { decodeDispatchError } from '../transactions/errors';
@@ -13,6 +18,7 @@ import {
   WalletConnection,
 } from '../../api/connection/types';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { NewAggregationEventSubscriptionOptions } from '../../api/aggregation/types';
 
 /**
  * Waits for a specific `NewAggregationReceipt` event and returns the associated data.
@@ -49,12 +55,16 @@ export async function waitForNewAggregationReceipt(
     throw error;
   }
 
-  return new Promise<NewAggregationReceipt>((resolve, reject) => {
-    const internalEmitter = subscribeToNewAggregationReceipts(api, () => {}, {
-      domainId,
-      aggregationId,
-    });
+  const internalEmitter = new EventEmitter();
 
+  subscribeToNewAggregationReceipts(
+    api,
+    () => {}, // no-op; we rely on internalEmitter
+    { domainId, aggregationId } as NewAggregationEventSubscriptionOptions,
+    internalEmitter,
+  );
+
+  return new Promise<NewAggregationReceipt>((resolve, reject) => {
     internalEmitter.on(
       ZkVerifyEvents.AggregationMatched,
       (event: NewAggregationReceipt) => {
@@ -269,3 +279,45 @@ export function getKeyringAccountIfAvailable(
     ? getSelectedAccount(connection, accountAddress)
     : undefined;
 }
+
+/**
+ * Converts a `DeliveryInput` into a properly formatted `Delivery` object.
+ * Supports either a `None` variant or a `Hyperbridge` delivery configuration.
+ *
+ * @returns A `Delivery` object formatted for on-chain use.
+ * @throws {Error} If required fields for Hyperbridge delivery are missing or invalid.
+ * @param options
+ */
+export function normalizeDeliveryFromOptions(options: DomainOptions): Delivery {
+  if (options.destination === Destination.None) {
+    return { None: null };
+  }
+
+  const { deliveryInput } = options;
+
+  return {
+    destination: {
+      Hyperbridge: {
+        destinationChain: deliveryInput.destinationChain,
+        destination_module: deliveryInput.destination_module,
+        timeout: deliveryInput.timeout,
+      },
+    },
+    price: deliveryInput.price,
+  };
+}
+
+/**
+ * Safe wrapper for emitting events without crashing.
+ */
+export const safeEmit = (
+  emitter: EventEmitter,
+  event: string,
+  data: unknown,
+) => {
+  try {
+    emitter.emit(event, data);
+  } catch (error) {
+    console.debug(`Failed to emit event ${event}:`, error);
+  }
+};
