@@ -1,4 +1,5 @@
 import { TransactionStatus, TransactionType, ZkVerifyEvents } from '../../src';
+import { EventEmitter } from "events";
 
 export interface EventResults {
     includedInBlockEmitted: boolean;
@@ -7,6 +8,28 @@ export interface EventResults {
     broadcastEmitted?: boolean;
     unsubscribeEmitted?: boolean;
     newAggregationReceiptEmitted?: boolean;
+}
+
+export type EventTracker = Record<ZkVerifyEvents, any[]>;
+
+export function createEventTracker() {
+    const receivedEvents: Record<string, any[]> = {};
+
+    const attachListeners = (
+        emitter: EventEmitter,
+        eventsToTrack: ZkVerifyEvents[],
+    ) => {
+        eventsToTrack.forEach((event) => {
+            emitter.on(event, (data) => {
+                if (!receivedEvents[event]) {
+                    receivedEvents[event] = [];
+                }
+                receivedEvents[event].push(data);
+            });
+        });
+    };
+
+    return { receivedEvents, attachListeners };
 }
 
 const assertCommonFields = (

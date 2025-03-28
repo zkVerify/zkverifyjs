@@ -18,6 +18,7 @@ import {
   WalletConnection,
 } from '../../api/connection/types';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { NewAggregationEventSubscriptionOptions } from '../../api/aggregation/types';
 
 /**
  * Waits for a specific `NewAggregationReceipt` event and returns the associated data.
@@ -54,12 +55,16 @@ export async function waitForNewAggregationReceipt(
     throw error;
   }
 
-  return new Promise<NewAggregationReceipt>((resolve, reject) => {
-    const internalEmitter = subscribeToNewAggregationReceipts(api, () => {}, {
-      domainId,
-      aggregationId,
-    });
+  const internalEmitter = new EventEmitter();
 
+  subscribeToNewAggregationReceipts(
+    api,
+    () => {}, // no-op; we rely on internalEmitter
+    { domainId, aggregationId } as NewAggregationEventSubscriptionOptions,
+    internalEmitter,
+  );
+
+  return new Promise<NewAggregationReceipt>((resolve, reject) => {
     internalEmitter.on(
       ZkVerifyEvents.AggregationMatched,
       (event: NewAggregationReceipt) => {

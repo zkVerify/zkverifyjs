@@ -1,7 +1,8 @@
 import {ProofType, zkVerifySession} from '../src';
 import { walletPool } from './common/walletPool';
 import {loadProofAndVK, performHoldDomain, performRegisterDomain, performUnregisterDomain} from "./common/utils";
-import { AggregateSecurityRules, Destination } from "../src/enums";
+import { AggregateSecurityRules, Destination, ZkVerifyEvents } from "../src";
+import {createEventTracker} from "./common/eventHandlers";
 
 jest.setTimeout(120000);
 describe('Domain interaction tests', () => {
@@ -57,6 +58,19 @@ describe('Domain interaction tests', () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Volta().withAccount(wallet);
 
+        const expectedEvents = [
+            ZkVerifyEvents.NewDomain,
+            ZkVerifyEvents.ProofVerified,
+            ZkVerifyEvents.NewProof,
+            ZkVerifyEvents.NewAggregationReceipt,
+            ZkVerifyEvents.DomainStateChanged,
+        ];
+
+        const { receivedEvents, attachListeners } = createEventTracker();
+
+        const emitter = session.subscribe();
+        attachListeners(emitter, expectedEvents);
+
         const domainId = await performRegisterDomain(session, 2, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted});
 
         const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk });
@@ -86,5 +100,47 @@ describe('Domain interaction tests', () => {
 
         await performHoldDomain(session, domainId, true);
         await performUnregisterDomain(session, domainId);
+
+        for (const eventType of expectedEvents) {
+            expect(receivedEvents[eventType]?.length).toBeGreaterThan(0);
+
+            receivedEvents[eventType].forEach((payload, index) => {
+                console.log(`Payload #${index + 1} for ${eventType}:`, payload);
+
+                switch (eventType) {
+                    case ZkVerifyEvents.NewDomain:
+                        expect(payload.domainId).toBeDefined();
+                        expect(typeof payload.domainId).toBe('number');
+                        break;
+
+                    case ZkVerifyEvents.ProofVerified:
+                        expect(payload.statement).toBeDefined();
+                        expect(typeof payload.statement).toBe('string');
+                        break;
+
+                    case ZkVerifyEvents.NewProof:
+                        expect(payload.statement).toBeDefined();
+                        expect(typeof payload.statement).toBe('string');
+                        expect(payload.domainId).toBeDefined();
+                        expect(payload.aggregationId).toBeDefined();
+                        break;
+
+                    case ZkVerifyEvents.NewAggregationReceipt:
+                        expect(payload.domainId).toBeDefined();
+                        expect(payload.aggregationId).toBeDefined();
+                        expect(payload.receipt).toBeDefined();
+                        break;
+
+                    case ZkVerifyEvents.DomainStateChanged:
+                        expect(payload.domainId).toBeDefined();
+                        expect(payload.domainState).toBeDefined();
+                        expect(['Hold', 'Removable']).toContain(payload.domainState);
+                        break;
+
+                    default:
+                        throw new Error(`Unhandled event type in test: ${eventType}`);
+                }
+            });
+        }
     });
 });

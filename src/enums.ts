@@ -27,7 +27,6 @@ export enum ZkVerifyEvents {
   NewAggregationReceipt = 'newAggregationReceipt',
   Broadcast = 'broadcast',
   CannotAggregate = 'cannotAggregate',
-  DomainFull = 'domainFull',
   DomainStateChanged = 'domainStateChanged',
   ErrorEvent = 'error',
   Finalized = 'finalized',
@@ -55,3 +54,13 @@ export enum Destination {
   None = 'None',
   Hyperbridge = 'Hyperbridge',
 }
+
+export const PUBLIC_ZK_VERIFY_EVENTS: ZkVerifyEvents[] = [
+  ZkVerifyEvents.NewAggregationReceipt,
+  ZkVerifyEvents.ProofVerified,
+  ZkVerifyEvents.NewProof,
+  ZkVerifyEvents.VkRegistered,
+  ZkVerifyEvents.NewDomain,
+  ZkVerifyEvents.DomainStateChanged,
+  ZkVerifyEvents.AggregationComplete,
+];

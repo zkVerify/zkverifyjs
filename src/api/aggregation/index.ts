@@ -16,14 +16,15 @@ import { NewAggregationEventSubscriptionOptions } from './types';
  * @param {ApiPromise} api - The Polkadot.js API instance.
  * @param {(data: NewAggregationReceipt) => void} callback - Function to call with the receipt data.
  * @param options
+ * @param emitter
  * @returns {EventEmitter} EventEmitter for listening to emitted events and unsubscribing.
  */
 export function subscribeToNewAggregationReceipts(
   api: ApiPromise,
   callback: (data: NewAggregationReceipt) => void,
-  options?: NewAggregationEventSubscriptionOptions,
+  options: NewAggregationEventSubscriptionOptions = undefined,
+  emitter: EventEmitter,
 ): EventEmitter {
-  const emitter = new EventEmitter();
   let domainId: number | undefined = undefined;
   let aggregationId: number | undefined = undefined;
 
