@@ -29,7 +29,7 @@ describe('Domain interaction tests', () => {
         session = await zkVerifySession.start().Volta().readOnly();
 
         try {
-            await session.registerDomain(1, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted }).domainIdPromise;
+            await session.registerDomain(1, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted }).transactionResult;
             fail("Expected an error but none was thrown.");
         } catch (error) {
             expect(error).toBeInstanceOf(Error);
@@ -37,7 +37,7 @@ describe('Domain interaction tests', () => {
         }
 
         try {
-            await session.unregisterDomain(9999999992).done;
+            await session.unregisterDomain(9999999992).transactionResult;
             fail("Expected an error but none was thrown.");
         } catch (error) {
             expect(error).toBeInstanceOf(Error);
@@ -45,7 +45,7 @@ describe('Domain interaction tests', () => {
         }
 
         try {
-            await session.holdDomain(9999993).done;
+            await session.holdDomain(9999993).transactionResult;
             fail("Expected an error but none was thrown.");
         } catch (error) {
             expect(error).toBeInstanceOf(Error);
@@ -57,7 +57,7 @@ describe('Domain interaction tests', () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Volta().withAccount(wallet);
 
-        const domainId = await performRegisterDomain(session, 1, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted});
+        const domainId = await performRegisterDomain(session, 2, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted});
 
         const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk });
 

@@ -1,20 +1,25 @@
 import {
     CurveType,
+    DomainOptions,
+    DomainTransactionInfo,
     Library,
     ProofOptions,
     ProofType,
+    RegisterDomainTransactionInfo,
+    TransactionInfo,
     TransactionStatus,
     TransactionType,
     VerifyTransactionInfo,
     VKRegistrationTransactionInfo,
-    zkVerifySession
+    zkVerifySession,
+    ZkVerifyEvents
 } from '../../src';
-import {EventResults, handleCommonEvents,} from './eventHandlers';
+import { EventResults, handleCommonEvents } from './eventHandlers';
 import path from "path";
 import fs from "fs";
-import { TransactionInfoByType } from "../../src/utils/transactions/types";
-import { ZkVerifyEvents } from "../../src";
-import { DomainOptions } from "../../src/types";
+import {AggregateTransactionInfo} from "../../src/types";
+
+
 
 export interface ProofData {
     proof: any;
@@ -115,11 +120,6 @@ export const performVerifyTransaction = async (
             );
             validateEventResults(eventResults);
 
-            expect(transactionInfo.domainId).toBeGreaterThanOrEqual(0);
-            expect(transactionInfo.domainId).toBe(domainId);
-
-            //TODO: Publish aggregation call and checks
-
             return { eventResults, transactionInfo };
         };
 
@@ -193,14 +193,11 @@ export const performVKRegistrationAndVerification = async (
 };
 
 export const validateTransactionInfo = (
-    transactionInfo: TransactionInfoByType[TransactionType.Verify] | TransactionInfoByType[TransactionType.VKRegistration],
-    expectedProofType: string
+    transactionInfo: TransactionInfo,
 ): void => {
     expect(transactionInfo).toBeDefined();
     expect(transactionInfo.blockHash).toBeDefined();
     expect(typeof transactionInfo.blockHash).toBe('string');
-
-    expect(transactionInfo.proofType).toBe(expectedProofType);
     expect(transactionInfo.status).toBe(TransactionStatus.Finalized);
 
     expect(transactionInfo.txHash).toBeDefined();
@@ -224,8 +221,9 @@ export const validateVerifyTransactionInfo = (
     expectedProofType: string,
     expectAggregation: boolean
 ): void => {
-    validateTransactionInfo(transactionInfo, expectedProofType);
+    validateTransactionInfo(transactionInfo);
 
+    expect(transactionInfo.proofType).toBe(expectedProofType);
     expect(transactionInfo.statement).toBeDefined();
     expect(typeof transactionInfo.statement).toBe('string');
 
@@ -244,7 +242,8 @@ export const validateVKRegistrationTransactionInfo = (
     transactionInfo: VKRegistrationTransactionInfo,
     expectedProofType: string
 ): void => {
-    validateTransactionInfo(transactionInfo, expectedProofType);
+    expect(transactionInfo.proofType).toBe(expectedProofType);
+    validateTransactionInfo(transactionInfo);
     expect(transactionInfo.statementHash).toBeDefined();
 };
 
@@ -290,7 +289,7 @@ export const performRegisterDomain = async (
     deliveryOptions: DomainOptions,
     signerAccount?: string
 ): Promise<number> => {
-    const { events, domainIdPromise } = session.registerDomain(aggregationSize, queueSize, deliveryOptions, signerAccount);
+    const { events, transactionResult } = session.registerDomain(aggregationSize, queueSize, deliveryOptions, signerAccount);
 
     const eventResults = handleCommonEvents(
         events,
@@ -310,15 +309,16 @@ export const performRegisterDomain = async (
         }
     });
 
-    const domainId = await domainIdPromise;
+    const transactionInfo = await transactionResult;
 
-    expect(domainId).toBeGreaterThan(0);
-    expect(domainId).toBe(newDomainId);
+    validateRegisterDomainTransactionInfo(transactionInfo)
+
+    expect(transactionInfo.domainId).toBe(newDomainId);
     expect(eventResults.errorEventEmitted).toBe(false);
     expect(eventResults.finalizedEmitted).toBe(true);
     expect(eventResults.includedInBlockEmitted).toBe(true);
 
-    return domainId;
+    return transactionInfo.domainId!;
 };
 
 export const performHoldDomain = async (
@@ -327,7 +327,7 @@ export const performHoldDomain = async (
     expectRemovable: boolean,
     accountAddress?: string
 ): Promise<void> => {
-    const { events, done } = session.holdDomain(domainId, accountAddress);
+    const { events, transactionResult } = session.holdDomain(domainId, accountAddress);
 
     const eventResults = handleCommonEvents(
         events,
@@ -351,7 +351,9 @@ export const performHoldDomain = async (
         }
     });
 
-    await done;
+    const transactionInfo = await transactionResult;
+
+    validateDomainTransactionInfo(transactionInfo, expectRemovable ? 'Removable' : 'Hold');
 
     if (domainStateAssertionError) throw domainStateAssertionError;
 
@@ -365,7 +367,7 @@ export const performUnregisterDomain = async (
     domainId: number,
     accountAddress?: string
 ): Promise<void> => {
-    const { events, done } = session.unregisterDomain(domainId, accountAddress);
+    const { events, transactionResult } = session.unregisterDomain(domainId, accountAddress);
 
     const eventResults = handleCommonEvents(
         events,
@@ -384,7 +386,9 @@ export const performUnregisterDomain = async (
         }
     });
 
-    await done;
+    const transactionInfo = await transactionResult;
+
+    validateDomainTransactionInfo(transactionInfo, 'Removed')
 
     if (assertionError) throw assertionError;
 
@@ -393,4 +397,83 @@ export const performUnregisterDomain = async (
     expect(eventResults.includedInBlockEmitted).toBe(true);
 };
 
-// TODO Perform aggregation publish, check Domain State Changed event as well to confirm Removable after Hold call.
+export const performAggregate = async (
+    session: zkVerifySession,
+    domainId: number,
+    aggregationId: number,
+    accountAddress?: string
+): Promise<void> => {
+    let newAggregationReceiptEmitted: boolean = false;
+
+    const { events, transactionResult } = session.aggregate(domainId, aggregationId, accountAddress);
+
+    const eventResults = handleCommonEvents(
+        events,
+        'Domain',
+        TransactionType.Aggregate
+    );
+
+    let assertionError: Error | null = null;
+
+    events.on(ZkVerifyEvents.NewAggregationReceipt, (eventData: any) => {
+        newAggregationReceiptEmitted = true;
+        try {
+            expect(eventData).toBeDefined();
+            expect(eventData.domainId).toBeDefined();
+            expect(eventData.aggregationId).toBeDefined();
+            expect(eventData.receipt).toBeDefined();
+        } catch (error) {
+            assertionError = error as Error;
+        }
+    });
+
+    const transactionInfo = await transactionResult;
+
+    validateAggregateTransactionInfo(transactionInfo)
+
+    if (assertionError) throw assertionError;
+
+    expect(eventResults.errorEventEmitted).toBe(false);
+    expect(newAggregationReceiptEmitted).toBe(true);
+    expect(eventResults.finalizedEmitted).toBe(true);
+    expect(eventResults.includedInBlockEmitted).toBe(true);
+};
+
+export const validateRegisterDomainTransactionInfo = (
+    transactionInfo: RegisterDomainTransactionInfo
+): void => {
+    validateTransactionInfo(transactionInfo);
+    expect(transactionInfo.domainId).toBeDefined();
+    expect(typeof transactionInfo.domainId).toBe('number');
+    expect(transactionInfo.domainId).toBeGreaterThanOrEqual(0);
+};
+
+export const validateDomainTransactionInfo = (
+    transactionInfo: DomainTransactionInfo,
+    expectedDomainState: string
+): void => {
+    validateTransactionInfo(transactionInfo);
+
+    expect(transactionInfo.domainId).toBeDefined();
+    expect(typeof transactionInfo.domainId).toBe('number');
+    expect(transactionInfo.domainId).toBeGreaterThanOrEqual(0);
+    expect(transactionInfo.domainState).toBeDefined();
+    expect(typeof transactionInfo.domainState).toBe('string');
+
+    expect(transactionInfo.domainState).toBe(expectedDomainState);
+};
+
+export const validateAggregateTransactionInfo = (
+    transactionInfo: AggregateTransactionInfo
+): void => {
+    validateTransactionInfo(transactionInfo);
+
+    expect(transactionInfo.domainId).toBeDefined();
+    expect(typeof transactionInfo.domainId).toBe('number');
+    expect(transactionInfo.domainId).toBeGreaterThanOrEqual(0);
+    expect(transactionInfo.aggregationId).toBeDefined();
+    expect(typeof transactionInfo.aggregationId).toBe('number');
+    expect(transactionInfo.aggregationId).toBeGreaterThanOrEqual(0);
+    expect(transactionInfo.receipt).toBeDefined();
+    expect(typeof transactionInfo.receipt).toBe('string');
+};

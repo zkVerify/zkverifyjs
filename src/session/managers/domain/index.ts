@@ -12,7 +12,12 @@ import {
   AccountConnection,
   WalletConnection,
 } from '../../../api/connection/types';
-import { AggregateTransactionInfo, DomainOptions } from '../../../types';
+import {
+  AggregateTransactionInfo,
+  DomainOptions,
+  DomainTransactionInfo,
+  RegisterDomainTransactionInfo,
+} from '../../../types';
 
 export class DomainManager {
   private readonly connectionManager: ConnectionManager;
@@ -32,8 +37,8 @@ export class DomainManager {
    * @param queueSize - Max number of aggregations in the queue (default is 16).
    * @param domainOptions - options object containing additional params such as destination and security rules.
    * @param signerAccount - Optional address of the account signing the transaction if multiple have been added to the session.
-   *
-   * @returns An object with an EventEmitter and a domain ID promise.
+   * @returns {{ events: EventEmitter; transactionResult: Promise<RegisterDomainTransactionInfo> }}
+   * An object containing an event emitter and a promise that resolves to a DomainTransactionInfo object when the call completes.
    * @throws {Error} If the session is read-only.
    */
   registerDomain(
@@ -41,7 +46,10 @@ export class DomainManager {
     queueSize: number = 16,
     domainOptions: DomainOptions,
     signerAccount?: string,
-  ): { events: EventEmitter; domainIdPromise: Promise<number> } {
+  ): {
+    events: EventEmitter;
+    transactionResult: Promise<RegisterDomainTransactionInfo>;
+  } {
     checkReadOnly(this.connectionManager.connectionDetails);
 
     return registerDomain(
@@ -79,8 +87,8 @@ export class DomainManager {
    * Places a hold on a domain.
    * @param {number} domainId - The ID of the domain to hold.
    * @param accountAddress - optional address of the account making the transaction
-   * @returns {{ events: EventEmitter; result: Promise<boolean> }}
-   * An object containing an event emitter and a promise that resolves when the call completes.
+   * @returns {{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }}
+   * An object containing an event emitter and a promise that resolves to a DomainTransactionInfo object when the call completes.
    * @throws {Error} If the connection is read-only.
    */
   holdDomain(
@@ -88,7 +96,7 @@ export class DomainManager {
     accountAddress?: string,
   ): {
     events: EventEmitter;
-    done: Promise<void>;
+    transactionResult: Promise<DomainTransactionInfo>;
   } {
     checkReadOnly(this.connectionManager.connectionDetails);
 
@@ -105,8 +113,8 @@ export class DomainManager {
    * Unregisters a domain.
    * @param {number} domainId - The ID of the domain to unregister.
    * @param accountAddress - optional address of the account making the transaction
-   * @returns {{ events: EventEmitter; done: Promise<void> }}
-   * An object containing an event emitter and a promise that resolves when the call completes.
+   * @returns {{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }}
+   * An object containing an event emitter and a promise that resolves to a DomainTransactionInfo object when the call completes.
    * @throws {Error} If the connection is read-only.
    */
   unregisterDomain(
@@ -114,7 +122,7 @@ export class DomainManager {
     accountAddress?: string,
   ): {
     events: EventEmitter;
-    done: Promise<void>;
+    transactionResult: Promise<DomainTransactionInfo>;
   } {
     checkReadOnly(this.connectionManager.connectionDetails);
 

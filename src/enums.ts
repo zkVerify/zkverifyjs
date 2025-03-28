@@ -24,7 +24,7 @@ export enum ZkVerifyEvents {
   AggregationComplete = 'aggregationComplete',
   AggregationMatched = 'aggregationMatched',
   AggregationMissed = 'aggregationMissed',
-  AggregationReceipt = 'aggregationReceipt',
+  NewAggregationReceipt = 'newAggregationReceipt',
   Broadcast = 'broadcast',
   CannotAggregate = 'cannotAggregate',
   DomainFull = 'domainFull',
@@ -36,6 +36,7 @@ export enum ZkVerifyEvents {
   NewProof = 'newProof',
   ProofVerified = 'proofVerified',
   Unsubscribe = 'unsubscribe',
+  VkRegistered = 'vkRegistered',
 }
 
 export enum Risc0Version {

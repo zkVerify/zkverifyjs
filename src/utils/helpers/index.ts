@@ -301,3 +301,18 @@ export function normalizeDeliveryFromOptions(options: DomainOptions): Delivery {
     price: deliveryInput.price,
   };
 }
+
+/**
+ * Safe wrapper for emitting events without crashing.
+ */
+export const safeEmit = (
+  emitter: EventEmitter,
+  event: string,
+  data: unknown,
+) => {
+  try {
+    emitter.emit(event, data);
+  } catch (error) {
+    console.debug(`Failed to emit event ${event}:`, error);
+  }
+};

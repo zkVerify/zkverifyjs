@@ -8,11 +8,13 @@ import EventEmitter from 'events';
 import {
   AggregateTransactionInfo,
   DomainOptions,
+  DomainTransactionInfo,
   RegisterDomainTransactionInfo,
 } from '../../types';
 import { VerifyOptions } from '../../session/types';
 import { handleTransaction } from '../../utils/transactions';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
 
 export const registerDomain = (
   connection: AccountConnection | WalletConnection,
@@ -20,7 +22,10 @@ export const registerDomain = (
   queueSize: number = 16,
   domainOptions: DomainOptions,
   signerAccount?: string,
-): { events: EventEmitter; domainIdPromise: Promise<number> } => {
+): {
+  events: EventEmitter;
+  transactionResult: Promise<RegisterDomainTransactionInfo>;
+} => {
   if (aggregationSize <= 0 || aggregationSize > 128)
     throw new Error(`registerDomain aggregationSize must be between 1 and 128`);
   if (queueSize <= 0 || queueSize > 16)
@@ -31,12 +36,7 @@ export const registerDomain = (
     );
 
   const delivery = normalizeDeliveryFromOptions(domainOptions);
-
   const { api } = connection;
-  const selectedAccount: KeyringPair | undefined = getKeyringAccountIfAvailable(
-    connection,
-    signerAccount,
-  );
 
   const registerExtrinsic = api.tx.aggregate.registerDomain(
     aggregationSize,
@@ -48,173 +48,66 @@ export const registerDomain = (
 
   const emitter = new EventEmitter();
 
-  const domainIdPromise = new Promise<number>((resolve, reject) => {
-    (async () => {
-      try {
-        const transactionResult = await (async () => {
-          if (selectedAccount) {
-            return await handleTransaction(
-              api,
-              registerExtrinsic,
-              selectedAccount,
-              undefined,
-              emitter,
-              {} as VerifyOptions,
-              TransactionType.DomainRegistration,
-            );
-          } else if ('injector' in connection) {
-            const { signer } = connection.injector;
-            return await handleTransaction(
-              api,
-              registerExtrinsic,
-              connection.accountAddress,
-              signer,
-              emitter,
-              {} as VerifyOptions,
-              TransactionType.DomainRegistration,
-            );
-          } else {
-            throw new Error('Unsupported connection type.');
-          }
-        })();
+  const transactionResult = performTransaction<RegisterDomainTransactionInfo>(
+    connection,
+    registerExtrinsic,
+    TransactionType.DomainRegistration,
+    emitter,
+    signerAccount,
+  );
 
-        const domainId = (transactionResult as RegisterDomainTransactionInfo)
-          .domainId;
-        if (typeof domainId !== 'number') {
-          throw new Error('Domain registration failed: No domain ID returned');
-        }
-
-        emitter.removeAllListeners();
-        resolve(domainId);
-      } catch (error) {
-        emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-        emitter.removeAllListeners();
-        reject(error);
-      }
-    })();
-  });
-
-  return { events: emitter, domainIdPromise };
+  return { events: emitter, transactionResult };
 };
 
 export const holdDomain = (
   connection: AccountConnection | WalletConnection,
   domainId: number,
-  accountAddress?: string,
-): { events: EventEmitter; done: Promise<void> } => {
+  signerAccount?: string,
+): {
+  events: EventEmitter;
+  transactionResult: Promise<DomainTransactionInfo>;
+} => {
   if (domainId < 0)
     throw new Error(`holdDomain domainId must be greater than 0`);
 
-  const { api } = connection;
-  const selectedAccount: KeyringPair | undefined = getKeyringAccountIfAvailable(
-    connection,
-    accountAddress,
-  );
+  const holdExtrinsic = connection.api.tx.aggregate.holdDomain(domainId);
   const emitter = new EventEmitter();
 
-  const holdExtrinsic = api.tx.aggregate.holdDomain(domainId);
+  const transactionResult = performTransaction<DomainTransactionInfo>(
+    connection,
+    holdExtrinsic,
+    TransactionType.DomainHold,
+    emitter,
+    signerAccount,
+  );
 
-  const done = new Promise<void>((resolve, reject) => {
-    (async () => {
-      try {
-        await (async () => {
-          if (selectedAccount) {
-            return await handleTransaction(
-              api,
-              holdExtrinsic,
-              selectedAccount,
-              undefined,
-              emitter,
-              {} as VerifyOptions,
-              TransactionType.DomainHold,
-            );
-          } else if ('injector' in connection) {
-            const { signer } = connection.injector;
-            return await handleTransaction(
-              api,
-              holdExtrinsic,
-              connection.accountAddress,
-              signer,
-              emitter,
-              {} as VerifyOptions,
-              TransactionType.DomainHold,
-            );
-          } else {
-            throw new Error('Unsupported connection type.');
-          }
-        })();
-
-        emitter.removeAllListeners();
-        resolve();
-      } catch (error) {
-        emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-        emitter.removeAllListeners();
-        reject(error);
-      }
-    })();
-  });
-
-  return { events: emitter, done };
+  return { events: emitter, transactionResult };
 };
 
 export const unregisterDomain = (
   connection: AccountConnection | WalletConnection,
   domainId: number,
-  accountAddress?: string,
-): { events: EventEmitter; done: Promise<void> } => {
+  signerAccount?: string,
+): {
+  events: EventEmitter;
+  transactionResult: Promise<DomainTransactionInfo>;
+} => {
   if (domainId < 0)
     throw new Error(`unregisterDomain domainId must be greater than 0`);
 
-  const { api } = connection;
-  const selectedAccount: KeyringPair | undefined = getKeyringAccountIfAvailable(
-    connection,
-    accountAddress,
-  );
+  const unregisterExtrinsic =
+    connection.api.tx.aggregate.unregisterDomain(domainId);
   const emitter = new EventEmitter();
 
-  const unregisterExtrinsic = api.tx.aggregate.unregisterDomain(domainId);
+  const transactionResult = performTransaction<DomainTransactionInfo>(
+    connection,
+    unregisterExtrinsic,
+    TransactionType.DomainUnregister,
+    emitter,
+    signerAccount,
+  );
 
-  const done = new Promise<void>((resolve, reject) => {
-    (async () => {
-      try {
-        await (async () => {
-          if (selectedAccount) {
-            return await handleTransaction(
-              api,
-              unregisterExtrinsic,
-              selectedAccount,
-              undefined,
-              emitter,
-              {} as VerifyOptions,
-              TransactionType.DomainUnregister,
-            );
-          } else if ('injector' in connection) {
-            const { signer } = connection.injector;
-            return await handleTransaction(
-              api,
-              unregisterExtrinsic,
-              connection.accountAddress,
-              signer,
-              emitter,
-              {} as VerifyOptions,
-              TransactionType.DomainUnregister,
-            );
-          } else {
-            throw new Error('Unsupported connection type.');
-          }
-        })();
-
-        emitter.removeAllListeners();
-        resolve();
-      } catch (error) {
-        emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-        emitter.removeAllListeners();
-        reject(error);
-      }
-    })();
-  });
-
-  return { events: emitter, done };
+  return { events: emitter, transactionResult };
 };
 
 export const aggregate = (
@@ -226,52 +119,69 @@ export const aggregate = (
   events: EventEmitter;
   transactionResult: Promise<AggregateTransactionInfo>;
 } => {
+  const registerExtrinsic = connection.api.tx.aggregate.aggregate(
+    domainId,
+    aggregationId,
+  );
+  const emitter = new EventEmitter();
+
+  const transactionResult = performTransaction<AggregateTransactionInfo>(
+    connection,
+    registerExtrinsic,
+    TransactionType.Aggregate,
+    emitter,
+    signerAccount,
+  );
+
+  return { events: emitter, transactionResult };
+};
+
+export const performTransaction = async <T>(
+  connection: AccountConnection | WalletConnection,
+  extrinsic: SubmittableExtrinsic<'promise'>,
+  transactionType: TransactionType,
+  emitter: EventEmitter,
+  signerAccount?: string,
+): Promise<T> => {
   const { api } = connection;
   const selectedAccount: KeyringPair | undefined = getKeyringAccountIfAvailable(
     connection,
     signerAccount,
   );
 
-  const registerExtrinsic = api.tx.aggregate.aggregate(domainId, aggregationId);
-  const emitter = new EventEmitter();
+  try {
+    const result = await (async () => {
+      if (selectedAccount) {
+        return await handleTransaction(
+          api,
+          extrinsic,
+          selectedAccount,
+          undefined,
+          emitter,
+          {} as VerifyOptions,
+          transactionType,
+        );
+      } else if ('injector' in connection) {
+        const { signer } = connection.injector;
+        return await handleTransaction(
+          api,
+          extrinsic,
+          connection.accountAddress,
+          signer,
+          emitter,
+          {} as VerifyOptions,
+          transactionType,
+        );
+      } else {
+        throw new Error('Unsupported connection type.');
+      }
+    })();
 
-  const transactionResult = (async (): Promise<AggregateTransactionInfo> => {
-    try {
-      const result = await (async () => {
-        if (selectedAccount) {
-          return await handleTransaction(
-            api,
-            registerExtrinsic,
-            selectedAccount,
-            undefined,
-            emitter,
-            {} as VerifyOptions,
-            TransactionType.Aggregate,
-          );
-        } else if ('injector' in connection) {
-          const { signer } = connection.injector;
-          return await handleTransaction(
-            api,
-            registerExtrinsic,
-            connection.accountAddress,
-            signer,
-            emitter,
-            {} as VerifyOptions,
-            TransactionType.Aggregate,
-          );
-        } else {
-          throw new Error('Unsupported connection type.');
-        }
-      })();
-
-      emitter.removeAllListeners();
-      return result as AggregateTransactionInfo;
-    } catch (error) {
-      emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-      emitter.removeAllListeners();
-      throw error;
-    }
-  })();
-
-  return { events: emitter, transactionResult };
+    emitter.removeAllListeners();
+    return result as T;
+  } catch (error) {
+    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+    emitter.removeAllListeners();
+    throw error;
+  }
 };

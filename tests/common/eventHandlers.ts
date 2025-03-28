@@ -6,6 +6,7 @@ export interface EventResults {
     errorEventEmitted: boolean;
     broadcastEmitted?: boolean;
     unsubscribeEmitted?: boolean;
+    newAggregationReceiptEmitted?: boolean;
 }
 
 const assertCommonFields = (
@@ -63,6 +64,12 @@ const assertDomainEventData = (eventData: any, expectedType: TransactionType) =>
     expect(eventData.aggregationId).toBeUndefined();
 };
 
+const assertAggregateEventData = (eventData: any) => {
+    expect(eventData.domainId).toBeDefined();
+    expect(eventData.aggregationId).toBeDefined();
+    expect(eventData.receipt).toBeDefined();
+};
+
 const assertEventDataByType = (
     eventData: any,
     expectedType: TransactionType,
@@ -79,6 +86,9 @@ const assertEventDataByType = (
         case TransactionType.DomainHold:
         case TransactionType.DomainUnregister:
             assertDomainEventData(eventData, expectedType);
+            break;
+        case TransactionType.Aggregate:
+            assertAggregateEventData(eventData);
             break;
         default:
             throw new Error(`Unsupported TransactionType: ${expectedType}`);

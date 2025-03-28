@@ -59,7 +59,8 @@ export interface DomainTransactionInfo extends TransactionInfo {
 
 export interface AggregateTransactionInfo extends TransactionInfo {
   domainId: number | undefined;
-  domainState: string;
+  aggregationId: number | undefined;
+  receipt: string;
 }
 
 export interface AccountInfo {
