@@ -9,6 +9,12 @@ import { NewAggregationEventSubscriptionOptions } from '../../../api/aggregation
 import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces/system';
 
+interface SubscriptionEntry {
+  event: ZkVerifyEvents;
+  callback?: (data: unknown) => void;
+  options?: NewAggregationEventSubscriptionOptions | undefined;
+}
+
 export class EventManager {
   private readonly connectionManager: ConnectionManager;
   private readonly emitter: EventEmitter;
@@ -23,39 +29,34 @@ export class EventManager {
    * For `NewAggregationReceipt`, `options` can include `domainId` and `aggregationId`.
    * For runtime events (e.g., ProofVerified), options are ignored.
    *
-   * @param subscriptions - List of events to subscribe to with optional filtering options.
+   * @param subscriptions - List of events to subscribe to with optional callback and filtering options.
    * @returns EventEmitter to allow listening to additional internal events (e.g., `Unsubscribe`).
    */
-  subscribe(
-    subscriptions?: {
-      event: ZkVerifyEvents;
-      callback: (data: unknown) => void;
-      options?: unknown;
-    }[],
-  ): EventEmitter {
+  subscribe(subscriptions?: SubscriptionEntry[]): EventEmitter {
     const { api } = this.connectionManager;
 
-    const eventsToSubscribe: {
-      event: ZkVerifyEvents;
-      callback: (data: unknown) => void;
-      options?: unknown;
-    }[] = subscriptions?.length
+    const eventsToSubscribe: SubscriptionEntry[] = subscriptions?.length
       ? subscriptions
-      : PUBLIC_ZK_VERIFY_EVENTS.map((event) => ({
-          event,
-          callback: (data: unknown) => console.log(`[${event}]`, data),
-          options:
-            event === ZkVerifyEvents.NewAggregationReceipt
-              ? (undefined as NewAggregationEventSubscriptionOptions)
-              : undefined,
-        }));
+      : PUBLIC_ZK_VERIFY_EVENTS.map(
+          (event): SubscriptionEntry => ({
+            event,
+            callback: undefined,
+            options:
+              event === ZkVerifyEvents.NewAggregationReceipt
+                ? (undefined as NewAggregationEventSubscriptionOptions)
+                : undefined,
+          }),
+        );
 
     eventsToSubscribe.forEach(({ event, callback, options }) => {
       switch (event) {
         case ZkVerifyEvents.NewAggregationReceipt:
           subscribeToNewAggregationReceipts(
             api,
-            callback,
+            (data) => {
+              this.emitter.emit(event, data);
+              if (callback) callback(data);
+            },
             options as NewAggregationEventSubscriptionOptions,
             this.emitter,
           );
@@ -84,37 +85,52 @@ export class EventManager {
   private _subscribeToRuntimeEvent(
     api: ApiPromise,
     eventType: ZkVerifyEvents,
-    callback: (data: unknown) => void,
+    callback?: (data: unknown) => void,
   ) {
-    api.query.system.events((records: EventRecord[]) => {
-      for (const { event, phase } of records) {
-        const key = `${event.section}::${event.method}`;
+    api.query.system
+      .events((records: EventRecord[]) => {
+        for (const { event, phase } of records) {
+          const key = `${event.section}::${event.method}`;
 
-        const matchMap: Partial<Record<ZkVerifyEvents, string | RegExp>> = {
-          [ZkVerifyEvents.ProofVerified]: /::ProofVerified/,
-          [ZkVerifyEvents.CannotAggregate]: 'aggregate::CannotAggregate',
-          [ZkVerifyEvents.NewProof]: 'aggregate::NewProof',
-          [ZkVerifyEvents.VkRegistered]: /::VkRegistered/,
-          [ZkVerifyEvents.AggregationComplete]:
-            'aggregate::AggregationComplete',
-          [ZkVerifyEvents.NewDomain]: 'aggregate::NewDomain',
-          [ZkVerifyEvents.DomainStateChanged]: 'aggregate::DomainStateChanged',
-        };
+          const matchMap: Partial<Record<ZkVerifyEvents, string | RegExp>> = {
+            [ZkVerifyEvents.ProofVerified]: /::ProofVerified/,
+            [ZkVerifyEvents.CannotAggregate]: 'aggregate::CannotAggregate',
+            [ZkVerifyEvents.NewProof]: 'aggregate::NewProof',
+            [ZkVerifyEvents.VkRegistered]: /::VkRegistered/,
+            [ZkVerifyEvents.AggregationComplete]:
+              'aggregate::AggregationComplete',
+            [ZkVerifyEvents.NewDomain]: 'aggregate::NewDomain',
+            [ZkVerifyEvents.DomainStateChanged]:
+              'aggregate::DomainStateChanged',
+          };
 
-        const expected = matchMap[eventType];
-        if (
-          expected &&
-          ((typeof expected === 'string' && key === expected) ||
-            (expected instanceof RegExp && expected.test(key)))
-        ) {
-          callback({
-            event: eventType,
-            data: event.data.toHuman?.() ?? event.data.toString(),
-            phase,
-          });
+          const expected = matchMap[eventType];
+          if (
+            expected &&
+            ((typeof expected === 'string' && key === expected) ||
+              (expected instanceof RegExp && expected.test(key)))
+          ) {
+            const parsedPhase = phase.toJSON
+              ? phase.toJSON()
+              : phase.toString();
+
+            const eventPayload = {
+              event: eventType,
+              data: event.data.toHuman?.() ?? event.data.toString(),
+              phase: parsedPhase,
+            };
+
+            this.emitter.emit(eventType, eventPayload);
+
+            if (callback) {
+              callback(eventPayload);
+            }
+          }
         }
-      }
-    });
+      })
+      .catch((error) => {
+        this.emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+      });
   }
 
   /**

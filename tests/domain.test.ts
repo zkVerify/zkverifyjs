@@ -1,8 +1,8 @@
 import {ProofType, zkVerifySession} from '../src';
 import { walletPool } from './common/walletPool';
-import {loadProofAndVK, performHoldDomain, performRegisterDomain, performUnregisterDomain} from "./common/utils";
+import { loadProofAndVK, performHoldDomain, performRegisterDomain, performUnregisterDomain } from "./common/utils";
 import { AggregateSecurityRules, Destination, ZkVerifyEvents } from "../src";
-import {createEventTracker} from "./common/eventHandlers";
+import { createEventTracker } from "./common/eventHandlers";
 
 jest.setTimeout(120000);
 describe('Domain interaction tests', () => {
@@ -26,7 +26,7 @@ describe('Domain interaction tests', () => {
         }
     });
 
-    it.skip('should error when attempting to register, unregister or hold a domain in a readOnly session', async () => {
+    it('should error when attempting to register, unregister or hold a domain in a readOnly session', async () => {
         session = await zkVerifySession.start().Volta().readOnly();
 
         try {
@@ -83,21 +83,14 @@ describe('Domain interaction tests', () => {
             },
             domainId,
         });
-        console.log("Awaiting Verify Transaction Result.")
-        const txInfo = await transactionResult;
-        console.log("Verify Transaction Result Complete.")
 
+        const txInfo = await transactionResult;
         expect(txInfo.domainId).toBeDefined();
         expect(txInfo.aggregationId).toBeDefined();
-        console.log(`domainId: ${txInfo.domainId}`)
-        console.log(`aggregationId: ${txInfo.aggregationId}`)
 
-        console.log("Awaiting Aggregate Transaction Result.")
         const { events, transactionResult: aggregateTransactionResult } = session.aggregate(txInfo.domainId!, txInfo.aggregationId!);
 
         await aggregateTransactionResult;
-        console.log("Aggregate Transaction Result: SUCCESS")
-
         await performHoldDomain(session, domainId, true);
         await performUnregisterDomain(session, domainId);
 
@@ -105,36 +98,39 @@ describe('Domain interaction tests', () => {
             expect(receivedEvents[eventType]?.length).toBeGreaterThan(0);
 
             receivedEvents[eventType].forEach((payload, index) => {
-                console.log(`Payload #${index + 1} for ${eventType}:`, payload);
-
+                console.debug(`Payload #${index + 1} for ${eventType}:`, payload);
                 switch (eventType) {
                     case ZkVerifyEvents.NewDomain:
-                        expect(payload.domainId).toBeDefined();
-                        expect(typeof payload.domainId).toBe('number');
+                        expect(payload.data.id).toBeDefined();
+
+                        const domainId = Number(payload.data.id);
+                        expect(domainId).toBeDefined();
+                        expect(typeof domainId).toBe('number');
+                        expect(domainId).toBeGreaterThan(0);
                         break;
 
                     case ZkVerifyEvents.ProofVerified:
-                        expect(payload.statement).toBeDefined();
-                        expect(typeof payload.statement).toBe('string');
+                        expect(payload.data.statement).toBeDefined();
+                        expect(typeof payload.data.statement).toBe('string');
                         break;
 
                     case ZkVerifyEvents.NewProof:
-                        expect(payload.statement).toBeDefined();
-                        expect(typeof payload.statement).toBe('string');
-                        expect(payload.domainId).toBeDefined();
-                        expect(payload.aggregationId).toBeDefined();
+                        expect(payload.data.statement).toBeDefined();
+                        expect(typeof payload.data.statement).toBe('string');
+                        expect(payload.data.domainId).toBeDefined();
+                        expect(payload.data.aggregationId).toBeDefined();
                         break;
 
                     case ZkVerifyEvents.NewAggregationReceipt:
-                        expect(payload.domainId).toBeDefined();
-                        expect(payload.aggregationId).toBeDefined();
-                        expect(payload.receipt).toBeDefined();
+                        expect(payload.data.domainId).toBeDefined();
+                        expect(payload.data.aggregationId).toBeDefined();
+                        expect(payload.data.receipt).toBeDefined();
                         break;
 
                     case ZkVerifyEvents.DomainStateChanged:
-                        expect(payload.domainId).toBeDefined();
-                        expect(payload.domainState).toBeDefined();
-                        expect(['Hold', 'Removable']).toContain(payload.domainState);
+                        expect(payload.data.id).toBeDefined();
+                        expect(payload.data.state).toBeDefined();
+                        expect(['Hold', 'Removable', 'Removed']).toContain(payload.data.state);
                         break;
 
                     default:

@@ -1,7 +1,6 @@
 import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces/system';
 import { EventEmitter } from 'events';
-import { NewAggregationReceipt } from '../../types';
 import { ZkVerifyEvents } from '../../enums';
 import { NewAggregationEventSubscriptionOptions } from './types';
 
@@ -14,24 +13,24 @@ import { NewAggregationEventSubscriptionOptions } from './types';
  * - Throws if `aggregationId` is provided without a `domainId`.
  *
  * @param {ApiPromise} api - The Polkadot.js API instance.
- * @param {(data: NewAggregationReceipt) => void} callback - Function to call with the receipt data.
+ * @param callback
  * @param options
  * @param emitter
  * @returns {EventEmitter} EventEmitter for listening to emitted events and unsubscribing.
  */
 export function subscribeToNewAggregationReceipts(
   api: ApiPromise,
-  callback: (data: NewAggregationReceipt) => void,
+  callback: (data: unknown) => void,
   options: NewAggregationEventSubscriptionOptions = undefined,
   emitter: EventEmitter,
 ): EventEmitter {
-  let domainId: number | undefined = undefined;
-  let aggregationId: number | undefined = undefined;
+  let domainId: string | undefined = undefined;
+  let aggregationId: string | undefined = undefined;
 
   if (options) {
-    domainId = options.domainId;
+    domainId = options.domainId?.toString();
     if ('aggregationId' in options) {
-      aggregationId = options.aggregationId;
+      aggregationId = options.aggregationId?.toString();
 
       if (domainId === undefined) {
         throw new Error(
@@ -44,22 +43,41 @@ export function subscribeToNewAggregationReceipts(
   api.query.system
     .events((events: EventRecord[]) => {
       events.forEach((record: EventRecord) => {
-        const { event } = record;
+        const { event, phase } = record;
 
         if (
           event.section === 'aggregate' &&
           event.method === 'NewAggregationReceipt'
         ) {
-          const currentDomainId = Number(event.data[0]);
-          const currentAggregationId = Number(event.data[1]);
-          const receipt = event.data[2].toString();
+          let currentDomainId: string | undefined;
+          let currentAggregationId: string | undefined;
+          const eventData = event.data.toHuman
+            ? event.data.toHuman()
+            : event.data.toString();
+
+          const eventObject = {
+            event: ZkVerifyEvents.NewAggregationReceipt,
+            data: eventData,
+            phase: phase.toJSON ? phase.toJSON() : phase.toString(),
+          };
+
+          try {
+            currentDomainId = event.data[0]?.toString();
+            currentAggregationId = event.data[1]?.toString();
+
+            if (!currentDomainId || !currentAggregationId) {
+              throw new Error(
+                'Event data is missing required fields: domainId or aggregationId.',
+              );
+            }
+          } catch (error) {
+            console.error('Error accessing event data:', error);
+            throw error;
+          }
 
           if (domainId === undefined && aggregationId === undefined) {
-            callback({
-              domainId: currentDomainId,
-              aggregationId: currentAggregationId,
-              receipt,
-            });
+            callback(eventObject);
+            emitter.emit(ZkVerifyEvents.NewAggregationReceipt, eventObject);
             return;
           }
 
@@ -68,33 +86,32 @@ export function subscribeToNewAggregationReceipts(
             aggregationId === undefined &&
             currentDomainId === domainId
           ) {
-            callback({
-              domainId: currentDomainId,
-              aggregationId: currentAggregationId,
-              receipt,
-            });
+            callback(eventObject);
+            emitter.emit(ZkVerifyEvents.NewAggregationReceipt, eventObject);
             return;
           }
 
           if (aggregationId !== undefined) {
             if (currentAggregationId < aggregationId) {
-              emitter.emit(ZkVerifyEvents.AggregationBeforeExpected, {
-                expectedId: aggregationId,
-                receivedId: currentAggregationId,
-                event: record.event,
-              });
+              emitter.emit(
+                ZkVerifyEvents.AggregationBeforeExpected,
+                eventObject,
+              );
               return;
             }
 
-            if (currentAggregationId === aggregationId + 1) {
-              scanLastNBlocksForReceipt(api, domainId!, aggregationId, 30)
+            if (
+              currentAggregationId === (parseInt(aggregationId) + 1).toString()
+            ) {
+              scanLastNBlocksForReceipt(
+                api,
+                parseInt(domainId!),
+                parseInt(aggregationId),
+                30,
+              )
                 .then((found) => {
                   if (!found) {
-                    emitter.emit(ZkVerifyEvents.AggregationMissed, {
-                      expectedId: aggregationId,
-                      receivedId: currentAggregationId,
-                      event: record.event,
-                    });
+                    emitter.emit(ZkVerifyEvents.AggregationMissed, eventObject);
                   }
                   unsubscribeFromNewAggregationReceipts(emitter);
                 })
@@ -105,25 +122,15 @@ export function subscribeToNewAggregationReceipts(
               return;
             }
 
-            if (currentAggregationId > aggregationId + 1) {
-              emitter.emit(ZkVerifyEvents.AggregationMissed, {
-                expectedId: aggregationId,
-                receivedId: currentAggregationId,
-                event: record.event,
-              });
+            if (parseInt(currentAggregationId) > parseInt(aggregationId) + 1) {
+              emitter.emit(ZkVerifyEvents.AggregationMissed, eventObject);
               unsubscribeFromNewAggregationReceipts(emitter);
               return;
             }
 
             if (currentAggregationId === aggregationId) {
-              const receiptEvent: NewAggregationReceipt = {
-                domainId: currentDomainId,
-                aggregationId: currentAggregationId,
-                receipt,
-              };
-
-              emitter.emit(ZkVerifyEvents.AggregationMatched, receiptEvent);
-              callback(receiptEvent);
+              emitter.emit(ZkVerifyEvents.AggregationMatched, eventObject);
+              callback(eventObject);
               unsubscribeFromNewAggregationReceipts(emitter);
               return;
             }

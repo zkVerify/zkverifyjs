@@ -10,8 +10,6 @@ export interface EventResults {
     newAggregationReceiptEmitted?: boolean;
 }
 
-export type EventTracker = Record<ZkVerifyEvents, any[]>;
-
 export function createEventTracker() {
     const receivedEvents: Record<string, any[]> = {};
 
@@ -52,7 +50,6 @@ const assertCommonFields = (
         expect(eventData.proofType).toBeUndefined();
     }
 };
-
 
 const assertVerifyEventData = (eventData: any, expectAggregationData: boolean) => {
     expect(eventData.statement).toBeDefined();
