@@ -1,6 +1,12 @@
 import {ProofType, zkVerifySession} from '../src';
 import { walletPool } from './common/walletPool';
-import { loadProofAndVK, performHoldDomain, performRegisterDomain, performUnregisterDomain } from "./common/utils";
+import {
+    loadProofAndVK,
+    performHoldDomain,
+    performRegisterDomain,
+    performUnregisterDomain,
+    validateAggregateStatementPathResult
+} from "./common/utils";
 import { AggregateSecurityRules, Destination, ZkVerifyEvents } from "../src";
 import { createEventTracker } from "./common/eventHandlers";
 
@@ -91,9 +97,14 @@ describe('Domain interaction tests', () => {
         const { events, transactionResult: aggregateTransactionResult } = session.aggregate(txInfo.domainId!, txInfo.aggregationId!);
         const aggregationReceipt = await session.waitForAggregationReceipt(txInfo.domainId!, txInfo.aggregationId!);
 
-        // TODO:  Use the aggregationReceipt and transactionResult statement path to call RPC statementPath.
-
         await aggregateTransactionResult;
+
+        console.log("Getting the statement path!!")
+        const result = await session.getAggregateStatementPath(aggregationReceipt.blockHash!, txInfo.domainId!, txInfo.aggregationId!, txInfo.statement!);
+        console.log("PATH IS: " + JSON.stringify(result));
+        validateAggregateStatementPathResult(result);
+        console.log("VALIDATED!!");
+
         await performHoldDomain(session, domainId, true);
         await performUnregisterDomain(session, domainId);
 

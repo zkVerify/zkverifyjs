@@ -4,6 +4,7 @@ import { Vec } from '@polkadot/types-codec';
 import { EventEmitter } from 'events';
 import { ZkVerifyEvents } from '../../enums';
 import { NewAggregationEventSubscriptionOptions } from './types';
+import { Codec } from '@polkadot/types/types';
 
 /**
  * Subscribes to `aggregation.NewAggregationReceipt` events and triggers the provided callback.
@@ -89,7 +90,9 @@ export async function subscribeToNewAggregationReceipts(
 
             const eventData = event.data.toHuman
               ? event.data.toHuman()
-              : Array.from(event.data, (item: unknown) => item.toString());
+              : Array.from(event.data as Iterable<Codec>, (item: Codec) =>
+                  item.toString(),
+                );
 
             const eventObject = {
               event: ZkVerifyEvents.NewAggregationReceipt,

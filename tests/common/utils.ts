@@ -17,7 +17,7 @@ import {
 import { EventResults, handleCommonEvents } from './eventHandlers';
 import path from "path";
 import fs from "fs";
-import {AggregateTransactionInfo} from "../../src/types";
+import { AggregateStatementPathResult, AggregateTransactionInfo } from "../../src/types";
 
 
 
@@ -477,3 +477,35 @@ export const validateAggregateTransactionInfo = (
     expect(transactionInfo.receipt).toBeDefined();
     expect(typeof transactionInfo.receipt).toBe('string');
 };
+
+export function validateAggregateStatementPathResult(result: unknown): asserts result is AggregateStatementPathResult {
+    if (typeof result !== 'object' || result === null) {
+        throw new Error('Result must be a non-null object.');
+    }
+
+    if (!('root' in result && 'proof' in result && 'numberOfLeaves' in result && 'leafIndex' in result && 'leaf' in result)) {
+        throw new Error('Result object is missing one or more required properties: root, proof, numberOfLeaves, leafIndex, leaf.');
+    }
+
+    const { root, proof, numberOfLeaves, leafIndex, leaf } = result as Record<string, unknown>;
+
+    if (typeof root !== 'string' || !/^0x[a-fA-F0-9]{64}$/.test(root)) {
+        throw new Error(`Invalid 'root': Received ${JSON.stringify(root)}`);
+    }
+
+    if (!Array.isArray(proof)) {
+        throw new Error(`'proof' must be an array. Received: ${typeof proof}`);
+    }
+
+    if (typeof numberOfLeaves !== 'number' || !Number.isInteger(numberOfLeaves) || numberOfLeaves < 1) {
+        throw new Error(`Invalid 'numberOfLeaves': Received ${JSON.stringify(numberOfLeaves)}. Must be a positive integer >= 1.`);
+    }
+
+    if (typeof leafIndex !== 'number' || !Number.isInteger(leafIndex) || leafIndex < 0) {
+        throw new Error(`Invalid 'leafIndex': Received ${JSON.stringify(leafIndex)}. Must be a non-negative integer.`);
+    }
+
+    if (typeof leaf !== 'string' || !/^0x[a-fA-F0-9]{64}$/.test(leaf)) {
+        throw new Error(`Invalid 'leaf': Received ${JSON.stringify(leaf)}`);
+    }
+}

@@ -3,7 +3,9 @@ import {
   AggregateSecurityRules,
   Destination,
   TransactionStatus,
+  ZkVerifyEvents,
 } from './enums';
+import { NewAggregationEventSubscriptionOptions } from './api/aggregation/types';
 
 export interface ProofProcessor {
   formatProof(proof: unknown, options?: unknown, version?: string): unknown;
@@ -127,3 +129,28 @@ export type Delivery =
       };
       price: number;
     };
+
+export interface NewAggregationReceiptEvent {
+  event: ZkVerifyEvents;
+  blockHash: string;
+  data: {
+    domainId?: string;
+    aggregationId?: string;
+    receipt?: string;
+  };
+  phase: string;
+}
+
+export interface AggregateStatementPathResult {
+  root: string;
+  proof: string[];
+  numberOfLeaves: number;
+  leafIndex: number;
+  leaf: string;
+}
+
+export interface SubscriptionEntry {
+  event: ZkVerifyEvents;
+  callback?: (data: unknown) => void;
+  options?: NewAggregationEventSubscriptionOptions | undefined;
+}

@@ -29,6 +29,9 @@ export {
   Delivery,
   DeliveryInput,
   DomainOptions,
+  SubscriptionEntry,
+  NewAggregationReceiptEvent,
+  AggregateStatementPathResult,
 } from './types';
 export { ExtrinsicCostEstimate } from './api/estimate/types';
 export { FormattedProofData } from './api/format/types';

@@ -8,13 +8,11 @@ import { PUBLIC_ZK_VERIFY_EVENTS, ZkVerifyEvents } from '../../../enums';
 import { NewAggregationEventSubscriptionOptions } from '../../../api/aggregation/types';
 import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces/system';
-import { NewAggregationReceipt } from '../../../types';
-
-interface SubscriptionEntry {
-  event: ZkVerifyEvents;
-  callback?: (data: unknown) => void;
-  options?: NewAggregationEventSubscriptionOptions | undefined;
-}
+import {
+  NewAggregationReceipt,
+  NewAggregationReceiptEvent,
+  SubscriptionEntry,
+} from '../../../types';
 
 export class EventManager {
   private readonly connectionManager: ConnectionManager;
@@ -155,25 +153,23 @@ export class EventManager {
       subscribeToNewAggregationReceipts(
         api,
         (eventObject: unknown) => {
+          const event = eventObject as NewAggregationReceiptEvent;
+
           if (
-            typeof eventObject === 'object' &&
-            eventObject !== null &&
-            eventObject.data
+            event &&
+            event.data &&
+            event.data.domainId &&
+            event.data.aggregationId &&
+            event.data.receipt
           ) {
-            const { blockHash, data } = eventObject;
+            const result: NewAggregationReceipt = {
+              blockHash: event.blockHash ?? null,
+              domainId: Number(event.data.domainId),
+              aggregationId: Number(event.data.aggregationId),
+              receipt: String(event.data.receipt),
+            };
 
-            if (data.domainId && data.aggregationId && data.receipt) {
-              const result: NewAggregationReceipt = {
-                blockHash: blockHash ?? null,
-                domainId: Number(data.domainId),
-                aggregationId: Number(data.aggregationId),
-                receipt: String(data.receipt),
-              };
-
-              resolve(result);
-            } else {
-              reject(new Error('Invalid event data structure'));
-            }
+            resolve(result);
           } else {
             reject(new Error('Invalid event data structure'));
           }

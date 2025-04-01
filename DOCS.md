@@ -265,7 +265,7 @@ These `NewAggregationReceipt` events can then trigger aggregations to be publish
 
 ### Waiting for a published Proof Aggregation Receipt
 
-In order to wait for a published aggregation receipt event `NewAggregationReceipt` the `subscribe` feature can be used:
+In order to wait for a published aggregation receipt event `NewAggregationReceipt` the `waitForAggregationReceipt` feature can be used:
 
 ```typescript
 // Pre-registered domain
@@ -282,19 +282,9 @@ const { events, transactionResult } = await session.verify().ultraplonk().execut
   domainId,
 });
 
-events.on(ZkVerifyEvents.IncludedInBlock, (eventData: any) => {
-  aggregationId = eventData.aggregationId;
-});
-
-session.subscribe(
-        (newAggregationReceipt: NewAggregationReceipt) => {
-          console.log('Aggregation receipt received:', newAggregationReceipt);
-          receipt = newAggregationReceipt;
-        },
-        { domainId, aggregationId } // Listen for a specific domainId and aggregationId.
-);
-
 const transactionInfo = await transactionResult;
+
+const receipt = await session.waitForAggregationReceipt(transactionInfo.domainId, transactionInfo.aggregationId);
 
 // Do something with transactionInfo and receipt
 ```
@@ -353,7 +343,7 @@ session = await zkVerifySession
 // Without needing events
 const transactionResult = await session.registerDomain(1, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted }).transactionResult;
 console.log(transactionResult.domainId);
-// If you want to listen to events and also get the domainIdPromise
+// If you want to listen to events and also get the transactionResult
 const { events: registerEvents, transactionResult } = session.registerDomain(1, 2, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted });
 
 // Listen for events if needed
@@ -421,6 +411,8 @@ console.log(transactionInfo.domainState);
 ```
 
 ### Example Usage
+
+### Verify Proof, listen to related transaction events.
 
 ```typescript
 import { zkVerifySession, ZkVerifyEvents, TransactionStatus, VerifyTransactionInfo } from 'zkverifyjs';
@@ -500,6 +492,42 @@ const vk = /* Your verification key */;
 
 // Execute the transaction
 executeVerificationTransaction(proof, publicSignals, vk);
+```
+
+### Subscribing to events.
+
+```typescript
+  const session = await zkVerifySession.start()
+          .Custom( {
+            websocket: "ws://my-custom-node",
+            rpc: "https://my-custom-node"
+          })
+          .withAccount('your-seed-phrase');
+
+
+  session.subscribe([
+    {
+      event: ZkVerifyEvents.NewAggregationReceipt,
+      callback: (eventData) => {
+        console.log('Received NewAggregationReceipt event:', eventData);
+      },
+      options: {
+        domainId: 1
+      }
+    },
+    {
+      event: ZkVerifyEvents.ProofVerified,
+      callback: (eventData) => {
+        console.log('Proof verified successfully:', eventData);
+      }
+    },
+    {
+      event: ZkVerifyEvents.AggregationComplete,
+      callback: (eventData) => {
+        console.log('Aggregation process completed:', eventData);
+      }
+    }
+  ]);
 ```
 
 ## API Reference
@@ -587,6 +615,18 @@ const { events, transactionResult } = await session.registerVerificationKey().ul
 
 * Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
 * Returns: A TransactionInfo object containing a statementHash  string.
+
+### `zkVerifySession.getAggregateStatementPath`
+
+```typescript
+const result = await session.getAggregateStatementPath(aggregationReceipt.blockHash!, txInfo.domainId!, txInfo.aggregationId!, txInfo.statement!);
+```
+
+* `blockHash`: The block hash the `NewAggregationReceiptEvent` for the specified `domainId` and `aggregationId` was located
+* `domainId`: The domain responsible for the aggregation
+* `aggregationId`: The `aggregationId` returned in the transaction result from a successful proof verification
+* `statement`: The `statement` returned in the transaction result from a successful proof verification
+* Returns: A AggregateStatementPathResult object containing a statementHash  string.
 
 ### `zkVerifySession.format`
 
@@ -714,17 +754,27 @@ const account2 = session.getAccount("myAccountAddress");
 ### `zkVerifySession.subscribe`
 
 ```typescript
-session.subscribe(callback, options);
+session.subscribe(subscriptions?);
 ```
 
-* `callback`: A Function to be called whenever a NewAggregationReceipt event occurs. The function receives an NewAggregationReceipt object as its argument.
-* `options`:  An optional `NewAggregationEventSubscriptionOption` object used to filter which NewAggregationReceipt events to listen to when subscribing.
+* `subscriptions` (Optional): An array of subscription objects (SubscriptionEntry\[]). Each subscription object contains:
+  * `event`: The name of the event to subscribe to. This must be a value from `ZkVerifyEvents`.
+  * `callback`: A function to be called whenever the specified event occurs. Receives an event object as its argument.
+  * `options` (Optional): A NewAggregationEventSubscriptionOptions object used to filter which events to listen to. This is only relevant for NewAggregationReceipt events.
 
-Usage:
+`options` Usage:
 
 * `undefined`: Subscribe to all NewAggregationReceipt events across all domains.
 * `{ domainId }`: Subscribe to all receipts for a specific domain.
-* `{ domainId, aggregationId }`: Subscribe to a specific aggregation within a specific domain. Automatically unsubscribes after receiving the matching event.
+
+### `zkVerifySession.waitForAggregationReceipt`
+
+```typescript
+session.waitForAggregationReceipt(domainId, aggregationId);
+```
+
+* `domainId`: The integer value of the domainId expected to aggregate your proof
+* `aggregationId`: The integer value of the aggregationId you want to wait for.
 
 ### `zkVerifySession.unsubscribe`
 

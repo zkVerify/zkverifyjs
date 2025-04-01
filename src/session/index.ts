@@ -8,6 +8,7 @@ import { zkVerifySessionOptions } from './types';
 import { SupportedNetwork, SupportedNetworkConfig } from '../config';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
 import { FormatManager } from './managers/format';
+import { RpcManager } from './managers/rpc';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import {
   AccountConnection,
@@ -41,6 +42,7 @@ export class zkVerifySession {
   declare unregisterDomain: DomainManager['unregisterDomain'];
   declare holdDomain: DomainManager['holdDomain'];
   declare aggregate: DomainManager['aggregate'];
+  declare getAggregateStatementPath: RpcManager['getAggregateStatementPath'];
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
@@ -52,6 +54,7 @@ export class zkVerifySession {
       new ExtrinsicManager(connectionManager),
       new DomainManager(connectionManager),
       new FormatManager(),
+      new RpcManager(connectionManager),
       connectionManager,
     ];
 

@@ -102,30 +102,27 @@ export const zkvTypes = {
     leaf_index: 'u32',
     leaf: 'H256',
   },
+  Curve: {
+    _enum: ['Bn254', 'Bls12_381'],
+  },
+  Groth16Vk: {
+    curve: 'Curve',
+    alphaG1: 'Bytes',
+    betaG2: 'Bytes',
+    gammaG2: 'Bytes',
+    deltaG2: 'Bytes',
+    gammaAbcG1: 'Vec<Bytes>',
+  },
+  Plonky2Config: {
+    _enum: ['Keccak', 'Poseidon'],
+  },
+  Plonky2Vk: {
+    config: 'Plonky2Config',
+    bytes: 'Bytes',
+  },
 };
 
 export const zkvRpc = {
-  poe: {
-    proofPath: {
-      description: 'Get the Merkle root and path of a stored proof',
-      params: [
-        {
-          name: 'root_id',
-          type: 'u64',
-        },
-        {
-          name: 'proof_hash',
-          type: 'H256',
-        },
-        {
-          name: 'at',
-          type: 'BlockHash',
-          isOptional: true,
-        },
-      ],
-      type: 'MerkleProof',
-    },
-  },
   aggregate: {
     statementPath: {
       description: 'Get the Merkle root and path of a aggregate statement',
@@ -148,6 +145,58 @@ export const zkvRpc = {
         },
       ],
       type: 'MerkleProof',
+    },
+  },
+  vk_hash: {
+    groth16: {
+      description: 'Get the hash of a Groth16 verification key',
+      params: [
+        {
+          name: 'vk',
+          type: 'Groth16Vk',
+        },
+      ],
+      type: 'H256',
+    },
+    plonky2: {
+      description: 'Get the hash of a Plonky2 verification key',
+      params: [
+        {
+          name: 'vk',
+          type: 'Plonky2Vk',
+        },
+      ],
+      type: 'H256',
+    },
+    proofofsql: {
+      description: 'Get the hash of a Proof-of-SQL verification key',
+      params: [
+        {
+          name: 'vk',
+          type: 'Bytes',
+        },
+      ],
+      type: 'H256',
+    },
+    risc0: {
+      description: 'Get the hash of a Risc0 verification key',
+      params: [
+        {
+          name: 'vk',
+          type: 'H256',
+        },
+      ],
+      type: 'H256',
+    },
+    ultraplonk: {
+      description: 'Get the hash of an UltraPLONK verification key',
+      params: [
+        {
+          name: 'vk',
+          type: 'Bytes',
+        },
+      ],
+      type: 'H256',
     },
   },
 };
