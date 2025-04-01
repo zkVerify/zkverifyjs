@@ -1,5 +1,11 @@
-import { ProofType } from './config';
-import { TransactionStatus } from './enums';
+import { ProofType, SupportedNetwork } from './config';
+import {
+  AggregateSecurityRules,
+  Destination,
+  TransactionStatus,
+  ZkVerifyEvents,
+} from './enums';
+import { NewAggregationEventSubscriptionOptions } from './api/aggregation/types';
 
 export interface ProofProcessor {
   formatProof(proof: unknown, options?: unknown, version?: string): unknown;
@@ -53,6 +59,12 @@ export interface DomainTransactionInfo extends TransactionInfo {
   domainState: string;
 }
 
+export interface AggregateTransactionInfo extends TransactionInfo {
+  domainId: number | undefined;
+  aggregationId: number | undefined;
+  receipt: string;
+}
+
 export interface AccountInfo {
   address: string;
   nonce: number;
@@ -61,6 +73,7 @@ export interface AccountInfo {
 }
 
 export interface NewAggregationReceipt {
+  blockHash: string;
   domainId: number;
   aggregationId: number;
   receipt: string;
@@ -72,4 +85,72 @@ export interface MerkleProof {
   numberOfLeaves: number;
   leafIndex: number;
   leaf: string;
+}
+
+export type NetworkConfig = {
+  host: SupportedNetwork;
+  websocket: string;
+  rpc: string;
+};
+
+export type CustomNetworkConfig = Omit<NetworkConfig, 'host'>;
+
+export type DeliveryInput = {
+  price: number;
+  destinationChain: { Evm: number };
+  destination_module: string;
+  timeout: number;
+};
+
+export type DomainOptions =
+  | {
+      destination: Destination.None;
+      deliveryOwner?: string;
+      aggregateRules: AggregateSecurityRules;
+    }
+  | {
+      destination: Destination.Hyperbridge;
+      deliveryInput: DeliveryInput;
+      deliveryOwner?: string;
+      aggregateRules: AggregateSecurityRules;
+    };
+
+export type Delivery =
+  | { None: null }
+  | {
+      destination: {
+        Hyperbridge: {
+          destinationChain: {
+            Evm: number;
+          };
+          destination_module: string;
+          timeout: number;
+        };
+      };
+      price: number;
+    };
+
+export interface NewAggregationReceiptEvent {
+  event: ZkVerifyEvents;
+  blockHash: string;
+  data: {
+    domainId?: string;
+    aggregationId?: string;
+    receipt?: string;
+  };
+  phase: string;
+}
+
+export interface AggregateStatementPathResult {
+  root: string;
+  proof: string[];
+  numberOfLeaves: number;
+  leafIndex: number;
+  leaf: string;
+}
+
+export interface SubscriptionEntry {
+  event: ZkVerifyEvents;
+  callback?: (data: unknown) => void;
+  options?: NewAggregationEventSubscriptionOptions | undefined;
 }

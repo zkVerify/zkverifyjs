@@ -2,6 +2,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { establishConnection } from './index';
 import { waitForNodeToSync } from '../../utils/helpers';
 import { zkvTypes, zkvRpc, SupportedNetwork } from '../../config';
+import { NetworkConfig } from '../../types';
 
 jest.mock('@polkadot/api');
 jest.mock('../../utils/helpers');
@@ -57,7 +58,13 @@ describe('establishConnection', () => {
   };
 
   it('should establish a connection successfully on a predefined network (Volta)', async () => {
-    const result = await establishConnection(SupportedNetwork.Volta);
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Volta,
+      websocket: 'wss://volta-rpc.zkverify.io',
+      rpc: 'http://volta-rpc.zkverify.io',
+    };
+
+    const result = await establishConnection(networkConfig);
 
     expect(WsProvider).toHaveBeenCalledWith(SupportedNetwork.Volta);
     expectApiPromiseCreateToHaveBeenCalledWith();
@@ -68,10 +75,13 @@ describe('establishConnection', () => {
 
   it('should establish a connection successfully on a custom network', async () => {
     const customUrl = 'ws://custom-url';
-    const result = await establishConnection(
-      SupportedNetwork.Custom,
-      customUrl,
-    );
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Custom,
+      websocket: 'ws://custom-url',
+      rpc: 'http://custom-rpc-url',
+    };
+
+    const result = await establishConnection(networkConfig);
 
     expect(WsProvider).toHaveBeenCalledWith(customUrl);
     expectApiPromiseCreateToHaveBeenCalledWith();
@@ -81,16 +91,14 @@ describe('establishConnection', () => {
   });
 
   it('should throw an error if custom WebSocket URL is missing when host is custom', async () => {
-    await expect(establishConnection(SupportedNetwork.Custom)).rejects.toThrow(
-      'Custom WebSocket URL must be provided when host is set to "custom".',
-    );
-  });
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Custom,
+      websocket: '',
+      rpc: 'http://custom-rpc-url',
+    };
 
-  it('should throw an error if a custom WebSocket URL is provided but the host is not custom', async () => {
-    await expect(
-      establishConnection(SupportedNetwork.Volta, 'ws://custom-url'),
-    ).rejects.toThrow(
-      'Custom WebSocket URL provided. Please select "custom" as the host if you want to use a custom WebSocket endpoint.',
+    await expect(establishConnection(networkConfig)).rejects.toThrow(
+      'WebSocket URL is required for network: custom',
     );
   });
 
@@ -99,7 +107,13 @@ describe('establishConnection', () => {
       new Error('API creation failed'),
     );
 
-    await expect(establishConnection(SupportedNetwork.Volta)).rejects.toThrow(
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Volta,
+      websocket: 'wss://volta-rpc.zkverify.io',
+      rpc: 'http://volta-rpc.zkverify.io',
+    };
+
+    await expect(establishConnection(networkConfig)).rejects.toThrow(
       'Failed to establish connection to wss://volta-rpc.zkverify.io: API creation failed',
     );
   });
@@ -107,7 +121,13 @@ describe('establishConnection', () => {
   it('should throw a generic error if an unknown error occurs during connection', async () => {
     mockApiPromiseCreate.mockRejectedValueOnce('Unknown error');
 
-    await expect(establishConnection(SupportedNetwork.Volta)).rejects.toThrow(
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Volta,
+      websocket: 'wss://volta-rpc.zkverify.io',
+      rpc: 'http://volta-rpc.zkverify.io',
+    };
+
+    await expect(establishConnection(networkConfig)).rejects.toThrow(
       'Failed to establish connection due to an unknown error.',
     );
   });

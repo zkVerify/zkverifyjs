@@ -56,9 +56,12 @@ describe('startSession', () => {
     (setupAccount as jest.Mock).mockReturnValue(mockAccount);
 
     mockOptions = {
-      host: SupportedNetwork.Volta,
+      networkConfig: {
+        host: SupportedNetwork.Volta,
+        websocket: 'ws://custom-url',
+        rpc: 'http://custom-rpc-url',
+      },
       seedPhrases: ['testSeedPhrase'],
-      customWsUrl: 'ws://custom-url',
     };
 
     const mockAccounts = new Map<string, KeyringPair>();
@@ -66,10 +69,7 @@ describe('startSession', () => {
 
     const result = await startSession(mockOptions);
 
-    expect(establishConnection).toHaveBeenCalledWith(
-      mockOptions.host,
-      mockOptions.customWsUrl,
-    );
+    expect(establishConnection).toHaveBeenCalledWith(mockOptions.networkConfig);
     expect(setupAccount).toHaveBeenCalledWith(mockOptions.seedPhrases![0]);
     expect(result).toEqual({
       api: mockApi,
@@ -82,7 +82,11 @@ describe('startSession', () => {
     Object.defineProperty(global, 'window', { value: {}, writable: true });
 
     mockOptions = {
-      host: SupportedNetwork.Volta,
+      networkConfig: {
+        host: SupportedNetwork.Volta,
+        websocket: 'ws://custom-url',
+        rpc: 'http://custom-rpc-url',
+      },
     };
 
     await expect(startSession(mockOptions)).rejects.toThrow(
@@ -94,16 +98,16 @@ describe('startSession', () => {
     (global as any).window = undefined;
 
     mockOptions = {
-      host: SupportedNetwork.Volta,
-      customWsUrl: 'ws://custom-url',
+      networkConfig: {
+        host: SupportedNetwork.Volta,
+        websocket: 'ws://custom-url',
+        rpc: 'http://custom-rpc-url',
+      },
     };
 
     const result = await startSession(mockOptions);
 
-    expect(establishConnection).toHaveBeenCalledWith(
-      mockOptions.host,
-      mockOptions.customWsUrl,
-    );
+    expect(establishConnection).toHaveBeenCalledWith(mockOptions.networkConfig);
     expect(result).toEqual({
       api: mockApi,
       provider: mockProvider,
@@ -121,8 +125,11 @@ describe('startWalletSession', () => {
     mockProvider = { providerProperty: 'providerValue' };
 
     mockOptions = {
-      host: SupportedNetwork.Custom,
-      customWsUrl: 'ws://custom-url',
+      networkConfig: {
+        host: SupportedNetwork.Custom,
+        websocket: 'ws://custom-url',
+        rpc: 'http://custom-rpc-url',
+      },
     };
 
     (establishConnection as jest.Mock).mockResolvedValue({
@@ -251,10 +258,7 @@ describe('startWalletSession', () => {
 
     const result = await startWalletSession(mockOptions);
 
-    expect(establishConnection).toHaveBeenCalledWith(
-      mockOptions.host,
-      mockOptions.customWsUrl,
-    );
+    expect(establishConnection).toHaveBeenCalledWith(mockOptions.networkConfig);
     expect(web3Enable).toHaveBeenCalledWith('zkVerify');
     expect(web3Accounts).toHaveBeenCalled();
     expect(web3FromSource).toHaveBeenCalledWith('mockSource');

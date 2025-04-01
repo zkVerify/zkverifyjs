@@ -12,7 +12,6 @@ import { TransactionType } from "../src";
 jest.setTimeout(120000);
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
-    let domainId: number | undefined;
     let wallet: string | null = null;
     let envVar: string | null = null;
 
@@ -41,17 +40,13 @@ describe('zkVerifySession class', () => {
 
             session = await zkVerifySession.start().Volta().withAccount(wallet);
 
-            if(expectAggregation) {
-                domainId = await performRegisterDomain(session, 1, 1);
-            }
-
             const { events, transactionResult } = await session.verify().ultraplonk().execute({
                 proofData: {
                     proof: proofData.proof.proof,
                     publicSignals: proofData.proof.publicSignals,
                     vk: proofData.vk,
                 },
-                domainId,
+                domainId: 0,
             });
 
             const results = handleCommonEvents(

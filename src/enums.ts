@@ -4,6 +4,7 @@ export enum TransactionType {
   DomainRegistration = 3,
   DomainHold = 4,
   DomainUnregister = 5,
+  Aggregate = 6,
 }
 
 export enum TransactionStatus {
@@ -19,14 +20,10 @@ export enum TransactionStatus {
 }
 
 export enum ZkVerifyEvents {
-  AggregationBeforeExpected = 'aggregationBeforeExpected',
   AggregationComplete = 'aggregationComplete',
-  AggregationMatched = 'aggregationMatched',
-  AggregationMissed = 'aggregationMissed',
-  AggregationReceipt = 'aggregationReceipt',
+  NewAggregationReceipt = 'newAggregationReceipt',
   Broadcast = 'broadcast',
   CannotAggregate = 'cannotAggregate',
-  DomainFull = 'domainFull',
   DomainStateChanged = 'domainStateChanged',
   ErrorEvent = 'error',
   Finalized = 'finalized',
@@ -35,6 +32,7 @@ export enum ZkVerifyEvents {
   NewProof = 'newProof',
   ProofVerified = 'proofVerified',
   Unsubscribe = 'unsubscribe',
+  VkRegistered = 'vkRegistered',
 }
 
 export enum Risc0Version {
@@ -42,3 +40,24 @@ export enum Risc0Version {
   V1_1 = 'V1_1',
   V1_2 = 'V1_2',
 }
+
+export enum AggregateSecurityRules {
+  Untrusted = 'Untrusted',
+  OnlyOwner = 'OnlyOwner',
+  OnlyOwnerUncompleted = 'OnlyOwnerUncompleted',
+}
+
+export enum Destination {
+  None = 'None',
+  Hyperbridge = 'Hyperbridge',
+}
+
+export const PUBLIC_ZK_VERIFY_EVENTS: ZkVerifyEvents[] = [
+  ZkVerifyEvents.NewAggregationReceipt,
+  ZkVerifyEvents.ProofVerified,
+  ZkVerifyEvents.NewProof,
+  ZkVerifyEvents.VkRegistered,
+  ZkVerifyEvents.NewDomain,
+  ZkVerifyEvents.DomainStateChanged,
+  ZkVerifyEvents.AggregationComplete,
+];

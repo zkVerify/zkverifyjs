@@ -1,4 +1,5 @@
 import { TransactionStatus, TransactionType, ZkVerifyEvents } from '../../src';
+import { EventEmitter } from "events";
 
 export interface EventResults {
     includedInBlockEmitted: boolean;
@@ -6,6 +7,27 @@ export interface EventResults {
     errorEventEmitted: boolean;
     broadcastEmitted?: boolean;
     unsubscribeEmitted?: boolean;
+    newAggregationReceiptEmitted?: boolean;
+}
+
+export function createEventTracker() {
+    const receivedEvents: Record<string, any[]> = {};
+
+    const attachListeners = (
+        emitter: EventEmitter,
+        eventsToTrack: ZkVerifyEvents[],
+    ) => {
+        eventsToTrack.forEach((event) => {
+            emitter.on(event, (data) => {
+                if (!receivedEvents[event]) {
+                    receivedEvents[event] = [];
+                }
+                receivedEvents[event].push(data);
+            });
+        });
+    };
+
+    return { receivedEvents, attachListeners };
 }
 
 const assertCommonFields = (
@@ -28,7 +50,6 @@ const assertCommonFields = (
         expect(eventData.proofType).toBeUndefined();
     }
 };
-
 
 const assertVerifyEventData = (eventData: any, expectAggregationData: boolean) => {
     expect(eventData.statement).toBeDefined();
@@ -63,6 +84,12 @@ const assertDomainEventData = (eventData: any, expectedType: TransactionType) =>
     expect(eventData.aggregationId).toBeUndefined();
 };
 
+const assertAggregateEventData = (eventData: any) => {
+    expect(eventData.domainId).toBeDefined();
+    expect(eventData.aggregationId).toBeDefined();
+    expect(eventData.receipt).toBeDefined();
+};
+
 const assertEventDataByType = (
     eventData: any,
     expectedType: TransactionType,
@@ -79,6 +106,9 @@ const assertEventDataByType = (
         case TransactionType.DomainHold:
         case TransactionType.DomainUnregister:
             assertDomainEventData(eventData, expectedType);
+            break;
+        case TransactionType.Aggregate:
+            assertAggregateEventData(eventData);
             break;
         default:
             throw new Error(`Unsupported TransactionType: ${expectedType}`);

@@ -37,7 +37,7 @@ Currently the following proof verifiers are supported:
     - [zkVerifySession.verify](#zkverifysessionverify)
     - [zkVerifySession.optimisticVerify](#zkverifysessionoptimisticverify)
     - [zkVerifySession.registerVerificationKey](#zkverifysessionregisterverificationkey)
-    - [zkVerifySession.poe](#zkverifysessionpoe)
+    - [zkVerifySession.getAggregateStatementPath](#zkverifysessiongetaggregatestatementpath)
     - [zkVerifySession.format](#zkverifysessionformat)
     - [zkVerifySession.createSubmitProofExtrinsic](#zkverifysessioncreatesubmitproofextrinsic)
     - [zkVerifySession.createExtrinsicHex](#zkverifysessioncreateextrinsichex)
@@ -49,7 +49,9 @@ Currently the following proof verifiers are supported:
     - [zkVerifySession.addAccounts](#zkverifysessionaddaccounts)
     - [zkVerifySession.removeAccount](#zkverifysessionremoveaccount)
     - [zkVerifySession.subscribe](#zkverifysessionsubscribe)
+    - [zkVerifySession.waitForAggregationReceipt](#waitforaggregationreceipt)
     - [zkVerifySession.unsubscribe](#zkverifysessionunsubscribe)
+    - [zkVerifySession.aggregate](#zkverifysessionaggregate)
     - [zkVerifySession.registerDomain](#zkverifysessionregisterdomain)
     - [zkVerifySession.holdDomain](#zkverifysessionholddomain)
     - [zkVerifySession.unregisterDomain](#zkverifysessionunregisterdomain)
@@ -78,10 +80,13 @@ const session = await zkVerifySession.start()
         .Testnet(); // Preconfigured network selection
 // No full account session as .withAccount() or .withAccounts() has not been used.
 ```
-2. Read-Only Session with Custom WebSocket:
+2. Read-Only Session with Custom Network Configuration:
 ```typescript
 const session = await zkVerifySession.start()
-        .Custom("wss://testnet-rpc.zkverify.io"); // Custom network
+        .Custom( {
+          websocket: "wss://testnet-rpc.zkverify.io",
+          rpc: "https://testnet-rpc.zkverify.io"
+        }); // Custom network
 // No full account session as .withAccount() or withAccounts() has not been used.
 ```
 3. Full Backend Session (send transactions) with Supported Network:
@@ -114,7 +119,10 @@ const session = await zkVerifySession.start()
 6. Full Frontend Browser Session (send transactions)  with Custom WebSocket:
 ```typescript
 const session = await zkVerifySession.start()
-        .Custom("wss://testnet-rpc.zkverify.io") // Custom network
+        .Custom( {
+          websocket: "wss://testnet-rpc.zkverify.io",
+          rpc: "https://testnet-rpc.zkverify.io"
+        }) // Custom network
         .withWallet({
           source: selectedWallet,
           accountAddress: selectedAccount,
@@ -282,7 +290,7 @@ These `NewAggregationReceipt` events can then trigger aggregations to be publish
 
 ### Waiting for a published Proof Aggregation Receipt
 
-In order to wait for a published aggregation receipt event `NewAggregationReceipt` the `subscribe` feature can be used:
+In order to wait for a published aggregation receipt event `NewAggregationReceipt` the `waitForAggregationReceipt` feature can be used:
 
 ```typescript
 // Pre-registered domain
@@ -299,19 +307,9 @@ const { events, transactionResult } = await session.verify().ultraplonk().execut
   domainId,
 });
 
-events.on(ZkVerifyEvents.IncludedInBlock, (eventData: any) => {
-  aggregationId = eventData.aggregationId;
-});
-
-session.subscribe(
-        (newAggregationReceipt: NewAggregationReceipt) => {
-          console.log('Aggregation receipt received:', newAggregationReceipt);
-          receipt = newAggregationReceipt;
-        },
-        { domainId, aggregationId } // Listen for a specific domainId and aggregationId.
-);
-
 const transactionInfo = await transactionResult;
+
+const receipt = await session.waitForAggregationReceipt(transactionInfo.domainId, transactionInfo.aggregationId);
 
 // Do something with transactionInfo and receipt
 ```
@@ -337,7 +335,10 @@ Connect to your custom node that has the unsafe flags set, and send the proof:
 // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
 const session = await zkVerifySession
   .start()
-  .Custom('ws://my-custom-node')
+        .Custom( {
+          websocket: "wss://my-custom-node",
+          rpc: "https://my-custom-node"
+        })
   .withAccount('your-seed-phrase');
 
 const { success, message } = session
@@ -365,9 +366,10 @@ session = await zkVerifySession
 
 // Register a Domain
 // Without needing events
-const domainId = await session.registerDomain(1, 1).domainIdPromise
-// If you want to listen to events and also get the domainIdPromise
-const { events: registerEvents, domainIdPromise } = session.registerDomain(1, 2);
+const transactionResult = await session.registerDomain(1, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted }).transactionResult;
+console.log(transactionResult.domainId);
+// If you want to listen to events and also get the transactionResult
+const { events: registerEvents, transactionResult } = session.registerDomain(1, 2, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted });
 
 // Listen for events if needed
 registerEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
@@ -382,14 +384,15 @@ registerEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
   console.log("ErrorEvent");
 });
 
-// await the domainId result
-const domainId = await domainIdPromise;
+// await the transactionResult
+const transactionInfo = await transactionResult;
+console.log(transactionInfo.domainId);
 
 // Hold a Domain
 // Without events
-const result = await session.unregisterDomain(domainId).done;
+const result = await session.unregisterDomain(domainId).transactionResult;
 // With events
-const { events: holdEvents, result: holdResult } = session.holdDomain(domainId);
+const { events: holdEvents, transactionResult: holdResult } = session.holdDomain(domainId);
 
 // Listen for events if needed
 holdEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
@@ -404,14 +407,15 @@ holdEvents.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
   console.log("ErrorEvent");
 });
 
-// await boolean success
-const wasSuccessful = await holdResult;
+// await transaction
+const transactionInfo = await transactionResult;
+console.log(transactionInfo.domainState);
 
 // Unregister a Domain
 // Without events
-const result = await session.unregisterDomain(domainId).done;
+const transactionInfo = await session.unregisterDomain(domainId).transactionResult;
 // With events
-const { events: unregisterEvents, result: unregisterResult } = session.unregisterDomain(domainId);
+const { events: unregisterEvents, transactionResult: unregisterResult } = session.unregisterDomain(domainId);
 
 // Listen for events if needed
 unregisterEvents.on(ZkVerifyEvents.IncludedInBlock, () => {
@@ -426,19 +430,25 @@ unregisterEvents.on(ZkVerifyEvents.ErrorEvent, () => {
     console.log("ErrorEvent");
 });
 
-// await boolean success
-const unregisterSuccessful = await unregisterResult;
+// await transactionResult
+const transactionInfo = await transactionResult;
+console.log(transactionInfo.domainState);
 ```
 
 ## Example Usage
+
+### Verify Proof, listen to related transaction events.
 
 ```typescript
 import { zkVerifySession, ZkVerifyEvents, TransactionStatus, VerifyTransactionInfo } from 'zkverifyjs';
 
 async function executeVerificationTransaction(proof: unknown, publicSignals: unknown, vk: unknown) {
-  // Start a new zkVerifySession on a Custom network (replace 'your-seed-phrase' with actual value)
+  // Start a new zkVerifySession on a Custom network (replace 'your-seed-phrase' and 'my-custom-node' with actual value)
   const session = await zkVerifySession.start()
-          .Custom('ws://my-custom-node')
+          .Custom( {
+            websocket: "ws://my-custom-node",
+            rpc: "https://my-custom-node"
+          })
           .withAccount('your-seed-phrase');
   
   // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
@@ -509,6 +519,42 @@ const vk = /* Your verification key */;
 executeVerificationTransaction(proof, publicSignals, vk);
 ```
 
+### Subscribing to events.
+
+```typescript
+  const session = await zkVerifySession.start()
+          .Custom( {
+            websocket: "ws://my-custom-node",
+            rpc: "https://my-custom-node"
+          })
+          .withAccount('your-seed-phrase');
+
+
+  session.subscribe([
+    {
+      event: ZkVerifyEvents.NewAggregationReceipt,
+      callback: (eventData) => {
+        console.log('Received NewAggregationReceipt event:', eventData);
+      },
+      options: {
+        domainId: 1
+      }
+    },
+    {
+      event: ZkVerifyEvents.ProofVerified,
+      callback: (eventData) => {
+        console.log('Proof verified successfully:', eventData);
+      }
+    },
+    {
+      event: ZkVerifyEvents.AggregationComplete,
+      callback: (eventData) => {
+        console.log('Aggregation process completed:', eventData);
+      }
+    }
+  ]);
+```
+
 # API Reference
 
 ## `zkVerifySession.start`
@@ -516,7 +562,10 @@ executeVerificationTransaction(proof, publicSignals, vk);
 ```typescript
 await zkVerifySession.start()
         .Testnet() // 1. Either preconfigured network selection
-        .Custom('wss://custom') // 2. Or specify a custom network selection
+        .Custom( {
+          websocket: "ws://my-custom-node",
+          rpc: "https://my-custom-node"
+        }) // 2. Or specify a custom network selection
         .withAccount(process.env.SEED_PHRASE!) // Optional
         .withWallet({
           source: selectedWallet,
@@ -525,7 +574,7 @@ await zkVerifySession.start()
         .readOnly() // Optional
 ```
 
-- Network Selection: Preconfigured options such as `.Testnet()` or provide your own websocket url using `.Custom('wss://custom')`.
+- Network Selection: Preconfigured options such as `.Testnet()` or provide your own network config using `.Custom( { websocket: "", rpc: ""})`.
 - withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase, cannot be used with `withWallet()`.
 - withWallet : Establish connection to a browser extension based substrate wallet like talisman or subwallet, cannot be used with `withAccount()`;
 - readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
@@ -590,6 +639,18 @@ const { events, transactionResult } = await session.registerVerificationKey().ul
 
 - Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
 - Returns: A TransactionInfo object containing a statementHash  string.
+
+## `zkVerifySession.getAggregateStatementPath`
+
+```typescript
+const result = await session.getAggregateStatementPath(aggregationReceipt.blockHash!, txInfo.domainId!, txInfo.aggregationId!, txInfo.statement!);
+```
+
+- `blockHash`: The block hash the `NewAggregationReceiptEvent` for the specified `domainId` and `aggregationId` was located
+- `domainId`: The domain responsible for the aggregation
+- `aggregationId`: The `aggregationId` returned in the transaction result from a successful proof verification
+- `statement`: The `statement` returned in the transaction result from a successful proof verification
+- Returns: A AggregateStatementPathResult object containing a statementHash  string.
 
 ## `zkVerifySession.format`
 
@@ -714,16 +775,25 @@ const account2 = session.getAccount("myAccountAddress");
 ## `zkVerifySession.subscribe`
 
 ```typescript
-session.subscribe(callback, options);
+session.subscribe(subscriptions?);
 ```
-- `callback`: A Function to be called whenever a NewAggregationReceipt event occurs. The function receives an NewAggregationReceipt object as its argument.
-- `options`:  An optional `NewAggregationEventSubscriptionOption` object used to filter which NewAggregationReceipt events to listen to when subscribing.
+- `subscriptions` (Optional): An array of subscription objects (SubscriptionEntry[]). Each subscription object contains:
+  - `event`: The name of the event to subscribe to. This must be a value from `ZkVerifyEvents`.
+  - `callback`: A function to be called whenever the specified event occurs. Receives an event object as its argument.
+  - `options` (Optional): A NewAggregationEventSubscriptionOptions object used to filter which events to listen to. This is only relevant for NewAggregationReceipt events.
 
-Usage:
+`options` Usage:
 
 - `undefined`: Subscribe to all NewAggregationReceipt events across all domains.
 - `{ domainId }`: Subscribe to all receipts for a specific domain.
-- `{ domainId, aggregationId }`: Subscribe to a specific aggregation within a specific domain. Automatically unsubscribes after receiving the matching event.
+
+## `zkVerifySession.waitForAggregationReceipt`
+
+```typescript
+session.waitForAggregationReceipt(domainId, aggregationId);
+```
+- `domainId`: The integer value of the domainId expected to aggregate your proof
+- `aggregationId`: The integer value of the aggregationId you want to wait for.
 
 ## `zkVerifySession.unsubscribe`
 
@@ -732,16 +802,29 @@ session.unsubscribe();
 ```
 - This method unsubscribes from any active NewAggregationReceipt event subscriptions. It is used to stop listening for NewAggregationReceipt events when they are no longer needed.
 
+## `zkVerifySession.aggregate`
+
+```typescript
+session.aggregate(domainId, aggregationId);
+```
+- publish aggregation for a specified `domainId` and `aggregationId`.
+* @param `{number}` domainId - The domain to publish.
+* @param `{number}` aggregationId: The aggregationId to publish.
+* Returns `{ events: EventEmitter; transactionResult: Promise<AggregateTransactionInfo> }`
+
+AggregateTransactionInfo contains a `receipt` populated by the `NewAggregationReceipt` event.
+
 ## `zkVerifySession.registerDomain`
 
 ```typescript
-session.registerDomain(aggregationSize, queueSize, accountAddress?);
+session.registerDomain(aggregationSize, queueSize, domainOptions, accountAddress?);
 ```
 - register a new domain where the owner is the signer that emits a new aggregation every aggregationSize proofs and where there could be at most  queueSize aggregation in waiting for publication state.
 * @param `{number}` aggregationSize - The size of the aggregation, integer equal to or less than 128.
 * @param `{number}` queueSize: an optional integer smaller equal than 16. 16 if it’s null.
+* @param `{DomainOptions}` domainOptions: additional options required to register the domain.
 * @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
-* @returns `{ events: EventEmitter; domainIdPromise: Promise<number> }`
+* Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
 
 Note: Need to hold the currency proportional to the size of aggregations and queue. The currency will be returned if the domain is unregistered
 
@@ -753,7 +836,7 @@ session.holdDomain(domainId, accountAddress?);
 - put the domain in Hold or Removable state. The state depends if there are some statements that need to be aggregated yet in this domain;  in these states the domain doesn’t accept any other proof but it still remains active for aggregating till there are some aggregations to aggregate. Only the Domain’s owner and the manager can call it
 * @param `{number}` domainId - The ID of the domain to hold.
 * @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
-* Returns `{ events: EventEmitter; result: Promise<boolean> }`
+* Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
 
 ## `zkVerifySession.unregisterDomain`
 
@@ -763,7 +846,7 @@ session.unregisterDomain(domainId, accountAddress?);
 - remove a registered domain in the "Removable" state, refund the owner with the held currency. If everything is ok it will emit a DomainStateChanged event with Removed state.
 * @param `{number}` domainId - The ID of the domain to unregister.
 * @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
-* Returns `{ events: EventEmitter; result: Promise<boolean> }`
+* Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
 
 ## `zkVerifySession.api`
 
