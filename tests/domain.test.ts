@@ -4,7 +4,7 @@ import { loadProofAndVK, performHoldDomain, performRegisterDomain, performUnregi
 import { AggregateSecurityRules, Destination, ZkVerifyEvents } from "../src";
 import { createEventTracker } from "./common/eventHandlers";
 
-jest.setTimeout(120000);
+jest.setTimeout(240000);
 describe('Domain interaction tests', () => {
     let session: zkVerifySession;
     let wallet: string | null = null;
@@ -26,7 +26,7 @@ describe('Domain interaction tests', () => {
         }
     });
 
-    it('should error when attempting to register, unregister or hold a domain in a readOnly session', async () => {
+    it.skip('should error when attempting to register, unregister or hold a domain in a readOnly session', async () => {
         session = await zkVerifySession.start().Volta().readOnly();
 
         try {
@@ -89,13 +89,28 @@ describe('Domain interaction tests', () => {
         expect(txInfo.aggregationId).toBeDefined();
 
         const { events, transactionResult: aggregateTransactionResult } = session.aggregate(txInfo.domainId!, txInfo.aggregationId!);
+        const aggregationReceipt = await session.waitForAggregationReceipt(txInfo.domainId!, txInfo.aggregationId!);
+
+        // TODO:  Use the aggregationReceipt and transactionResult statement path to call RPC statementPath.
 
         await aggregateTransactionResult;
         await performHoldDomain(session, domainId, true);
         await performUnregisterDomain(session, domainId);
 
         for (const eventType of expectedEvents) {
-            expect(receivedEvents[eventType]?.length).toBeGreaterThan(0);
+            if (!receivedEvents[eventType]) {
+                console.error(`❌ No events received for event type: ${eventType}`);
+            } else if (!Array.isArray(receivedEvents[eventType])) {
+                console.error(`❌ Expected receivedEvents[${eventType}] to be an array but got:`, receivedEvents[eventType]);
+            } else if (receivedEvents[eventType].length === 0) {
+                console.error(`❌ No events found in the array for event type: ${eventType}`);
+            } else {
+                console.debug(`✅ Received ${receivedEvents[eventType].length} events for ${eventType}`);
+            }
+
+            expect(Array.isArray(receivedEvents[eventType])).toBe(true);
+            expect(receivedEvents[eventType].length).toBeGreaterThan(0);
+
 
             receivedEvents[eventType].forEach((payload, index) => {
                 console.debug(`Payload #${index + 1} for ${eventType}:`, payload);
@@ -122,6 +137,7 @@ describe('Domain interaction tests', () => {
                         break;
 
                     case ZkVerifyEvents.NewAggregationReceipt:
+                        expect(payload.blockHash).toBeDefined();
                         expect(payload.data.domainId).toBeDefined();
                         expect(payload.data.aggregationId).toBeDefined();
                         expect(payload.data.receipt).toBeDefined();

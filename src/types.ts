@@ -71,6 +71,7 @@ export interface AccountInfo {
 }
 
 export interface NewAggregationReceipt {
+  blockHash: string;
   domainId: number;
   aggregationId: number;
   receipt: string;

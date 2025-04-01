@@ -20,10 +20,7 @@ export enum TransactionStatus {
 }
 
 export enum ZkVerifyEvents {
-  AggregationBeforeExpected = 'aggregationBeforeExpected',
   AggregationComplete = 'aggregationComplete',
-  AggregationMatched = 'aggregationMatched',
-  AggregationMissed = 'aggregationMissed',
   NewAggregationReceipt = 'newAggregationReceipt',
   Broadcast = 'broadcast',
   CannotAggregate = 'cannotAggregate',

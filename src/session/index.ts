@@ -26,6 +26,7 @@ export class zkVerifySession {
   declare format: FormatManager['format'];
   declare subscribe: EventManager['subscribe'];
   declare unsubscribe: EventManager['unsubscribe'];
+  declare waitForAggregationReceipt: EventManager['waitForAggregationReceipt'];
   declare estimateCost: ExtrinsicManager['estimateCost'];
   declare createSubmitProofExtrinsic: ExtrinsicManager['createSubmitProofExtrinsic'];
   declare createExtrinsicHex: ExtrinsicManager['createExtrinsicHex'];

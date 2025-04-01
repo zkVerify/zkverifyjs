@@ -1,6 +1,6 @@
 import {
   subscribeToNewAggregationReceipts,
-  unsubscribeFromNewAggregationReceipts,
+  unsubscribe,
 } from '../../../api/aggregation';
 import { EventEmitter } from 'events';
 import { ConnectionManager } from '../connection';
@@ -8,6 +8,7 @@ import { PUBLIC_ZK_VERIFY_EVENTS, ZkVerifyEvents } from '../../../enums';
 import { NewAggregationEventSubscriptionOptions } from '../../../api/aggregation/types';
 import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces/system';
+import { NewAggregationReceipt } from '../../../types';
 
 interface SubscriptionEntry {
   event: ZkVerifyEvents;
@@ -134,9 +135,59 @@ export class EventManager {
   }
 
   /**
+   * Waits for a specific `NewAggregationReceipt` event and returns the result as a NewAggregationReceipt object.
+   *
+   * @param domainId - The domain ID to listen for.
+   * @param aggregationId - The aggregation ID to listen for.
+   * @param timeout - Optional timeout value in milliseconds.
+   * @returns {Promise<NewAggregationReceipt>} Resolves with the event data when found, or rejects on timeout/error.
+   */
+  async waitForAggregationReceipt(
+    domainId: number,
+    aggregationId: number,
+    timeout?: number,
+  ): Promise<NewAggregationReceipt> {
+    const { api } = this.connectionManager;
+
+    const options = { domainId, aggregationId, timeout };
+
+    return new Promise((resolve, reject) => {
+      subscribeToNewAggregationReceipts(
+        api,
+        (eventObject: unknown) => {
+          if (
+            typeof eventObject === 'object' &&
+            eventObject !== null &&
+            eventObject.data
+          ) {
+            const { blockHash, data } = eventObject;
+
+            if (data.domainId && data.aggregationId && data.receipt) {
+              const result: NewAggregationReceipt = {
+                blockHash: blockHash ?? null,
+                domainId: Number(data.domainId),
+                aggregationId: Number(data.aggregationId),
+                receipt: String(data.receipt),
+              };
+
+              resolve(result);
+            } else {
+              reject(new Error('Invalid event data structure'));
+            }
+          } else {
+            reject(new Error('Invalid event data structure'));
+          }
+        },
+        options,
+        this.emitter,
+      ).catch(reject);
+    });
+  }
+
+  /**
    * Unsubscribes from all active subscriptions.
    */
   unsubscribe(): void {
-    unsubscribeFromNewAggregationReceipts(this.emitter);
+    unsubscribe(this.emitter);
   }
 }
