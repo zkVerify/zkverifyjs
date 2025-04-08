@@ -1,10 +1,10 @@
 import {CurveType, Library, SupportedNetwork, zkVerifySession} from '../src';
 import { EventEmitter } from 'events';
-import { ProofMethodMap } from "../src/session/builders/verify";
 import { walletPool } from './common/walletPool';
 import { loadProofAndVK } from "./common/utils";
 import { ProofType } from "../src";
 import { SupportedNetworkConfig } from "../src/config"
+import { ProofMethodMap } from "../dist/types/session/builders/verify";
 
 jest.setTimeout(120000);
 describe('zkVerifySession class', () => {

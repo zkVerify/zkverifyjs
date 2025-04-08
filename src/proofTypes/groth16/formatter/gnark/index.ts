@@ -4,7 +4,6 @@ import {
   Proof,
   ProofInput,
 } from '../../types';
-import { ProofOptions } from '../../../../session/types';
 import {
   extractCurve,
   formatG1Point,
@@ -13,6 +12,7 @@ import {
   getEndianess,
   unstringifyBigInts,
 } from '../utils';
+import { ProofOptions } from '../../../../config';
 
 /**
  * Formats zk-SNARK proof data for Groth16 using Gnark.

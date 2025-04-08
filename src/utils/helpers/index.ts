@@ -3,7 +3,14 @@ import { ApiPromise } from '@polkadot/api';
 import { EventEmitter } from 'events';
 import { Delivery, DomainOptions, ProofProcessor } from '../../types';
 import { Destination } from '../../enums';
-import { proofConfigurations, ProofType } from '../../config';
+import {
+  Groth16Config,
+  Plonky2Config,
+  proofConfigurations,
+  ProofOptions,
+  ProofType,
+  Risc0Config,
+} from '../../config';
 import { decodeDispatchError } from '../transactions/errors';
 import { DispatchError } from '@polkadot/types/interfaces';
 import {
@@ -245,3 +252,44 @@ export const safeEmit = (
     console.debug(`Failed to emit event ${event}:`, error);
   }
 };
+
+/**
+ * Type guard for Groth16Config
+ */
+export function isGroth16Config(
+  options: ProofOptions,
+): options is ProofOptions & { config: Groth16Config } {
+  return (
+    options.proofType === ProofType.groth16 &&
+    options.config !== undefined &&
+    (options.config as Groth16Config).library !== undefined &&
+    (options.config as Groth16Config).curve !== undefined
+  );
+}
+
+/**
+ * Type guard for Plonky2Config
+ */
+export function isPlonky2Config(
+  options: ProofOptions,
+): options is ProofOptions & { config: Plonky2Config } {
+  return (
+    options.proofType === ProofType.plonky2 &&
+    options.config !== undefined &&
+    (options.config as Plonky2Config).compressed !== undefined &&
+    (options.config as Plonky2Config).hashFunction !== undefined
+  );
+}
+
+/**
+ * Type guard for Risc0Config
+ */
+export function isRisc0Config(
+  options: ProofOptions,
+): options is ProofOptions & { config: Risc0Config } {
+  return (
+    options.proofType === ProofType.risc0 &&
+    options.config !== undefined &&
+    (options.config as Risc0Config).version !== undefined
+  );
+}

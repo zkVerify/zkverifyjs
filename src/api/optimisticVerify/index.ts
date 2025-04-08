@@ -4,10 +4,10 @@ import { format } from '../format';
 import { ProofData } from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types';
-import { ProofOptions } from '../../session/types';
 import { VerifyInput } from '../verify/types';
 import { interpretDryRunResponse } from '../../utils/helpers';
 import { ApiPromise } from '@polkadot/api';
+import { ProofOptions } from '../../config';
 
 export const optimisticVerify = async (
   connection: AccountConnection | WalletConnection,

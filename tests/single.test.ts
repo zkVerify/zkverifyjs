@@ -1,13 +1,7 @@
-import {VerifyTransactionInfo, zkVerifySession} from '../src';
-import { walletPool } from './common/walletPool';
-import {
-    loadProofAndVK,
-    performRegisterDomain,
-    validateVerifyTransactionInfo
-} from "./common/utils";
-import { ProofType } from "../src";
-import { handleCommonEvents } from "./common/eventHandlers";
-import { TransactionType } from "../src";
+import {ProofType, TransactionType, VerifyTransactionInfo, zkVerifySession} from '../src';
+import {walletPool} from './common/walletPool';
+import {loadProofAndVK, validateVerifyTransactionInfo} from "./common/utils";
+import {handleCommonEvents} from "./common/eventHandlers";
 
 jest.setTimeout(120000);
 describe('zkVerifySession class', () => {

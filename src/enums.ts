@@ -41,6 +41,22 @@ export enum Risc0Version {
   V1_2 = 'V1_2',
 }
 
+export enum Plonky2HashFunction {
+  Keccak = 'Keccak',
+  Poseidon = 'Poseidon',
+}
+
+export enum Library {
+  snarkjs = 'snarkjs',
+  gnark = 'gnark',
+}
+
+export enum CurveType {
+  bn128 = 'bn128',
+  bn254 = 'bn254',
+  bls12381 = 'bls12381',
+}
+
 export enum AggregateSecurityRules {
   Untrusted = 'Untrusted',
   OnlyOwner = 'OnlyOwner',

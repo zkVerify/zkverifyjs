@@ -1,7 +1,7 @@
 import { ProofProcessor } from '../../types';
 import { getProofProcessor, validateProofVersion } from '../../utils/helpers';
 import { FormattedProofData } from './types';
-import { ProofOptions } from '../../session/types';
+import { ProofOptions } from '../../config';
 
 export function format(
   options: ProofOptions,

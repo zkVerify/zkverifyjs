@@ -1,6 +1,6 @@
-import { ProofOptions } from '../../types';
 import { FormattedProofData } from '../../../api/format/types';
 import { format } from '../../../api/format';
+import { ProofOptions } from '../../../config';
 
 /**
  * Manages proof formatting operations.

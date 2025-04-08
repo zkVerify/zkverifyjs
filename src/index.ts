@@ -1,11 +1,10 @@
 export { zkVerifySession } from './session';
 export {
-  ProofOptions,
   VerifyOptions,
   WalletOptions,
   zkVerifySessionOptions,
 } from './session/types';
-export { ProofType, SupportedNetwork, Library, CurveType } from './config';
+export { ProofType, SupportedNetwork, ProofOptions } from './config';
 export {
   ZkVerifyEvents,
   TransactionStatus,
@@ -13,6 +12,9 @@ export {
   Risc0Version,
   AggregateSecurityRules,
   Destination,
+  Library,
+  CurveType,
+  Plonky2HashFunction,
 } from './enums';
 export {
   ProofData,

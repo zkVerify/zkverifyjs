@@ -1,37 +1,55 @@
-import { proofConfigurations } from '../../config';
-import { ProofOptions } from '../types';
+import { ProofType, ProofOptions } from '../../config';
+import {
+  isGroth16Config,
+  isPlonky2Config,
+  isRisc0Config,
+} from '../../utils/helpers';
 
 /**
- * Validates the library and curve type for a given proof type.
+ * Validates the options provided for a given proof type.
  * @throws {Error} - If the validation fails.
- * @param options
  */
 export function validateProofTypeOptions(options: ProofOptions): void {
-  if (!options.proofType) {
+  const proofType = options.proofType;
+
+  if (!proofType) {
     throw new Error('Proof type is required.');
   }
 
-  const proofConfig = proofConfigurations[options.proofType];
+  switch (proofType) {
+    case ProofType.groth16:
+      if (!isGroth16Config(options)) {
+        throw new Error(
+          `Proof type '${proofType}' requires both 'library' and 'curve' options.`,
+        );
+      }
+      break;
 
-  if (options.library && !proofConfig.requiresLibrary) {
-    throw new Error(
-      `Library cannot be set for proof type '${options.proofType}'.`,
-    );
-  }
-  if (!options.library && proofConfig.requiresLibrary) {
-    throw new Error(
-      `Library must be specified for proof type '${options.proofType}'.`,
-    );
-  }
+    case ProofType.plonky2:
+      if (!isPlonky2Config(options)) {
+        throw new Error(
+          `Proof type '${proofType}' requires 'compressed' (boolean) and 'hashFunction' options.`,
+        );
+      }
+      break;
 
-  if (options.curve && !proofConfig.requiresCurve) {
-    throw new Error(
-      `Curve type cannot be set for proof type '${options.proofType}'.`,
-    );
-  }
-  if (!options.curve && proofConfig.requiresCurve) {
-    throw new Error(
-      `Curve type must be specified for proof type '${options.proofType}'.`,
-    );
+    case ProofType.risc0:
+      if (!isRisc0Config(options)) {
+        throw new Error(
+          `Proof type '${proofType}' requires a 'version' option.`,
+        );
+      }
+      break;
+
+    case ProofType.ultraplonk:
+    case ProofType.proofofsql:
+      // No specific options required for these proof types
+      break;
+
+    default:
+      void (options as never);
+      throw new Error(
+        `Unsupported proof type: ${(options as { proofType: string }).proofType}`,
+      );
   }
 }

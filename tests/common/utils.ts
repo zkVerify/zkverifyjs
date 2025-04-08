@@ -18,6 +18,7 @@ import { EventResults, handleCommonEvents } from './eventHandlers';
 import path from "path";
 import fs from "fs";
 import { AggregateStatementPathResult, AggregateTransactionInfo } from "../../src/types";
+import {Groth16Config, Plonky2Config, Risc0Config} from "../../src/config";
 
 
 

@@ -1,15 +1,13 @@
-import {
-  RegisterKeyBuilder,
-  RegisterKeyMethodMap,
-} from '../../builders/register';
-import { ProofType, Library, CurveType } from '../../../config';
-import { ProofOptions, VerifyOptions } from '../../types';
+import { RegisterKeyBuilder } from '../../builders/register';
+import { AllProofConfigs, ProofOptions, ProofType } from '../../../config';
+import { RegisterKeyMethodMap, VerifyOptions } from '../../types';
 import { registerVk } from '../../../api/register';
 import { checkReadOnly } from '../../../utils/helpers';
 import { AccountConnection } from '../../../api/connection/types';
 import { VKRegistrationTransactionInfo } from '../../../types';
 import { EventEmitter } from 'events';
 import { ConnectionManager } from '../connection';
+import { validateProofTypeOptions } from '../../validator';
 
 export class VerificationKeyRegistrationManager {
   private readonly connectionManager: ConnectionManager;
@@ -31,12 +29,13 @@ export class VerificationKeyRegistrationManager {
     for (const proofType in ProofType) {
       if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
         Object.defineProperty(builderMethods, proofType, {
-          value: (library?: Library, curve?: CurveType) => {
+          value: (proofConfig?: AllProofConfigs | null) => {
             const proofOptions: ProofOptions = {
               proofType: proofType as ProofType,
-              library,
-              curve,
-            };
+              config: proofConfig || {},
+            } as ProofOptions;
+
+            validateProofTypeOptions(proofOptions);
 
             return this.createRegisterKeyBuilder(proofOptions, accountAddress);
           },
