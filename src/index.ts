@@ -4,7 +4,16 @@ export {
   WalletOptions,
   zkVerifySessionOptions,
 } from './session/types';
-export { ProofType, SupportedNetwork, ProofOptions } from './config';
+export {
+  ProofType,
+  SupportedNetwork,
+  ProofOptions,
+  ProofConfig,
+  AllProofConfigs,
+  Groth16Config,
+  Plonky2Config,
+  Risc0Config,
+} from './config';
 export {
   ZkVerifyEvents,
   TransactionStatus,

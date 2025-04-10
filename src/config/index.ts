@@ -51,36 +51,28 @@ export enum ProofType {
 export interface ProofConfig {
   pallet: string;
   processor: ProofProcessor;
-  supportedVersions: string[];
 }
 
 export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.groth16]: {
     pallet: 'settlementGroth16Pallet',
     processor: Groth16Processor,
-    supportedVersions: [],
   },
   [ProofType.risc0]: {
     pallet: 'settlementRisc0Pallet',
     processor: Risc0Processor,
-    supportedVersions: Object.keys(Risc0Version).map(
-      (key) => Risc0Version[key as keyof typeof Risc0Version],
-    ),
   },
   [ProofType.ultraplonk]: {
     pallet: 'settlementUltraplonkPallet',
     processor: UltraPlonkProcessor,
-    supportedVersions: [],
   },
   [ProofType.proofofsql]: {
     pallet: 'settlementProofOfSqlPallet',
     processor: ProofOfSqlProcessor,
-    supportedVersions: [],
   },
   [ProofType.plonky2]: {
     pallet: 'settlementPlonky2Pallet',
     processor: Plonky2Processor,
-    supportedVersions: [],
   },
   // ADD_NEW_PROOF_TYPE - configurations
 };

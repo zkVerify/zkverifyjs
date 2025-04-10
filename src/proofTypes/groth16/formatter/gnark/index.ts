@@ -13,6 +13,7 @@ import {
   unstringifyBigInts,
 } from '../utils';
 import { ProofOptions } from '../../../../config';
+import { isGroth16Config } from '../../../../utils/helpers';
 
 /**
  * Formats zk-SNARK proof data for Groth16 using Gnark.
@@ -39,7 +40,14 @@ export const formatProof = (
       Krs: { X: string; Y: string };
     };
 
-    const curve = extractCurve(options.curve!);
+    if (!isGroth16Config(options)) {
+      throw new Error(
+        'Expected Groth16 config but received invalid configuration.',
+      );
+    }
+
+    const curve = extractCurve(options.config.curve);
+
     const endianess = getEndianess(curve);
 
     return {
@@ -92,7 +100,13 @@ export const formatVk = (
       };
     };
 
-    const curve = extractCurve(options.curve!);
+    if (!isGroth16Config(options)) {
+      throw new Error(
+        'Expected Groth16 config but received invalid configuration.',
+      );
+    }
+
+    const curve = extractCurve(options.config.curve);
     const endianess = getEndianess(curve);
 
     return {

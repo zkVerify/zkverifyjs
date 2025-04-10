@@ -1,4 +1,4 @@
-import {ProofType, TransactionType, VerifyTransactionInfo, zkVerifySession} from '../src';
+import {ProofType, Risc0Version, TransactionType, VerifyTransactionInfo, zkVerifySession} from '../src';
 import {walletPool} from './common/walletPool';
 import {loadProofAndVK, validateVerifyTransactionInfo} from "./common/utils";
 import {handleCommonEvents} from "./common/eventHandlers";
@@ -26,7 +26,7 @@ describe('zkVerifySession class', () => {
     });
 
     // Just used for local testing a single proof easily.
-    it.skip('should send a proof to a registered domain and get aggregation', async () => {
+    it('should send a proof to a registered domain and get aggregation', async () => {
         try {
             const expectAggregation = true;
             [envVar, wallet] = await walletPool.acquireWallet();

@@ -1,5 +1,5 @@
 import { ProofProcessor } from '../../types';
-import { getProofProcessor, validateProofVersion } from '../../utils/helpers';
+import { getProofProcessor } from '../../utils/helpers';
 import { FormattedProofData } from './types';
 import { ProofOptions } from '../../config';
 
@@ -11,8 +11,6 @@ export function format(
   version?: string,
   registeredVk?: boolean,
 ): FormattedProofData {
-  validateProofVersion(options.proofType, version);
-
   const processor: ProofProcessor = getProofProcessor(options.proofType);
 
   if (!processor) {

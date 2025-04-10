@@ -1,8 +1,6 @@
 import {
-    CurveType,
     DomainOptions,
     DomainTransactionInfo,
-    Library,
     ProofOptions,
     ProofType,
     RegisterDomainTransactionInfo,
@@ -18,9 +16,8 @@ import { EventResults, handleCommonEvents } from './eventHandlers';
 import path from "path";
 import fs from "fs";
 import { AggregateStatementPathResult, AggregateTransactionInfo } from "../../src/types";
-import {Groth16Config, Plonky2Config, Risc0Config} from "../../src/config";
-
-
+import { Groth16Config, Plonky2Config, Risc0Config } from "../../src/config";
+import { isRisc0Config } from "../../src/utils/helpers";
 
 export interface ProofData {
     proof: any;
@@ -28,30 +25,50 @@ export interface ProofData {
     vk?: string;
 }
 
-export const proofTypes = Object.keys(ProofType).map((key) => ProofType[key as keyof typeof ProofType]);
-export const curveTypes = Object.keys(CurveType).map((key) => CurveType[key as keyof typeof CurveType]);
-export const libraries = Object.keys(Library).map((key) => Library[key as keyof typeof Library]);
+export function getProofFilenameComponents(proofOptions: ProofOptions): string[] {
+    const { proofType, config } = proofOptions;
+    const components: string[] = [proofType];
 
-export const loadProofData = (proofOptions: ProofOptions, version?: string): ProofData => {
-    const { proofType, curve, library } = proofOptions;
+    switch (proofType) {
+        case ProofType.groth16: {
+            const { library, curve } = config as Groth16Config;
+            components.push(library.toLowerCase(), curve.toLowerCase());
+            break;
+        }
+        case ProofType.plonky2: {
+            const { compressed, hashFunction } = config as Plonky2Config;
+            components.push(compressed ? 'compressed' : 'uncompressed', hashFunction.toLowerCase());
+            break;
+        }
+        case ProofType.risc0: {
+            const { version } = config as Risc0Config;
+            components.push(version.toLowerCase());
+            break;
+        }
+        case ProofType.ultraplonk:
+        case ProofType.proofofsql:
+            // No config
+            break;
+    }
 
-    const fileName = [proofType, version?.toLowerCase(), library, curve].filter(Boolean).join('_');
-    const dataPath = path.join(__dirname, 'data', `${fileName}.json`);
+    return components.filter(Boolean).map(String);
+}
 
+export const loadProofData = (proofOptions: ProofOptions): ProofData => {
+    const fileName = getProofFilenameComponents(proofOptions).join('_') + '.json';
+    const dataPath = path.join(__dirname, 'data', fileName);
     return JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 };
 
-export const loadVerificationKey = (proofOptions: ProofOptions, version?: string): string => {
-    const { proofType, curve, library } = proofOptions;
-
-    const fileName = [proofType, version?.toLowerCase(), library, curve].filter(Boolean).join('_');
-    const dataPath = path.join(__dirname, 'data', `${fileName}.json`);
-
+export const loadVerificationKey = (proofOptions: ProofOptions): string => {
+    const fileName = getProofFilenameComponents(proofOptions).join('_').toLowerCase() + '.json';
+    const dataPath = path.join(__dirname, 'data', fileName);
     const proofData: ProofData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
     if (!proofData.vk) {
         throw new Error(`Verification key not found in file: ${dataPath}`);
     }
+
     return proofData.vk;
 };
 
@@ -69,56 +86,43 @@ export const performVerifyTransaction = async (
     proof: any,
     publicSignals: any,
     vk: string,
-    withAggregation: boolean,
-    version?: string
+    withAggregation: boolean
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
     // 0 = Volta / Ethereum Sepolia
     const domainId: number | undefined = withAggregation ? 0 : undefined;
 
     try {
         console.log(
-            `[IN PROGRESS] ${accountAddress} ${proofOptions.proofType}` +
-            (version ? `:${version}` : '') +
-            (proofOptions.library ? ` with library: ${proofOptions.library}` : '') +
-            (proofOptions.curve ? ` with curve: ${proofOptions.curve}` : '')
+            `[IN PROGRESS] ${accountAddress} ${proofOptions.proofType}${formatProofConfigDetails(proofOptions)}`
         );
 
         const verifyTransaction = async () => {
-            const verify = session.verify(accountAddress)[proofOptions.proofType](
-                proofOptions.library,
-                proofOptions.curve
-            );
+            const verify = dispatchBuilder(session.verify(accountAddress), proofOptions);
 
-            const { events, transactionResult } = await verify.execute({
+            const input = {
                 proofData: {
-                    proof: proof,
-                    publicSignals: publicSignals,
-                    vk: vk,
-                    version: version
+                    proof,
+                    publicSignals,
+                    vk,
+                    ...(isRisc0Config(proofOptions) && { version: proofOptions.config.version })
                 },
                 domainId
-            });
+            };
+
+            const { events, transactionResult } = await verify.execute(input);
 
             const eventResults = handleCommonEvents(events, proofOptions.proofType, TransactionType.Verify, withAggregation);
 
-            console.log(
-                `[RESULT RECEIVED] ${accountAddress} ${proofOptions.proofType}` +
-                (version ? `:${version}` : '') +
-                ` Transaction result received. Validating...`
-            );
-
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
             console.log(
-                `[VALIDATING] ${accountAddress} ${proofOptions.proofType}` +
-                (version ? `:${version}` : '') +
-                ` validateVerifyTransactionInfo`
+                `[RESULT RECEIVED] ${accountAddress} ${proofOptions.proofType}${formatProofConfigDetails(proofOptions)} Transaction result received. Validating...`
             );
+
             validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAggregation);
             console.log(
-                `[VALIDATING] ${accountAddress} ${proofOptions.proofType}` +
-                (version ? `:${version}` : '') +
-                ` validateEventResults`
+                `[VALIDATING] ${accountAddress} ${proofOptions.proofType}${formatProofConfigDetails(proofOptions)} validateVerifyTransactionInfo`
             );
+
             validateEventResults(eventResults);
 
             return { eventResults, transactionInfo };
@@ -129,8 +133,7 @@ export const performVerifyTransaction = async (
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         console.error(
-            `[ERROR] Account: ${accountAddress}, ProofType: ${proofOptions.proofType}` +
-            (version ? `:${version}` : ''),
+            `[ERROR] Account: ${accountAddress}, ProofType: ${proofOptions.proofType}${formatProofConfigDetails(proofOptions)}`,
             error
         );
 
@@ -148,15 +151,20 @@ export const performVKRegistrationAndVerification = async (
     version?: string
 ): Promise<void> => {
     console.log(
-        `${accountAddress} ${proofOptions.proofType} Executing VK registration with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
+        `${accountAddress} ${proofOptions.proofType} Executing VK registration` +
+        (proofOptions.config
+            ? ' with ' +
+            Object.entries(proofOptions.config)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(', ')
+            : '') +
+        '...'
     );
 
+    const register = dispatchBuilder(session.registerVerificationKey(accountAddress), proofOptions);
+
     const { events: registerEvents, transactionResult: registerTransactionResult } =
-        await session
-            .registerVerificationKey(accountAddress)[proofOptions.proofType](
-            proofOptions.library,
-            proofOptions.curve
-        )
+        await register
         .execute(vk);
 
     const registerResults = handleCommonEvents(
@@ -170,12 +178,13 @@ export const performVKRegistrationAndVerification = async (
     validateEventResults(registerResults);
 
     console.log(
-        `${proofOptions.proofType} Executing verification using registered VK with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
+        `${proofOptions.proofType} Executing verification using registered VK${formatProofConfigDetails(proofOptions)}...`
     );
 
+    const verify = dispatchBuilder(session.verify(accountAddress), proofOptions);
+
     const { events: verifyEvents, transactionResult: verifyTransactionResult } =
-        await session
-            .verify(accountAddress)[proofOptions.proofType](proofOptions.library, proofOptions.curve)
+        await verify
             .withRegisteredVk()
             .execute({
                 proofData: {
@@ -250,8 +259,8 @@ export const validateVKRegistrationTransactionInfo = (
 
 export const loadProofAndVK = (proofOptions: ProofOptions, version?: string) => {
     return {
-        proof: loadProofData(proofOptions, version),
-        vk: loadVerificationKey(proofOptions, version),
+        proof: loadProofData(proofOptions),
+        vk: loadVerificationKey(proofOptions),
     };
 };
 
@@ -510,3 +519,31 @@ export function validateAggregateStatementPathResult(result: unknown): asserts r
         throw new Error(`Invalid 'leaf': Received ${JSON.stringify(leaf)}`);
     }
 }
+
+export function dispatchBuilder<T>(
+    methodMap: Record<ProofType, (config?: any) => T>,
+    proofOptions: ProofOptions
+): T {
+    switch (proofOptions.proofType) {
+        case ProofType.groth16:
+            return methodMap.groth16(proofOptions.config as Groth16Config);
+        case ProofType.plonky2:
+            return methodMap.plonky2(proofOptions.config as Plonky2Config);
+        case ProofType.risc0:
+            return methodMap.risc0(proofOptions.config as Risc0Config);
+        case ProofType.ultraplonk:
+            return methodMap.ultraplonk();
+        case ProofType.proofofsql:
+            return methodMap.proofofsql();
+        // ADD_NEW_PROOF_TYPE - used for tests.
+        default:
+            throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);
+    }
+}
+
+export const formatProofConfigDetails = (proofOptions: ProofOptions): string => {
+    if (!proofOptions.config) return '';
+    return ' ' + Object.entries(proofOptions.config)
+        .map(([key, value]) => `with ${key}: ${value}`)
+        .join(' ');
+};

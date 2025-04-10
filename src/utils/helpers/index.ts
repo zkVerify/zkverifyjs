@@ -108,31 +108,6 @@ export const interpretDryRunResponse = async (
 };
 
 /**
- * Validates the version of the proof based on the configuration.
- * @param proofType - The proof type to validate.
- * @param version - The version to validate.
- * @throws Error if the version is not supported or not provided when required.
- */
-export function validateProofVersion(
-  proofType: ProofType,
-  version?: string,
-): void {
-  const config = proofConfigurations[proofType];
-
-  if (config.supportedVersions.length > 0) {
-    if (!version) {
-      throw new Error(`Version is required for proof type: ${proofType}`);
-    }
-
-    if (!config.supportedVersions.includes(version)) {
-      throw new Error(
-        `Invalid version '${version}' for proof type: ${proofType}. Supported versions: ${config.supportedVersions.join(', ')}`,
-      );
-    }
-  }
-}
-
-/**
  * Binds all methods from the source object to the target object,
  * preserving the original `this` context.
  *
