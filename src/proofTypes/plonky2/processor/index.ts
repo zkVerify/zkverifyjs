@@ -1,19 +1,26 @@
 import { ProofProcessor } from '../../../types';
 import { Plonky2Proof, Plonky2Vk, Plonky2Pubs } from '../types';
 import * as formatter from '../formatter';
+import { ProofOptions } from '../../../config';
 
-class ProofOfSqlProcessor implements ProofProcessor {
-  formatProof(proof: Plonky2Proof['proof']): string {
-    return formatter.formatProof(proof);
+class Plonky2Processor implements ProofProcessor {
+  formatProof(
+    proof: Plonky2Proof['proof'],
+    options: ProofOptions,
+  ): { compressed: boolean; bytes: string } {
+    return formatter.formatProof(proof, options);
   }
 
-  formatVk(vk: Plonky2Vk['vk']): string {
-    return formatter.formatVk(vk);
+  formatVk(
+    vk: Plonky2Vk['vk'],
+    options: ProofOptions,
+  ): { config: string; bytes: string } {
+    return formatter.formatVk(vk, options);
   }
 
-  formatPubs(pubs: Plonky2Pubs['pubs']): string {
-    return formatter.formatPubs(pubs);
+  formatPubs(pubs: Plonky2Pubs['pubs'], options: ProofOptions): string {
+    return formatter.formatPubs(pubs, options);
   }
 }
 
-export default new ProofOfSqlProcessor();
+export default new Plonky2Processor();

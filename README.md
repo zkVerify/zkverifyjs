@@ -4,19 +4,31 @@ The `zkverifyjs` package is a TypeScript library designed to facilitate sending 
 
 Currently the following proof verifiers are supported:
 - Groth16 (BN128, BN254, BLS12-381 elliptic curves)
-  - Note - Must include `Library` and `CurveType` e.g. `.groth16(Library.gnark, CurveType.bn128)`
-- Risc0 `V1_0`, `V1_1`, `V1_2`
-  - Note - Version must be included as a ProofData input for Risc0
-
-  ```typescript
-  .execute({ proofData: { 
-      vk: vk,
-      proof: proof,
-      publicSignals: publicSignals,
-      version: 'V1_2' }
+  - Note - Must include `Library` and `CurveType` e.g.
+```typescript
+  .groth16({
+    library: Library.snarkjs,
+    curve: CurveType.bls12381
   })
-  ```
-
+```
+- Plonky2
+  - Must include hashFunction and whether it's compressed or not
+```typescript
+    const { events, transactionResult } = await session
+        .verify()
+        .plonky2({
+            compressed: false,
+            hashFunction: Plonky2HashFunction.Poseidon
+        })
+        .execute({...
+```
+- Risc0 versions `V1_0`, `V1_1`, `V1_2`
+  - Note - Version must be included for Risc0 e.g.
+```typescript
+  .risc0({
+    version: Risc0Version.V1_2
+  })
+ ```
 - Ultraplonk
 - Space and Time
 
@@ -166,7 +178,10 @@ import { CurveType } from './index';
 
 const { events, transactionResult } = await session
   .verify()
-  .groth16(Library.snarkjs, CurveType.bn128)
+  .groth16({
+    library: Library.snarkjs,
+    curve: CurveType.bn128
+    })
   .execute({
     proofData: {
       vk: vk,
@@ -227,28 +242,32 @@ You can listen for transaction events using the events emitter. Common events in
 - `error`: Triggered if an error occurs during the transaction process.
 
 ```typescript
-const { events, transactionResult } = await session
-  .verify()
-  .risc0()
-  .execute({
-    proofData: {
-      vk: vk,
-      proof: proof,
-      publicSignals: publicSignals,
-    },
-    domainId: 42, // Optional domain ID for proof aggregation
-  });
+import {Risc0Version} from "./enums";
+
+const {events, transactionResult} = await session
+        .verify()
+        .risc0({
+          version: Risc0Version.V1_2
+        })
+        .execute({
+          proofData: {
+            vk: vk,
+            proof: proof,
+            publicSignals: publicSignals,
+          },
+          domainId: 42, // Optional domain ID for proof aggregation
+        });
 
 events.on('includedInBlock', (eventData) => {
-    console.log('Transaction included in block:', eventData);
+  console.log('Transaction included in block:', eventData);
 });
 
 events.on('finalized', (eventData) => {
-    console.log('Transaction finalized:', eventData);
+  console.log('Transaction finalized:', eventData);
 });
 
 events.on('error', (error) => {
-    console.error('An error occurred during the transaction:', error);
+  console.error('An error occurred during the transaction:', error);
 });
 ```
 
@@ -259,7 +278,10 @@ To await the final result of the transaction, use the transactionResult promise.
 ```typescript
 const { events, transactionResult } = await session
   .verify()
-  .groth16(Library.gnark, CurveType.bls12381)
+  .groth16({
+    library: Library.snarkjs,
+    curve: CurveType.bls12381
+  })
   .execute({
     proofData: {
       vk: vk,
@@ -343,7 +365,9 @@ const session = await zkVerifySession
 
 const { success, message } = session
   .optimisticVerify()
-  .risc0()
+  .risc0({
+    version: Risc0Version.V1_1
+  })
   .execute({
     proofData: {
       vk: vk,
@@ -453,7 +477,10 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
   
   // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
   const { success, message } = session.optimisticVerify()
-          .risc0()
+          .plonky2({
+            compressed: false,
+            hashFunction: Plonky2HashFunction.Poseidon
+          })
           .execute({ proofData: {
               vk: vk,
               proof: proof,
@@ -470,7 +497,11 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
   // Your logic here
 
   // Execute the verification transaction on zkVerify chain
-  const { events, transactionResult } = await session.verify().risc0()
+  const { events, transactionResult } = await session.verify()
+          .plonky2({
+            compressed: false,
+            hashFunction: Plonky2HashFunction.Poseidon
+          })
           .execute({ proofData: {
               vk: vk,
               proof: proof,
@@ -616,7 +647,10 @@ const { events, transactionResult } = await session
 ```typescript
 const { success, message } = session
   .optimisticVerify()
-  .risc0()
+  .plonky2({
+    compressed: false,
+    hashFunction: Plonky2HashFunction.Poseidon
+  })
   .execute({
     proofData: {
       vk: vk,
@@ -627,7 +661,7 @@ const { success, message } = session
   });
 ```
 
-- Proof Type: `.risc0()` specifies the type of proof to be used. Options available for all supported proof types.
+- Proof Type: `.plonky2()` specifies the type of proof to be used. Options available for all supported proof types.
 - Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
 - Returns: A result containing a boolean `success`.  If success is false the response will also contain a `message` with further details related to the failure.
 

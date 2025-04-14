@@ -57,6 +57,7 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
 export const loadProofData = (proofOptions: ProofOptions): ProofData => {
     const fileName = getProofFilenameComponents(proofOptions).join('_') + '.json';
     const dataPath = path.join(__dirname, 'data', fileName);
+
     return JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 };
 
@@ -257,7 +258,7 @@ export const validateVKRegistrationTransactionInfo = (
     expect(transactionInfo.statementHash).toBeDefined();
 };
 
-export const loadProofAndVK = (proofOptions: ProofOptions, version?: string) => {
+export const loadProofAndVK = (proofOptions: ProofOptions) => {
     return {
         proof: loadProofData(proofOptions),
         vk: loadVerificationKey(proofOptions),
