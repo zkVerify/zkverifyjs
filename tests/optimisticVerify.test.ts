@@ -1,7 +1,8 @@
-import { CurveType, Library, zkVerifySession } from '../src';
+import {CurveType, Library, SupportedNetwork, zkVerifySession} from '../src';
 import { walletPool } from './common/walletPool';
 import path from "path";
 import fs from "fs";
+import {SupportedNetworkConfig} from "../src/config";
 
 jest.setTimeout(180000);
 
@@ -19,7 +20,7 @@ describe('optimisticVerify functionality', () => {
         const groth16Data = loadGroth16Data();
         const { proof, publicSignals: defaultPublicSignals, vk } = groth16Data;
 
-        session = await zkVerifySession.start().Custom({rpc: "customWsUrl", websocket: customWsUrl}).withAccount(wallet!);
+        session = await zkVerifySession.start().Custom({rpc: "https://customUrl", websocket: customWsUrl}).withAccount(wallet!);
 
         return {
             session,
