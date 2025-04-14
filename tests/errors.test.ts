@@ -44,7 +44,7 @@ describe('verify with bad data', () => {
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
-            .groth16(Library.snarkjs, CurveType.bn128)
+            .groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
             .execute({
                 proofData: {
                     proof: badProof,
@@ -77,7 +77,7 @@ describe('verify with bad data', () => {
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
-            .groth16(Library.snarkjs, CurveType.bn254)
+            .groth16({ library: Library.snarkjs, curve: CurveType.bn254 })
             .execute({
                 proofData: {
                     proof: proof,

@@ -4,9 +4,14 @@ import { verify } from './index';
 import { EventEmitter } from 'events';
 import { AccountConnection, WalletConnection } from '../connection/types';
 import { VerifyOptions } from '../../session/types';
-import { TransactionType, ZkVerifyEvents } from '../../enums';
+import {
+  CurveType,
+  Library,
+  TransactionType,
+  ZkVerifyEvents,
+} from '../../enums';
 import { ProofProcessor } from '../../types';
-import { ProofType, Library, CurveType } from '../../config';
+import { ProofType } from '../../config';
 import { VerifyInput } from './types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { createSubmitProofExtrinsic } from '../extrinsic';
@@ -65,8 +70,10 @@ describe('verify', () => {
     mockOptions = {
       proofOptions: {
         proofType: ProofType.groth16,
-        library: Library.snarkjs,
-        curve: CurveType.bls12381,
+        config: {
+          library: Library.snarkjs,
+          curve: CurveType.bls12381,
+        },
       },
       registeredVk: false,
     };

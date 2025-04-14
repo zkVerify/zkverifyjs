@@ -124,7 +124,6 @@ describe('Domain interaction tests', () => {
 
 
             receivedEvents[eventType].forEach((payload, index) => {
-                console.debug(`Payload #${index + 1} for ${eventType}:`, payload);
                 switch (eventType) {
                     case ZkVerifyEvents.NewDomain:
                         expect(payload.data.id).toBeDefined();

@@ -1,7 +1,8 @@
 import { ProofProcessor } from '../../types';
 import { getProofProcessor } from '../../utils/helpers';
-import { ProofType, Library, CurveType } from '../../config';
+import { ProofType } from '../../config';
 import { format } from './index';
+import { CurveType, Library } from '../../enums';
 
 jest.mock('../../utils/helpers', () => ({
   getProofProcessor: jest.fn(),
@@ -13,8 +14,10 @@ describe('format', () => {
 
   const proofOptions = {
     proofType: ProofType.groth16,
-    library: Library.snarkjs,
-    curve: CurveType.bls12381,
+    config: {
+      library: Library.snarkjs,
+      curve: CurveType.bls12381,
+    },
   };
 
   beforeEach(() => {

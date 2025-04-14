@@ -26,7 +26,7 @@ describe('zkVerifySession class', () => {
     });
 
     // Just used for local testing a single proof easily.
-    it('should send a proof to a registered domain and get aggregation', async () => {
+    it.skip('should send a proof to a registered domain and get aggregation', async () => {
         try {
             console.log('🧪 Starting test: should send a proof to a registered domain and get aggregation');
 

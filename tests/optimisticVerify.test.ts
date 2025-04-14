@@ -19,7 +19,7 @@ describe('optimisticVerify functionality', () => {
         const groth16Data = loadGroth16Data();
         const { proof, publicSignals: defaultPublicSignals, vk } = groth16Data;
 
-        session = await zkVerifySession.start().Custom(customWsUrl).withAccount(wallet!);
+        session = await zkVerifySession.start().Custom({rpc: "customWsUrl", websocket: customWsUrl}).withAccount(wallet!);
 
         return {
             session,
@@ -57,7 +57,7 @@ describe('optimisticVerify functionality', () => {
 
         await expect(
             session.optimisticVerify()
-                .groth16(Library.snarkjs, CurveType.bn128)
+                .groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
                 .execute(input)
         ).rejects.toThrowError('Optimistic verification is only supported on custom networks.');
     });
@@ -65,7 +65,7 @@ describe('optimisticVerify functionality', () => {
     it.skip('should succeed when called on a custom network with valid proof details', async () => {
         const { input } = await createSessionAndInput('ws://custom-url');
 
-        const builder = session.optimisticVerify().groth16(Library.snarkjs, CurveType.bls12381);
+        const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bls12381 })
         const { success, message } = await builder.execute(input);
 
         expect(message).toBe("Optimistic Verification Successful!");
@@ -75,7 +75,7 @@ describe('optimisticVerify functionality', () => {
     it.skip('should fail when called with incorrect data', async () => {
         const { input } = await createSessionAndInput('ws://custom-url');
 
-        const builder = session.optimisticVerify().groth16(Library.snarkjs, CurveType.bn128);
+        const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
         const { success, message } = await builder.execute(input);
 
         expect(success).toBe(false);
@@ -85,7 +85,7 @@ describe('optimisticVerify functionality', () => {
     it.skip('should fail when called with incorrect publicSignals', async () => {
         const { input } = await createSessionAndInput('ws://custom-url', ["0x1"]);
 
-        const builder = session.optimisticVerify().groth16(Library.snarkjs, CurveType.bls12381);
+        const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bls12381 })
         const { success, message } = await builder.execute(input);
 
         expect(success).toBe(false);
