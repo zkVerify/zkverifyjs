@@ -1,7 +1,8 @@
 import { ConnectionManager } from '../connection';
 import { ApiPromise } from '@polkadot/api';
-import { getAggregateStatementPath } from '../../../api/rpc';
+import { getAggregateStatementPath, getVkHash } from '../../../api/rpc';
 import { AggregateStatementPathResult } from '../../../types';
+import { ProofType } from '../../../config';
 
 export class RpcManager {
   private readonly connectionManager: ConnectionManager;
@@ -41,5 +42,20 @@ export class RpcManager {
       aggregationId,
       statement,
     );
+  }
+
+  /**
+   * Retrieves the VK hash for the given proof type and verification key.
+   *
+   * @async
+   * @function getVkHash
+   * @param {ProofType} proofType - The proof system type (e.g., groth16, plonky2).
+   * @param {string} vk - The verification key string.
+   * @returns {Promise<string>} - The resulting VK hash.
+   * @throws {Error} If the proof type is unsupported or the RPC call fails.
+   */
+  async getVkHash(proofType: ProofType, vk: string): Promise<string> {
+    const api: ApiPromise = this.connectionManager.connectionDetails.api;
+    return getVkHash(api, proofType, vk);
   }
 }

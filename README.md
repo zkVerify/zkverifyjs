@@ -50,6 +50,7 @@ Currently the following proof verifiers are supported:
     - [zkVerifySession.optimisticVerify](#zkverifysessionoptimisticverify)
     - [zkVerifySession.registerVerificationKey](#zkverifysessionregisterverificationkey)
     - [zkVerifySession.getAggregateStatementPath](#zkverifysessiongetaggregatestatementpath)
+    - [zkVerifySession.getVkHash](#zkverifysessiongetvkhash)
     - [zkVerifySession.format](#zkverifysessionformat)
     - [zkVerifySession.createSubmitProofExtrinsic](#zkverifysessioncreatesubmitproofextrinsic)
     - [zkVerifySession.createExtrinsicHex](#zkverifysessioncreateextrinsichex)
@@ -685,6 +686,16 @@ const result = await session.getAggregateStatementPath(aggregationReceipt.blockH
 - `aggregationId`: The `aggregationId` returned in the transaction result from a successful proof verification
 - `statement`: The `statement` returned in the transaction result from a successful proof verification
 - Returns: A AggregateStatementPathResult object containing a statementHash  string.
+
+## `zkVerifySession.getVkHash`
+
+```typescript
+const vkHash = await session.getVkHash(ProofType.groth16, formattedVk)
+```
+
+- `proofType`: An enum value representing the type of proof being formatted (e.g., ProofType.groth16).
+- `formattedVk`: A verification key that has been formatted beforehand using `zkVerifySession.format`
+- Returns: A verification key hash as a 0x string
 
 ## `zkVerifySession.format`
 

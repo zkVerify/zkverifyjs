@@ -665,6 +665,16 @@ const result = await session.getAggregateStatementPath(aggregationReceipt.blockH
 * `statement`: The `statement` returned in the transaction result from a successful proof verification
 * Returns: A AggregateStatementPathResult object containing a statementHash  string.
 
+### `zkVerifySession.getVkHash`
+
+```typescript
+const vkHash = await session.getVkHash(ProofType.groth16, formattedVk)
+```
+
+* `proofType`: An enum value representing the type of proof being formatted (e.g., ProofType.groth16).
+* `formattedVk`: A verification key that has been formatted beforehand using `zkVerifySession.format`
+* Returns: A verification key hash as a 0x string
+
 ### `zkVerifySession.format`
 
 ```typescript

@@ -1,5 +1,6 @@
 import { ApiPromise } from '@polkadot/api';
 import { AggregateStatementPathResult } from '../../types';
+import { ProofType } from '../../config';
 
 export async function getAggregateStatementPath(
   api: ApiPromise,
@@ -73,6 +74,54 @@ export async function getAggregateStatementPath(
   } catch (error) {
     throw new Error(
       `Error during RPC call: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+export async function getVkHash(
+  api: ApiPromise,
+  proofType: ProofType,
+  vk: string,
+): Promise<string> {
+  try {
+    if (!vk || vk.trim() === '') {
+      throw new Error(`Invalid input: "vk" must be a non-empty string.`);
+    }
+
+    // @ts-expect-error: Custom RPC methods are not recognized by TypeScript
+    if (!api.rpc.vk_hash || typeof api.rpc.vk_hash !== 'object') {
+      throw new Error(`RPC method for ${proofType} is not registered.`);
+    }
+
+    // @ts-expect-error: Custom RPC methods are not recognized by TypeScript
+    const rpcCall = api.rpc.vk_hash[proofType];
+
+    if (typeof rpcCall !== 'function') {
+      throw new Error(`RPC method for ${proofType} is not registered.`);
+    }
+
+    const result = await rpcCall(vk);
+
+    if (!result || typeof result.toString !== 'function') {
+      throw new Error(`No VK hash found for proof type "${proofType}".`);
+    }
+
+    const hash = result.toString();
+
+    if (
+      typeof hash !== 'string' ||
+      !hash.startsWith('0x') ||
+      hash.length <= 2
+    ) {
+      throw new Error(`No VK hash found for proof type "${proofType}".`);
+    }
+
+    return hash;
+  } catch (err) {
+    throw new Error(
+      `RPC call for ${proofType} failed: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
     );
   }
 }
