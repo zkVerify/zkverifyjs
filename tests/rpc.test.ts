@@ -2,7 +2,7 @@ import { CurveType, FormattedProofData, Library, ProofType, zkVerifySession } fr
 import path from "path";
 import fs from "fs";
 
-jest.setTimeout(180000);
+jest.setTimeout(60000);
 
 describe('Custom RPC Integration Test', () => {
     let session: zkVerifySession;
@@ -15,7 +15,7 @@ describe('Custom RPC Integration Test', () => {
         await session.close();
     });
 
-    async function getFormattedVk(): Promise<string> {
+    async function getFormattedVk(): Promise<unknown> {
         const dataPath = path.join(__dirname, 'common/data', 'groth16_snarkjs_bn128.json');
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
@@ -25,7 +25,7 @@ describe('Custom RPC Integration Test', () => {
             groth16Data.publicSignals,
             groth16Data.vk
         );
-        return formattedProofData.formattedVk as string;
+        return formattedProofData.formattedVk;
     }
 
     it('should retrieve a VK hash via the rpc endpoint', async () => {

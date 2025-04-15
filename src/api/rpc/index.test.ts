@@ -159,7 +159,7 @@ describe('getVkHash', () => {
   });
 
   it('should return a valid hash for groth16', async () => {
-    const vk = JSON.stringify({ dummy: 'vk' });
+    const vk = { dummy: 'vk' };
 
     const result = await getVkHash(api, ProofType.groth16, vk);
 
@@ -169,33 +169,24 @@ describe('getVkHash', () => {
   });
 
   it('should throw if the returned hash is not a valid 0x string', async () => {
-    const invalidRpcReturn = {
-      toString: () => 'not-a-valid-hash',
-    };
     // @ts-expect-error: Custom RPC method 'rpc.vk_hash' is not recognized by TypeScript's type system
-    (api.rpc.vk_hash.groth16 as unknown as jest.Mock).mockResolvedValue(
-      invalidRpcReturn,
-    );
+    (api.rpc.vk_hash.groth16 as jest.Mock).mockImplementation(() => {
+      return Promise.resolve({
+        toString: () => 'not-a-valid-hash',
+      });
+    });
 
-    const vk = JSON.stringify({ dummy: 'vk' });
+    const vk = { dummy: 'vk' };
 
     await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
       'RPC call for groth16 failed: No VK hash found for proof type "groth16".',
     );
   });
 
-  it('should throw if vk is an empty string', async () => {
-    const emptyVk = '';
-
-    await expect(getVkHash(api, ProofType.groth16, emptyVk)).rejects.toThrow(
-      'RPC call for groth16 failed: Invalid input: "vk" must be a non-empty string.',
-    );
-  });
-
   it('should throw if vk_hash is undefined on api.rpc', async () => {
     (api.rpc as any).vk_hash = undefined;
 
-    const vk = JSON.stringify({ some: 'vk' });
+    const vk = { some: 'vk' };
 
     await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
       'RPC call for groth16 failed: RPC method for groth16 is not registered.',
@@ -206,7 +197,7 @@ describe('getVkHash', () => {
     // @ts-expect-error: Custom RPC method 'rpc.vk_hash' is not recognized by TypeScript's type system
     (api.rpc.vk_hash as any).groth16 = 'not-a-function';
 
-    const vk = JSON.stringify({ dummy: 'vk' });
+    const vk = { dummy: 'vk' };
 
     await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
       'RPC call for groth16 failed: RPC method for groth16 is not registered.',
@@ -215,11 +206,11 @@ describe('getVkHash', () => {
 
   it('should throw if RPC returns undefined', async () => {
     // @ts-expect-error: Custom RPC method 'rpc.vk_hash' is not recognized by TypeScript's type system
-    (api.rpc.vk_hash.groth16 as unknown as jest.Mock).mockResolvedValue(
-      undefined,
-    );
+    (api.rpc.vk_hash.groth16 as jest.Mock).mockImplementation(() => {
+      return Promise.resolve(undefined);
+    });
 
-    const vk = JSON.stringify({ dummy: 'vk' });
+    const vk = { dummy: 'vk' };
 
     await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
       'RPC call for groth16 failed: No VK hash found for proof type "groth16".',

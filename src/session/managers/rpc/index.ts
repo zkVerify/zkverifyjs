@@ -54,7 +54,7 @@ export class RpcManager {
    * @returns {Promise<string>} - The resulting VK hash.
    * @throws {Error} If the proof type is unsupported or the RPC call fails.
    */
-  async getVkHash(proofType: ProofType, vk: string): Promise<string> {
+  async getVkHash(proofType: ProofType, vk: unknown): Promise<string> {
     const api: ApiPromise = this.connectionManager.connectionDetails.api;
     return getVkHash(api, proofType, vk);
   }

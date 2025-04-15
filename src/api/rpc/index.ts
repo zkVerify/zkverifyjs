@@ -81,11 +81,13 @@ export async function getAggregateStatementPath(
 export async function getVkHash(
   api: ApiPromise,
   proofType: ProofType,
-  vk: string,
+  vk: unknown,
 ): Promise<string> {
   try {
-    if (!vk || vk.trim() === '') {
-      throw new Error(`Invalid input: "vk" must be a non-empty string.`);
+    if (typeof vk !== 'object' || vk === null) {
+      throw new Error(
+        `Invalid VK format: expected an object, got ${typeof vk}`,
+      );
     }
 
     // @ts-expect-error: Custom RPC methods are not recognized by TypeScript
