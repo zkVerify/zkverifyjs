@@ -25,7 +25,7 @@ describe('zkVerifySession - estimateCost', () => {
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
         const formattedProofData = await session.format(
-            { proofType: ProofType.groth16, library: Library.snarkjs, curve: CurveType.bn128 },
+            { proofType: ProofType.groth16, config: { library: Library.snarkjs, curve: CurveType.bn128 } },
             groth16Data.proof,
             groth16Data.publicSignals,
             groth16Data.vk
