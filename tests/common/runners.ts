@@ -1,13 +1,12 @@
-import { CurveType, Library, ProofOptions, ProofType } from "../../src";
+import { ProofOptions, ProofType } from "../../src";
 import {
     loadProofAndVK,
     performVerifyTransaction,
     performVKRegistrationAndVerification
 } from "./utils";
 import { walletPool } from "./walletPool";
-import { proofConfigurations } from "../../src/config";
 import { zkVerifySession } from "../../src";
-import {proofTypeVersionExclusions, testOptions, TestOptions} from "./options";
+import { proofTypeVersionExclusions, testOptions } from "./options";
 
 const logTestDetails = (proofOptions: ProofOptions, testType: string) => {
     const { proofType, config } = proofOptions;
@@ -30,13 +29,14 @@ export const runVerifyTest = async (
     withAggregation: boolean = false
 ) => {
     let seedPhrase: string | undefined;
+    let accountAddress: string | undefined;
     let envVar: string | undefined;
 
     try {
         [envVar, seedPhrase] = await walletPool.acquireWallet();
         logTestDetails(proofOptions, "verification test");
 
-        const accountAddress = await session.addAccount(seedPhrase);
+        accountAddress = await session.addAccount(seedPhrase);
         const { proof, vk } = loadProofAndVK(proofOptions);
 
         await performVerifyTransaction(
@@ -52,9 +52,8 @@ export const runVerifyTest = async (
         console.error(`Error during runVerifyTest (${envVar}) for ${proofOptions.proofType}:`, error);
         throw error;
     } finally {
-        if (envVar) {
-            await walletPool.releaseWallet(envVar);
-        }
+        accountAddress && await session.removeAccount(accountAddress);
+        envVar && await walletPool.releaseWallet(envVar);
     }
 };
 
@@ -63,13 +62,14 @@ export const runVKRegistrationTest = async (
     proofOptions: ProofOptions
 ) => {
     let seedPhrase: string | undefined;
+    let accountAddress: string | undefined;
     let envVar: string | undefined;
 
     try {
         [envVar, seedPhrase] = await walletPool.acquireWallet();
         logTestDetails(proofOptions, "VK registration");
 
-        const accountAddress = await session.addAccount(seedPhrase);
+        accountAddress = await session.addAccount(seedPhrase);
         const { proof, vk } = loadProofAndVK(proofOptions);
 
         await performVKRegistrationAndVerification(
@@ -84,9 +84,8 @@ export const runVKRegistrationTest = async (
         console.error(`Error during runVKRegistrationTest (${envVar}) for ${proofOptions.proofType}:`, error);
         throw error;
     } finally {
-        if (envVar) {
-            await walletPool.releaseWallet(envVar);
-        }
+        accountAddress && await session.removeAccount(accountAddress);
+        envVar && await walletPool.releaseWallet(envVar);
     }
 };
 
@@ -96,7 +95,6 @@ export const generateTestPromises = (
     const promises: Promise<void>[] = [];
 
     testOptions.proofTypes.forEach((proofType) => {
-        const config = proofConfigurations[proofType];
         const excludedVersions = proofTypeVersionExclusions[proofType] || [];
 
         switch (proofType) {
