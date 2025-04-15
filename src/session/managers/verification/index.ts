@@ -76,8 +76,8 @@ export class VerificationManager {
           value: (proofConfig?: AllProofConfigs | null) => {
             const proofOptions: ProofOptions = {
               proofType: proofType as ProofType,
-              ...proofConfig,
-            } as ProofOptions;
+              config: proofConfig ?? undefined,
+            };
 
             validateProofTypeOptions(proofOptions);
 

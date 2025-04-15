@@ -1,8 +1,7 @@
-import {CurveType, Library, SupportedNetwork, zkVerifySession} from '../src';
+import { CurveType, Library, zkVerifySession } from '../src';
 import { walletPool } from './common/walletPool';
 import path from "path";
 import fs from "fs";
-import {SupportedNetworkConfig} from "../src/config";
 
 jest.setTimeout(180000);
 
