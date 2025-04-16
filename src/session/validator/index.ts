@@ -10,7 +10,7 @@ import {
  * @throws {Error} - If the validation fails.
  */
 export function validateProofTypeOptions(options: ProofOptions): void {
-  const proofType = options.proofType;
+  const { proofType } = options;
 
   if (!proofType) {
     throw new Error('Proof type is required.');

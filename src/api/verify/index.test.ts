@@ -21,7 +21,6 @@ import * as helpers from '../../utils/helpers';
 jest.mock('../../utils/helpers', () => ({
   getProofPallet: jest.fn(),
   getProofProcessor: jest.fn(),
-  validateProofVersion: jest.fn(),
   getSelectedAccount: jest.fn(),
   getKeyringAccountIfAvailable: jest.fn(),
 }));

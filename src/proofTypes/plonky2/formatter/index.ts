@@ -47,11 +47,10 @@ export function formatPubs(
   throwInvalidPlonky2Config();
 }
 
-function validatedHexString(input: string): string {
+function validatedHexString(input: string): void {
   if (!input.startsWith('0x')) {
     throw new Error('Invalid format: string input must be 0x-prefixed.');
   }
-  return input;
 }
 
 function throwInvalidPlonky2Config(): never {
