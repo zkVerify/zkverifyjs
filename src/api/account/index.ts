@@ -1,5 +1,6 @@
 import { Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { CHAIN_SS58_PREFIX } from '../../config';
 
 /**
  * Sets up the account using the provided secret seed phrase.
@@ -11,6 +12,8 @@ import { KeyringPair } from '@polkadot/keyring/types';
 export const setupAccount = (secretSeedPhrase: string): KeyringPair => {
   try {
     const keyring = new Keyring({ type: 'sr25519' });
+    keyring.setSS58Format(CHAIN_SS58_PREFIX);
+
     return keyring.addFromUri(secretSeedPhrase);
   } catch (error) {
     if (error instanceof Error) {

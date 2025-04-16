@@ -66,6 +66,7 @@
     "groth16",
     "javascript",
     "noir",
+    "plonky2",
     "proof-verification",
     "proofs",
     "risc0",
@@ -81,10 +82,10 @@
     "zkp"
   ],
   "dependencies": {
-    "@polkadot/api": "15.8.1",
-    "@polkadot/extension-dapp": "0.58.5",
+    "@polkadot/api": "15.9.2",
+    "@polkadot/extension-dapp": "0.58.7",
     "async-mutex": "0.5.0",
-    "bignumber.js": "9.1.2",
+    "bignumber.js": "9.2.1",
     "dotenv": "16.4.7",
     "js-sha3": "0.9.3",
     "snarkjs": "0.7.5",
@@ -124,7 +125,7 @@
     "unist-util-visit": "5.0.0"
   },
   "overrides": {
-    "@polkadot/util": "13.3.1"
+    "@polkadot/util": "13.4.4"
   },
   "sideEffects": false
 }

@@ -13,6 +13,8 @@ import {
   Risc0Version,
 } from '../enums';
 
+export const CHAIN_SS58_PREFIX = 251; // zkVerify specific address format
+
 export enum SupportedNetwork {
   Volta = 'Volta',
   Custom = 'Custom',

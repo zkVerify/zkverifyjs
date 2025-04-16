@@ -64,6 +64,9 @@ describe('Domain interaction tests', () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Volta().withAccount(wallet);
 
+        const accountInfo = await session.getAccountInfo();
+        console.log(`Running Test: 'should register, hold, and unregister a domain' with Account: ${accountInfo[0].address}`)
+
         const expectedEvents = [
             ZkVerifyEvents.NewDomain,
             ZkVerifyEvents.ProofVerified,
