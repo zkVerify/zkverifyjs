@@ -6,7 +6,8 @@ import {
   ProofInput,
 } from '../types';
 import { ProofProcessor } from '../../../types';
-import { ProofOptions } from '../../../session/types';
+import { ProofOptions } from '../../../config';
+import { isGroth16Config } from '../../../utils/helpers';
 
 class Groth16Processor implements ProofProcessor {
   /**
@@ -18,14 +19,18 @@ class Groth16Processor implements ProofProcessor {
    */
   private getFormatter(options: ProofOptions): Formatter {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const formatter = require(`../formatter/${options.library}`) as Formatter;
-      return formatter;
+      if (isGroth16Config(options)) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require(`../formatter/${options.config.library}`) as Formatter;
+      }
     } catch (error) {
       throw new Error(
-        `Unsupported or missing library: ${options.library} : ${error}`,
+        `Error loading Groth16 formatter : ${(error as Error).message}`,
       );
     }
+    throw new Error(
+      `Unsupported proof configuration for proofType: ${options.proofType}`,
+    );
   }
 
   /**

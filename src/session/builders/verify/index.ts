@@ -1,15 +1,8 @@
-import { ProofOptions, VerifyOptions } from '../../types';
-import { CurveType, Library, ProofType } from '../../../config';
+import { VerifyOptions } from '../../types';
 import { EventEmitter } from 'events';
 import { VerifyTransactionInfo } from '../../../types';
 import { VerifyInput } from '../../../api/verify/types';
-
-export type ProofMethodMap = {
-  [K in keyof typeof ProofType]: (
-    library?: Library,
-    curve?: CurveType,
-  ) => VerificationBuilder;
-};
+import { ProofOptions } from '../../../config';
 
 export class VerificationBuilder {
   private readonly options: VerifyOptions;

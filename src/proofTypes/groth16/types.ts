@@ -1,4 +1,4 @@
-import { ProofOptions } from '../../session/types';
+import { ProofOptions } from '../../config';
 
 export interface Groth16VerificationKeyInput {
   curve: string;

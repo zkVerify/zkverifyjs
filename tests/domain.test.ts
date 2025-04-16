@@ -64,6 +64,9 @@ describe('Domain interaction tests', () => {
         [envVar, wallet] = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Volta().withAccount(wallet);
 
+        const accountInfo = await session.getAccountInfo();
+        console.log(`Running Test: 'should register, hold, and unregister a domain' with Account: ${accountInfo[0].address}`)
+
         const expectedEvents = [
             ZkVerifyEvents.NewDomain,
             ZkVerifyEvents.ProofVerified,
@@ -124,7 +127,6 @@ describe('Domain interaction tests', () => {
 
 
             receivedEvents[eventType].forEach((payload, index) => {
-                console.debug(`Payload #${index + 1} for ${eventType}:`, payload);
                 switch (eventType) {
                     case ZkVerifyEvents.NewDomain:
                         expect(payload.data.id).toBeDefined();

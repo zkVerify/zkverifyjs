@@ -68,12 +68,6 @@ export async function subscribeToNewAggregationReceipts(
     try {
       api.rpc.chain.subscribeFinalizedHeads(async (header) => {
         const blockHash = header.hash.toHex();
-        const blockNumber = header.number.toNumber();
-
-        console.log(
-          `🧩 Block Hash Retrieved: ${blockHash} for Block Number: ${blockNumber}`,
-        );
-
         const apiAt = await api.at(blockHash);
         const events =
           (await apiAt.query.system.events()) as unknown as Vec<EventRecord>;

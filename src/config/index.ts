@@ -1,11 +1,19 @@
 import { NetworkConfig, ProofProcessor } from '../types';
 import {
   Groth16Processor,
+  Plonky2Processor,
   ProofOfSqlProcessor,
   Risc0Processor,
   UltraPlonkProcessor,
 } from '../proofTypes';
-import { Risc0Version } from '../enums';
+import {
+  CurveType,
+  Library,
+  Plonky2HashFunction,
+  Risc0Version,
+} from '../enums';
+
+export const CHAIN_SS58_PREFIX = 251; // zkVerify specific address format
 
 export enum SupportedNetwork {
   Volta = 'Volta',
@@ -38,61 +46,64 @@ export enum ProofType {
   risc0 = 'risc0',
   ultraplonk = 'ultraplonk',
   proofofsql = 'proofofsql',
+  plonky2 = 'plonky2',
   // ADD_NEW_PROOF_TYPE
 }
 
-export enum Library {
-  snarkjs = 'snarkjs',
-  gnark = 'gnark',
-}
-
-export enum CurveType {
-  bn128 = 'bn128',
-  bn254 = 'bn254',
-  bls12381 = 'bls12381',
-}
-
-interface ProofConfig {
+export interface ProofConfig {
   pallet: string;
   processor: ProofProcessor;
-  supportedVersions: string[];
-  requiresLibrary?: boolean;
-  requiresCurve?: boolean;
 }
 
 export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.groth16]: {
     pallet: 'settlementGroth16Pallet',
     processor: Groth16Processor,
-    supportedVersions: [],
-    requiresLibrary: true,
-    requiresCurve: true,
   },
   [ProofType.risc0]: {
     pallet: 'settlementRisc0Pallet',
     processor: Risc0Processor,
-    supportedVersions: Object.keys(Risc0Version).map(
-      (key) => Risc0Version[key as keyof typeof Risc0Version],
-    ),
-    requiresLibrary: false,
-    requiresCurve: false,
   },
   [ProofType.ultraplonk]: {
     pallet: 'settlementUltraplonkPallet',
     processor: UltraPlonkProcessor,
-    supportedVersions: [],
-    requiresLibrary: false,
-    requiresCurve: false,
   },
   [ProofType.proofofsql]: {
     pallet: 'settlementProofOfSqlPallet',
     processor: ProofOfSqlProcessor,
-    supportedVersions: [],
-    requiresLibrary: false,
-    requiresCurve: false,
   },
-  // ADD_NEW_PROOF_TYPE
+  [ProofType.plonky2]: {
+    pallet: 'settlementPlonky2Pallet',
+    processor: Plonky2Processor,
+  },
+  // ADD_NEW_PROOF_TYPE - configurations
 };
+
+export interface ProofOptions {
+  proofType: ProofType;
+  config?: Groth16Config | Plonky2Config | Risc0Config;
+}
+
+export interface Groth16Config {
+  library: Library;
+  curve: CurveType;
+}
+
+export interface Plonky2Config {
+  compressed: boolean;
+  hashFunction: Plonky2HashFunction;
+}
+
+export interface Risc0Config {
+  version: Risc0Version;
+}
+
+export type AllProofConfigs =
+  | Groth16Config
+  | Plonky2Config
+  | Risc0Config
+  | undefined;
+// ADD_NEW_PROOF_TYPE - options if needed.
 
 export const zkvTypes = {
   MerkleProof: {

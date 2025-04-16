@@ -2,6 +2,7 @@ const Fastify = require('fastify');
 const { Mutex } = require('async-mutex');
 const { Keyring } = require('@polkadot/api');
 const { cryptoWaitReady } = require('@polkadot/util-crypto');
+require('dotenv').config()
 
 const fastify = Fastify();
 const availableWallets = new Map();
@@ -94,4 +95,14 @@ initializeWallets().then(() => {
 }).catch((error) => {
     console.error("Failed to initialize wallets:", error);
     process.exit(1);
+});
+
+process.on('SIGTERM', () => {
+    console.log('👋 Wallet server received SIGTERM. Shutting down.');
+    fastify.close().then(() => process.exit(0));
+});
+
+process.on('SIGINT', () => {
+    console.log('👋 Wallet server received SIGINT. Shutting down.');
+    fastify.close().then(() => process.exit(0));
 });

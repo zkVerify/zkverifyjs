@@ -1,7 +1,7 @@
 import { ProofProcessor } from '../../../types';
 import { Risc0Vk, Risc0Pubs } from '../types';
 import * as formatter from '../formatter';
-import { ProofOptions } from '../../../session/types';
+import { ProofOptions } from '../../../config';
 
 class Risc0Processor implements ProofProcessor {
   formatProof(

@@ -4,7 +4,6 @@ import {
   Proof,
   ProofInput,
 } from '../../types';
-import { ProofOptions } from '../../../../session/types';
 import {
   extractCurve,
   formatG1Point,
@@ -13,6 +12,8 @@ import {
   getEndianess,
   unstringifyBigInts,
 } from '../utils';
+import { ProofOptions } from '../../../../config';
+import { isGroth16Config } from '../../../../utils/helpers';
 
 /**
  * Formats zk-SNARK proof data for Groth16.
@@ -25,8 +26,14 @@ export const formatProof = (
   proof: ProofInput,
   options: ProofOptions,
 ): Proof => {
+  if (!isGroth16Config(options)) {
+    throw new Error(
+      'Expected Groth16 config but received invalid configuration.',
+    );
+  }
+
   const proofData = unstringifyBigInts(proof) as ProofInput;
-  const curve = extractCurve(options.curve!);
+  const curve = extractCurve(options.config.curve);
   const endianess = getEndianess(curve);
 
   return {
@@ -50,8 +57,14 @@ export const formatVk = (
   vk: Groth16VerificationKeyInput,
   options: ProofOptions,
 ): Groth16VerificationKey => {
+  if (!isGroth16Config(options)) {
+    throw new Error(
+      'Expected Groth16 config but received invalid configuration.',
+    );
+  }
+
   const vkData = unstringifyBigInts(vk) as Groth16VerificationKeyInput;
-  const curve = extractCurve(options.curve!);
+  const curve = extractCurve(options.config.curve);
   const endianess = getEndianess(curve);
 
   return {

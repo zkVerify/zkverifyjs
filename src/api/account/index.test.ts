@@ -2,6 +2,8 @@ import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { setupAccount } from './index';
 import { walletPool } from '../../../tests/common/walletPool';
 
+jest.setTimeout(30000);
+
 describe('setupAccount', () => {
   beforeAll(async () => {
     await cryptoWaitReady();

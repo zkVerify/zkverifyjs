@@ -43,6 +43,7 @@ export class zkVerifySession {
   declare holdDomain: DomainManager['holdDomain'];
   declare aggregate: DomainManager['aggregate'];
   declare getAggregateStatementPath: RpcManager['getAggregateStatementPath'];
+  declare getVkHash: RpcManager['getVkHash'];
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;

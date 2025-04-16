@@ -1,7 +1,8 @@
-import { getAggregateStatementPath } from './index';
+import { getAggregateStatementPath, getVkHash } from './index';
 import { ApiPromise } from '@polkadot/api';
 import { jest } from '@jest/globals';
 import { AggregateStatementPathResult } from '../../types';
+import { ProofType } from '../../config';
 
 describe('getAggregateStatementPath', () => {
   let api: ApiPromise;
@@ -134,5 +135,85 @@ describe('getAggregateStatementPath', () => {
     await getAggregateStatementPath(api, '0x123', 1, 2, 'test-statement');
     // @ts-expect-error: Custom RPC method 'aggregate.statementPath' is not recognized by TypeScript's type system
     expect(api.rpc.aggregate.statementPath).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('getVkHash', () => {
+  let api: ApiPromise;
+  const validHash = '0xabc123deadbeef';
+
+  beforeEach(() => {
+    api = {
+      rpc: {
+        vk_hash: {
+          groth16: jest
+            .fn()
+            .mockImplementation(() => Promise.resolve(validHash)),
+        },
+      },
+    } as unknown as ApiPromise;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return a valid hash for groth16', async () => {
+    const vk = { dummy: 'vk' };
+
+    const result = await getVkHash(api, ProofType.groth16, vk);
+
+    expect(typeof result).toBe('string');
+    expect(result).toBe(validHash);
+    expect(result.startsWith('0x')).toBe(true);
+  });
+
+  it('should throw if the returned hash is not a valid 0x string', async () => {
+    // @ts-expect-error: Custom RPC method 'rpc.vk_hash' is not recognized by TypeScript's type system
+    (api.rpc.vk_hash.groth16 as jest.Mock).mockImplementation(() => {
+      return Promise.resolve({
+        toString: () => 'not-a-valid-hash',
+      });
+    });
+
+    const vk = { dummy: 'vk' };
+
+    await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
+      'RPC call for groth16 failed: No VK hash found for proof type "groth16".',
+    );
+  });
+
+  it('should throw if vk_hash is undefined on api.rpc', async () => {
+    (api.rpc as any).vk_hash = undefined;
+
+    const vk = { some: 'vk' };
+
+    await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
+      'RPC call for groth16 failed: RPC method for groth16 is not registered.',
+    );
+  });
+
+  it('should throw if vk_hash[proofType] is not a function', async () => {
+    // @ts-expect-error: Custom RPC method 'rpc.vk_hash' is not recognized by TypeScript's type system
+    (api.rpc.vk_hash as any).groth16 = 'not-a-function';
+
+    const vk = { dummy: 'vk' };
+
+    await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
+      'RPC call for groth16 failed: RPC method for groth16 is not registered.',
+    );
+  });
+
+  it('should throw if RPC returns undefined', async () => {
+    // @ts-expect-error: Custom RPC method 'rpc.vk_hash' is not recognized by TypeScript's type system
+    (api.rpc.vk_hash.groth16 as jest.Mock).mockImplementation(() => {
+      return Promise.resolve(undefined);
+    });
+
+    const vk = { dummy: 'vk' };
+
+    await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
+      'RPC call for groth16 failed: No VK hash found for proof type "groth16".',
+    );
   });
 });

@@ -1,4 +1,4 @@
-import { CurveType } from '../../../config';
+import { CurveType } from '../../../enums';
 
 /**
  * Recursively converts numeric strings and hexadecimal strings in an object, array, or string

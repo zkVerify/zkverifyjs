@@ -4,8 +4,13 @@ import { getProofPallet, getProofProcessor } from '../../utils/helpers';
 import { handleTransaction } from '../../utils/transactions';
 import { AccountConnection } from '../connection/types';
 import { VerifyOptions } from '../../session/types';
-import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { ProofType, Library, CurveType } from '../../config';
+import {
+  CurveType,
+  Library,
+  TransactionType,
+  ZkVerifyEvents,
+} from '../../enums';
+import { ProofType } from '../../config';
 import { KeyringPair } from '@polkadot/keyring/types';
 import * as helpers from '../../utils/helpers';
 
@@ -50,8 +55,10 @@ describe('registerVk', () => {
     mockOptions = {
       proofOptions: {
         proofType: ProofType.groth16,
-        library: Library.snarkjs,
-        curve: CurveType.bls12381,
+        config: {
+          library: Library.snarkjs,
+          curve: CurveType.bls12381,
+        },
       },
     } as VerifyOptions;
     mockVerificationKey = 'mockVerificationKey';

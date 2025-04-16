@@ -1,13 +1,5 @@
-import { ProofOptions } from '../../types';
 import { VerifyInput } from '../../../api/verify/types';
-import { CurveType, Library, ProofType } from '../../../config';
-
-export type OptimisticProofMethodMap = {
-  [K in keyof typeof ProofType]: (
-    library?: Library,
-    curve?: CurveType,
-  ) => OptimisticVerificationBuilder;
-};
+import { ProofOptions } from '../../../config';
 
 export class OptimisticVerificationBuilder {
   constructor(

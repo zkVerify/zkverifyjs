@@ -1,10 +1,11 @@
-import {CurveType, Library, SupportedNetwork, zkVerifySession} from '../src';
+import { CurveType, Library, SupportedNetwork, zkVerifySession } from '../src';
 import { EventEmitter } from 'events';
-import { ProofMethodMap } from "../src/session/builders/verify";
 import { walletPool } from './common/walletPool';
 import { loadProofAndVK } from "./common/utils";
 import { ProofType } from "../src";
 import { SupportedNetworkConfig } from "../src/config"
+import { ProofMethodMap } from "../src/session/types";
+
 
 jest.setTimeout(120000);
 describe('zkVerifySession class', () => {
@@ -177,7 +178,7 @@ describe('zkVerifySession class', () => {
                     vk: 'vk'
                     }
                 }),
-                session.verify().groth16(Library.snarkjs, CurveType.bls12381).execute({ proofData: {
+                session.verify().groth16({ library: Library.snarkjs, curve: CurveType.bls12381 }).execute({ proofData: {
                         proof: 'proofData',
                         publicSignals: 'publicSignals',
                         vk: 'vk'

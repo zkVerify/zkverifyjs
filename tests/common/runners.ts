@@ -1,39 +1,43 @@
-import { CurveType, Library, ProofOptions, ProofType } from "../../src";
+import { ProofOptions, ProofType } from "../../src";
 import {
     loadProofAndVK,
     performVerifyTransaction,
     performVKRegistrationAndVerification
 } from "./utils";
 import { walletPool } from "./walletPool";
-import { proofConfigurations } from "../../src/config";
 import { zkVerifySession } from "../../src";
+import { proofTypeVersionExclusions, testOptions } from "./options";
 
-//TODO: Update this once we have V1_1 test data
-const proofTypeVersionExclusions: Partial<Record<ProofType, string[]>> = {
-    [ProofType.risc0]: ["V1_1"]
-};
+const logTestDetails = (proofOptions: ProofOptions, testType: string) => {
+    const { proofType, config } = proofOptions;
 
-const logTestDetails = (proofOptions: ProofOptions, testType: string, version?: string) => {
-    const { proofType, library, curve } = proofOptions;
-    const details = [library && `library: ${library}`, curve && `curve: ${curve}`].filter(Boolean).join(", ");
-    console.log(`Running ${testType} for ${proofType}${version ? `:${version}` : ""}${details ? ` with ${details}` : ""}`);
+    const configDetails =
+        config && typeof config === 'object'
+            ? Object.entries(config)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(', ')
+            : '';
+
+    const configSuffix = configDetails ? ` with ${configDetails}` : '';
+
+    console.log(`Running ${testType} for ${proofType}${configSuffix}`);
 };
 
 export const runVerifyTest = async (
     session: zkVerifySession,
     proofOptions: ProofOptions,
-    withAggregation: boolean = false,
-    version?: string
+    withAggregation: boolean = false
 ) => {
     let seedPhrase: string | undefined;
+    let accountAddress: string | undefined;
     let envVar: string | undefined;
 
     try {
         [envVar, seedPhrase] = await walletPool.acquireWallet();
-        logTestDetails(proofOptions, "verification test", version);
+        logTestDetails(proofOptions, "verification test");
 
-        const accountAddress = await session.addAccount(seedPhrase);
-        const { proof, vk } = loadProofAndVK(proofOptions, version);
+        accountAddress = await session.addAccount(seedPhrase);
+        const { proof, vk } = loadProofAndVK(proofOptions);
 
         await performVerifyTransaction(
             session,
@@ -42,33 +46,31 @@ export const runVerifyTest = async (
             proof.proof,
             proof.publicSignals,
             vk,
-            withAggregation,
-            version
+            withAggregation
         );
     } catch (error) {
         console.error(`Error during runVerifyTest (${envVar}) for ${proofOptions.proofType}:`, error);
         throw error;
     } finally {
-        if (envVar) {
-            await walletPool.releaseWallet(envVar);
-        }
+        accountAddress && await session.removeAccount(accountAddress);
+        envVar && await walletPool.releaseWallet(envVar);
     }
 };
 
 export const runVKRegistrationTest = async (
     session: zkVerifySession,
-    proofOptions: ProofOptions,
-    version?: string
+    proofOptions: ProofOptions
 ) => {
     let seedPhrase: string | undefined;
+    let accountAddress: string | undefined;
     let envVar: string | undefined;
 
     try {
         [envVar, seedPhrase] = await walletPool.acquireWallet();
         logTestDetails(proofOptions, "VK registration");
 
-        const accountAddress = await session.addAccount(seedPhrase);
-        const { proof, vk } = loadProofAndVK(proofOptions, version);
+        accountAddress = await session.addAccount(seedPhrase);
+        const { proof, vk } = loadProofAndVK(proofOptions);
 
         await performVKRegistrationAndVerification(
             session,
@@ -76,58 +78,65 @@ export const runVKRegistrationTest = async (
             proofOptions,
             proof.proof,
             proof.publicSignals,
-            vk,
-            version
+            vk
         );
     } catch (error) {
         console.error(`Error during runVKRegistrationTest (${envVar}) for ${proofOptions.proofType}:`, error);
         throw error;
     } finally {
-        if (envVar) {
-            await walletPool.releaseWallet(envVar);
-        }
+        accountAddress && await session.removeAccount(accountAddress);
+        envVar && await walletPool.releaseWallet(envVar);
     }
 };
 
-const generateTestPromises = (
-    proofTypes: ProofType[],
-    curveTypes: CurveType[],
-    libraries: Library[],
-    runTest: (proofOptions: ProofOptions, version?: string) => Promise<void>
+export const generateTestPromises = (
+    runTest: (proofOptions: ProofOptions) => Promise<void>
 ): Promise<void>[] => {
     const promises: Promise<void>[] = [];
 
-    proofTypes.forEach((proofType) => {
-        const config = proofConfigurations[proofType];
-        const supportedVersions = config.supportedVersions;
+    testOptions.proofTypes.forEach((proofType) => {
         const excludedVersions = proofTypeVersionExclusions[proofType] || [];
 
-        const versionsToUse = supportedVersions.filter(
-            (version) => !(excludedVersions && excludedVersions.includes(version))
-        );
-
-        if (versionsToUse.length > 0) {
-            versionsToUse.forEach((version) => {
-                if (config.requiresCurve && config.requiresLibrary) {
-                    libraries.forEach((library) => {
-                        curveTypes.forEach((curve) => {
-                            promises.push(runTest({ proofType, curve, library }, version));
-                        });
-                    });
-                } else {
-                    promises.push(runTest({ proofType }, version));
-                }
-            });
-        } else {
-            if (config.requiresCurve && config.requiresLibrary) {
-                libraries.forEach((library) => {
-                    curveTypes.forEach((curve) => {
-                        promises.push(runTest({ proofType, curve, library }));
+        switch (proofType) {
+            case ProofType.groth16:
+                testOptions.libraries.forEach((library) => {
+                    testOptions.curveTypes.forEach((curve) => {
+                        promises.push(runTest({
+                            proofType,
+                            config: { library, curve },
+                        }));
                     });
                 });
-            } else {
+                break;
+
+            case ProofType.risc0:
+                testOptions.risc0Versions
+                    .filter((v) => !excludedVersions.includes(v))
+                    .forEach((version) => {
+                        promises.push(runTest({
+                            proofType,
+                            config: { version },
+                        }));
+                    });
+                break;
+
+            case ProofType.plonky2:
+                testOptions.plonky2CompressionOptions.forEach((compressed) => {
+                    testOptions.plonky2HashFunctions.forEach((hashFunction) => {
+                        promises.push(runTest({
+                            proofType,
+                            config: { compressed, hashFunction },
+                        }));
+                    });
+                });
+                break;
+
+            case ProofType.ultraplonk:
+            case ProofType.proofofsql:
                 promises.push(runTest({ proofType }));
-            }
+                break;
+
+            // ADD_NEW_PROOF_TYPE - generateTestPromises
         }
     });
 
@@ -135,9 +144,6 @@ const generateTestPromises = (
 };
 
 export const runAllProofTests = async (
-    proofTypes: ProofType[],
-    curveTypes: CurveType[],
-    libraries: Library[],
     withAggregation: boolean
 ) => {
     let session: zkVerifySession | undefined;
@@ -145,8 +151,8 @@ export const runAllProofTests = async (
     try {
         session = await zkVerifySession.start().Volta().readOnly();
 
-        const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, (proofOptions, version) =>
-            runVerifyTest(session!, proofOptions, withAggregation, version)
+        const testPromises = generateTestPromises((proofOptions) =>
+            runVerifyTest(session!, proofOptions, withAggregation)
         );
 
         const results = await Promise.allSettled(testPromises);
@@ -165,16 +171,12 @@ export const runAllProofTests = async (
     }
 };
 
-export const runAllVKRegistrationTests = async (
-    proofTypes: ProofType[],
-    curveTypes: CurveType[],
-    libraries: Library[]
-) => {
+export const runAllVKRegistrationTests = async () => {
     const session = await zkVerifySession.start().Volta().readOnly();
 
     try {
-        const testPromises = generateTestPromises(proofTypes, curveTypes, libraries, (proofOptions, version) =>
-            runVKRegistrationTest(session, proofOptions, version)
+        const testPromises = generateTestPromises((proofOptions) =>
+            runVKRegistrationTest(session, proofOptions)
         );
         await Promise.all(testPromises);
     } finally {
