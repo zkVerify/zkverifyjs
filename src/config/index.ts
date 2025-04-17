@@ -18,7 +18,6 @@ export const CHAIN_SS58_PREFIX = 251; // zkVerify specific address format
 export enum SupportedNetwork {
   Volta = 'Volta',
   Custom = 'Custom',
-  Testnet = 'Testnet',
   // ADD_NEW_SUPPORTED_NETWORK
 }
 
@@ -27,11 +26,6 @@ export const SupportedNetworkConfig: Record<SupportedNetwork, NetworkConfig> = {
     host: SupportedNetwork.Volta,
     websocket: 'wss://volta-rpc.zkverify.io',
     rpc: 'https://volta-rpc.zkverify.io',
-  },
-  [SupportedNetwork.Testnet]: {
-    host: SupportedNetwork.Testnet,
-    websocket: 'wss://testnet-rpc.zkverify.io',
-    rpc: 'https://testnet-rpc.zkverify.io',
   },
   // ADD_NEW_SUPPORTED_NETWORK
   [SupportedNetwork.Custom]: {

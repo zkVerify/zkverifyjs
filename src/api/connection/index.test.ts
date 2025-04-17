@@ -10,9 +10,8 @@ jest.mock('../../config', () => ({
   zkvTypes: {},
   zkvRpc: {},
   SupportedNetwork: {
-    Testnet: 'wss://testnet-rpc.zkverify.io',
-    Custom: 'custom',
-    Volta: 'wss://volta-rpc.zkverify.io',
+    Custom: 'Custom',
+    Volta: 'Volta',
   },
 }));
 
@@ -66,7 +65,7 @@ describe('establishConnection', () => {
 
     const result = await establishConnection(networkConfig);
 
-    expect(WsProvider).toHaveBeenCalledWith(SupportedNetwork.Volta);
+    expect(WsProvider).toHaveBeenCalledWith(networkConfig.websocket);
     expectApiPromiseCreateToHaveBeenCalledWith();
     expect(waitForNodeToSync).toHaveBeenCalledWith(result.api);
     expect(result.api).toBeDefined();
@@ -98,7 +97,7 @@ describe('establishConnection', () => {
     };
 
     await expect(establishConnection(networkConfig)).rejects.toThrow(
-      'WebSocket URL is required for network: custom',
+      'WebSocket URL is required for network: Custom',
     );
   });
 
@@ -114,7 +113,7 @@ describe('establishConnection', () => {
     };
 
     await expect(establishConnection(networkConfig)).rejects.toThrow(
-      'Failed to establish connection to wss://volta-rpc.zkverify.io: API creation failed',
+      'Failed to establish connection to Volta: API creation failed',
     );
   });
 
