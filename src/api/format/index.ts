@@ -8,7 +8,6 @@ export function format(
   proof: unknown,
   publicSignals: unknown,
   vk: unknown,
-  version?: string,
   registeredVk?: boolean,
 ): FormattedProofData {
   const processor: ProofProcessor = getProofProcessor(options.proofType);
@@ -38,7 +37,7 @@ export function format(
   let formattedProof, formattedPubs, formattedVk;
 
   try {
-    formattedProof = processor.formatProof(proof, options, version);
+    formattedProof = processor.formatProof(proof, options);
   } catch (error) {
     const proofSnippet =
       typeof proof === 'string'

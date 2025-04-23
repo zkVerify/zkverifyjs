@@ -8,7 +8,7 @@ import {
 import { NewAggregationEventSubscriptionOptions } from './api/aggregation/types';
 
 export interface ProofProcessor {
-  formatProof(proof: unknown, options?: unknown, version?: string): unknown;
+  formatProof(proof: unknown, options?: unknown): unknown;
   formatVk(vkJson: unknown, options?: unknown): unknown;
   formatPubs(pubs: unknown, options?: unknown): unknown;
 }
@@ -17,7 +17,6 @@ export interface ProofData {
   proof: unknown;
   publicSignals: unknown;
   vk?: unknown;
-  version?: string;
 }
 
 export interface TransactionInfo {

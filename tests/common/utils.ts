@@ -16,7 +16,7 @@ import { EventResults, handleCommonEvents } from './eventHandlers';
 import path from "path";
 import fs from "fs";
 import { AggregateStatementPathResult, AggregateTransactionInfo } from "../../src/types";
-import { Groth16Config, Plonky2Config, Risc0Config } from "../../src/config";
+import { Groth16Config, Plonky2Config, Risc0Config } from "../../src";
 import { isRisc0Config } from "../../src/utils/helpers";
 
 export interface ProofData {
@@ -104,8 +104,7 @@ export const performVerifyTransaction = async (
                 proofData: {
                     proof,
                     publicSignals,
-                    vk,
-                    ...(isRisc0Config(proofOptions) && { version: proofOptions.config.version })
+                    vk
                 },
                 domainId
             };
@@ -191,8 +190,7 @@ export const performVKRegistrationAndVerification = async (
                 proofData: {
                     proof: proof,
                     publicSignals: publicSignals,
-                    vk: vkTransactionInfo.statementHash!,
-                    version: version
+                    vk: vkTransactionInfo.statementHash!
                 },
             });
 

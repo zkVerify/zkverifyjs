@@ -19,7 +19,6 @@ export async function startSession(
 
   const { networkConfig, seedPhrases } = options;
   const { api, provider } = await establishConnection(networkConfig);
-
   if (seedPhrases && seedPhrases.length > 0) {
     const uniqueAccounts = new Map<string, KeyringPair>();
 
