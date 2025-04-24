@@ -104,15 +104,14 @@ describe('format', () => {
   });
 
   it('should return formatted values for non-registered verification key', () => {
-    const result = format(proofOptions, 'proof', 'signals', 'vk', 'v1');
+    const result = format(proofOptions, 'proof', 'signals', 'vk', false);
 
-    expect(result.formattedProof).toBe('formattedProof-v1');
+    expect(result.formattedProof).toBe('formattedProof');
     expect(result.formattedPubs).toBe('formattedPubs');
     expect(result.formattedVk).toEqual({ Vk: 'formattedVk' });
     expect(mockProcessor.formatProof).toHaveBeenCalledWith(
       'proof',
       proofOptions,
-      'v1',
     );
     expect(mockProcessor.formatPubs).toHaveBeenCalledWith(
       'signals',
@@ -184,15 +183,14 @@ describe('format', () => {
   });
 
   it('should return formatted values for registered verification key', () => {
-    const result = format(proofOptions, 'proof', 'signals', 'vk', 'v1', true);
+    const result = format(proofOptions, 'proof', 'signals', 'vk', true);
 
-    expect(result.formattedProof).toBe('formattedProof-v1');
+    expect(result.formattedProof).toBe('formattedProof');
     expect(result.formattedPubs).toBe('formattedPubs');
     expect(result.formattedVk).toEqual({ Hash: 'vk' });
     expect(mockProcessor.formatProof).toHaveBeenCalledWith(
       'proof',
       proofOptions,
-      'v1',
     );
     expect(mockProcessor.formatPubs).toHaveBeenCalledWith(
       'signals',

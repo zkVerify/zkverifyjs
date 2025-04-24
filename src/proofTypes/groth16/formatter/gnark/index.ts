@@ -162,3 +162,9 @@ export const formatVk = (
 export const formatPubs = (pubs: string[]): string[] => {
   return formatPublicSignals(pubs);
 };
+
+export default {
+  formatProof,
+  formatVk,
+  formatPubs,
+};

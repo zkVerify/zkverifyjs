@@ -154,11 +154,7 @@ export class VerificationManager {
    * This method is intended to be called by the `VerificationBuilder`.
    *
    * @param {VerifyOptions} options - The options for the verification process, including:
-   *   - `proofOptions` {AllProofOptions}: Contains the proof type and associated options depending on the type:
-   *       - Groth16: Requires `library` and `curve`.
-   *       - Plonky2: Requires `compressed` (boolean) and `hashFunction`.
-   *       - Risc0: Requires `version`.
-   *       - Ultraplonk / ProofOfSql: No specific options required.
+   *   - `proofOptions` {AllProofOptions}: Contains the proof type and associated options depending on the type.
    *   - `accountAddress` {string} [optional]: The account address to use for the verification.
    *   - `nonce` {number} [optional]: The nonce for the transaction, if applicable.
    *   - `registeredVk` {boolean} [optional]: Whether to use a registered verification key.
@@ -203,14 +199,12 @@ export class VerificationManager {
    * Executes the optimistic verification process using the provided proof options and input.
    * This method is intended to be called by the `OptimisticVerificationBuilder`.
    *
-   * @param {AllProofConfigs} proofOptions - The proof options, including:
-   *   - `proofType` {ProofType}: The type of proof to be verified.
-   *   - Depending on the `proofType`, the following additional properties may be required:
-   *     - Groth16: `library` and `curve` (as part of `Groth16Options`).
-   *     - Plonky2: `compressed` (boolean) and `hashFunction` (as part of `Plonky2Options`).
-   *     - Risc0: `version` (as part of `Risc0Options`).
-   *     - Ultraplonk / ProofOfSql: No specific options required.
-   *
+   * @param {VerifyOptions} options - The options for the verification process, including:
+   *   - `proofOptions` {AllProofOptions}: Contains the proof type and associated options depending on the type.
+   *   - `accountAddress` {string} [optional]: The account address to use for the verification.
+   *   - `nonce` {number} [optional]: The nonce for the transaction, if applicable.
+   *   - `registeredVk` {boolean} [optional]: Whether to use a registered verification key.
+   *   - `domainId` {number} [optional]: The domain ID for domain-specific operations.
    * @param {VerifyInput} input - The verification input, which must be one of the following:
    *   - `proofData`: An array of proof parameters (proof, public signals, and verification key).
    *   - `extrinsic`: A pre-built `SubmittableExtrinsic`.
@@ -226,7 +220,7 @@ export class VerificationManager {
    * @private
    */
   private async executeOptimisticVerify(
-    proofOptions: ProofOptions,
+    options: VerifyOptions,
     input: VerifyInput,
   ): Promise<{ success: boolean; message: string }> {
     checkReadOnly(this.connectionManager.connectionDetails);
@@ -241,7 +235,7 @@ export class VerificationManager {
       this.connectionManager.connectionDetails as
         | AccountConnection
         | WalletConnection,
-      proofOptions,
+      options,
       input,
     );
   }

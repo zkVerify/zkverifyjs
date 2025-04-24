@@ -30,14 +30,12 @@ export const verify = async (
 
     const transaction: SubmittableExtrinsic<'promise'> = (() => {
       if ('proofData' in input && input.proofData) {
-        const { proof, publicSignals, vk, version } =
-          input.proofData as ProofData;
+        const { proof, publicSignals, vk } = input.proofData as ProofData;
         const formatted: FormattedProofData = format(
           options.proofOptions,
           proof,
           publicSignals,
           vk,
-          version,
           options.registeredVk,
         );
         return createSubmitProofExtrinsic(

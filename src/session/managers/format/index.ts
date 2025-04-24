@@ -13,7 +13,6 @@ export class FormatManager {
    * @param proof - The proof data to format.
    * @param publicSignals - The public signals associated with the proof.
    * @param vk - The verification key to format.
-   * @param version - Optional version of the proving system (e.g., `V1_1`).
    * @param registeredVk - Optional flag indicating if the verification key is registered.
    * @returns {Promise<FormattedProofData>} A promise resolving to the formatted proof data.
    * @throws {Error} - Throws an error if formatting fails.
@@ -23,16 +22,8 @@ export class FormatManager {
     proof: unknown,
     publicSignals: unknown,
     vk: unknown,
-    version?: string,
     registeredVk?: boolean,
   ): Promise<FormattedProofData> {
-    return format(
-      proofOptions,
-      proof,
-      publicSignals,
-      vk,
-      version,
-      registeredVk,
-    );
+    return format(proofOptions, proof, publicSignals, vk, registeredVk);
   }
 }

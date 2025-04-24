@@ -8,6 +8,14 @@ import {
 import { ProofProcessor } from '../../../types';
 import { ProofOptions } from '../../../config';
 import { isGroth16Config } from '../../../utils/helpers';
+import { Library } from '../../../enums';
+import * as snarkjsFormatter from '../formatter/snarkjs';
+import * as gnarkFormatter from '../formatter/gnark';
+
+const formatterMap: Record<Library, Formatter> = {
+  [Library.snarkjs]: snarkjsFormatter,
+  [Library.gnark]: gnarkFormatter,
+};
 
 class Groth16Processor implements ProofProcessor {
   /**
@@ -18,19 +26,20 @@ class Groth16Processor implements ProofProcessor {
    * @returns {Object} The formatter module corresponding to the specified library.
    */
   private getFormatter(options: ProofOptions): Formatter {
-    try {
-      if (isGroth16Config(options)) {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        return require(`../formatter/${options.config.library}`) as Formatter;
-      }
-    } catch (error) {
+    if (!isGroth16Config(options)) {
       throw new Error(
-        `Error loading Groth16 formatter : ${(error as Error).message}`,
+        `Unsupported proof configuration for proofType: ${options.proofType}`,
       );
     }
-    throw new Error(
-      `Unsupported proof configuration for proofType: ${options.proofType}`,
-    );
+
+    const formatter = formatterMap[options.config.library as Library];
+    if (!formatter) {
+      throw new Error(
+        `Unsupported Groth16 formatter library: ${options.config.library}`,
+      );
+    }
+
+    return formatter;
   }
 
   /**
