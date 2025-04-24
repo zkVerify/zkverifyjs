@@ -24,6 +24,7 @@ export class ExtrinsicManager {
    *
    * @param {ProofType} proofType - The type of proof, to decide which pallet to use.
    * @param {FormattedProofData} params - Formatted Proof Parameters required by the extrinsic.
+   * @param domainId
    * @returns {SubmittableExtrinsic<'promise'>} The generated SubmittableExtrinsic for submission.
    * @throws {Error} - Throws an error if the extrinsic creation fails.
    */
@@ -45,6 +46,7 @@ export class ExtrinsicManager {
    *
    * @param {ProofType} proofType - The type of supported proof, used to select the correct pallet.
    * @param {FormattedProofData} params - Formatted Proof Parameters required by the extrinsic.
+   * @param domainId
    * @returns {string} Hex-encoded string of the SubmittableExtrinsic.
    * @throws {Error} - Throws an error if the hex generation fails.
    */
