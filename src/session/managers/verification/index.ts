@@ -105,6 +105,14 @@ export class VerificationManager {
     return builderMethods as OptimisticProofMethodMap;
   }
 
+  /**
+   * Creates a builder map for different proof types that can be used for **batch verification**.
+   * Each proof type returns a `BatchVerificationBuilder` allowing you to set options
+   * and then submit multiple proofs in a single `batchAll` transaction.
+   *
+   * @param {string} [accountAddress] - The account address performing the batch verification.
+   * @returns {BatchProofMethodMap} A map of proof types to their batch verification builder methods.
+   */
   batchVerify(accountAddress?: string): BatchProofMethodMap {
     const builderMethods: Partial<BatchProofMethodMap> = {};
 
@@ -131,6 +139,14 @@ export class VerificationManager {
     return builderMethods as BatchProofMethodMap;
   }
 
+  /**
+   * Creates a builder map for different proof types that can be used for **optimistic batch verification**.
+   * Each proof type returns a `BatchOptimisticVerificationBuilder` that builds and dry-runs a `batchAll` transaction
+   * to ensure all proofs would pass without submitting to the chain.
+   *
+   * @param {string} [accountAddress] - The account address used for simulation.
+   * @returns {BatchOptimisticProofMethodMap} A map of proof types to their optimistic batch verification builders.
+   */
   batchOptimisticVerify(
     accountAddress?: string,
   ): BatchOptimisticProofMethodMap {
@@ -221,6 +237,18 @@ export class VerificationManager {
     );
   }
 
+  /**
+   * Factory method to create a `BatchVerificationBuilder` for the given proof type.
+   * This builder enables chaining configuration methods and executing a batch of on-chain verifications
+   * using a single `batchAll` transaction.
+   *
+   * @param {ProofOptions} proofOptions - Configuration for the proof type and related parameters.
+   * @param {string} [accountAddress] - Optional account address to sign and submit the transaction.
+   * @returns {BatchVerificationBuilder} A builder for executing batch verification.
+   *
+   * @throws {Error} If the provided proof options are invalid.
+   * @private
+   */
   private createBatchVerifyBuilder(
     proofOptions: ProofOptions,
     accountAddress?: string,
@@ -232,6 +260,18 @@ export class VerificationManager {
     );
   }
 
+  /**
+   * Factory method to create a `BatchVerificationBuilder` for the given proof type.
+   * This builder enables chaining configuration methods and executing a batch of on-chain verifications
+   * using a single `batchAll` transaction.
+   *
+   * @param {ProofOptions} proofOptions - Configuration for the proof type and related parameters.
+   * @param {string} [accountAddress] - Optional account address to sign and submit the transaction.
+   * @returns {BatchVerificationBuilder} A builder for executing batch verification.
+   *
+   * @throws {Error} If the provided proof options are invalid.
+   * @private
+   */
   private createBatchOptimisticVerifyBuilder(
     proofOptions: ProofOptions,
     accountAddress?: string,
@@ -334,6 +374,19 @@ export class VerificationManager {
     );
   }
 
+  /**
+   * Executes a full on-chain batch verification of multiple proofs.
+   * Internally constructs a `batchAll` extrinsic and listens for success or error events.
+   *
+   * @param {VerifyOptions} options - Options including proof type, vk registration flag, etc.
+   * @param {VerifyInput[]} input - An array of proof inputs (either proofData or prebuilt extrinsic).
+   * @returns {Promise<{events: EventEmitter, transactionResult: Promise<BatchVerifyTransactionInfo>}>}
+   *   A promise resolving to:
+   *   - `events`: An EventEmitter for lifecycle events (broadcast, includedInBlock, finalized, etc).
+   *   - `transactionResult`: The final batch verification result after on-chain execution.
+   *
+   * @throws {Error} If verification is called while in read-only mode.
+   */
   private async executeBatchVerify(
     options: VerifyOptions,
     input: VerifyInput[],
@@ -356,6 +409,16 @@ export class VerificationManager {
     return { events, transactionResult };
   }
 
+  /**
+   * Executes a dry-run of a batch verification to simulate success or failure without submitting.
+   * This method wraps `api.rpc.system.dryRun` around the `batchAll` extrinsic built from the proof list.
+   *
+   * @param {VerifyOptions} options - Options including proof type and domain configuration.
+   * @param {VerifyInput[]} input - List of proofs to simulate in the batch.
+   * @returns {Promise<{ success: boolean; message: string }>} A dry-run result summary.
+   *
+   * @throws {Error} If not connected to a custom network or called in read-only mode.
+   */
   private async executeBatchOptimisticVerify(
     options: VerifyOptions,
     input: VerifyInput[],
