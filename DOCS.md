@@ -25,7 +25,7 @@ Currently the following proof verifiers are supported:
             compressed: false,
             hashFunction: Plonky2HashFunction.Poseidon
         })
-        .execute({...
+        .execute({...})
 ```
 
 * Risc0 versions `V1_0`, `V1_1`, `V1_2`, `V2_0`
@@ -188,11 +188,13 @@ You submit an array of proofs as long as they are all of the same proof type and
 
 ```shell
 const { events, transactionResult } = await session
-    .batchVerify()
+    .batchVerify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
     .groth16({
         library: Library.snarkjs,
         curve: CurveType.bn254,
     })
+    .withRegisteredVk() // optional
+    .nonce(1) // optional
     .execute([
         {
             proofData: {
@@ -289,7 +291,7 @@ To await the final result of the transaction, use the transactionResult promise.
 
 ```typescript
 const { events, transactionResult } = await session
-  .verify()
+  .verify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
   .groth16({
     library: Library.snarkjs,
     curve: CurveType.bls12381
@@ -417,7 +419,7 @@ const { success, message } = session.batchOptimisticVerify()
 );
 ```
 
-Note: if any proof fails, success boolean will be false.
+Note: if any proof fails, `success` boolean will be false and `message` will be provided
 
 ### Domain Management (Aggregate Pallet)
 
@@ -690,10 +692,10 @@ const { events, transactionResult } = await session
 
 ```typescript
 const { events, transactionResult } = await session
-  .verify()
+  .batchVerify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
   .ultraplonk()
-  .nonce(1)
-  .withRegisteredVk()
+  .nonce(1) // Optional
+  .withRegisteredVk() // Optional
   .execute([{
     proofData: {
       vk: vk,
@@ -725,7 +727,7 @@ const { events, transactionResult } = await session
 
 ```typescript
 const { success, message } = session
-  .optimisticVerify()
+  .optimisticVerify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
   .plonky2({
     compressed: false,
     hashFunction: Plonky2HashFunction.Poseidon
@@ -752,7 +754,7 @@ const { success, message } = session
 
 ```typescript
 const { success, message } = session
-  .optimisticVerify()
+  .batchOptimisticVerify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
   .plonky2({
     compressed: false,
     hashFunction: Plonky2HashFunction.Poseidon
@@ -941,10 +943,10 @@ const account2 = session.getAccount("myAccountAddress");
 ### `zkVerifySession.subscribe`
 
 ```typescript
-session.subscribe(subscriptions?);
+session.subscribe(subscriptions[]);
 ```
 
-* `subscriptions` (Optional): An array of subscription objects (SubscriptionEntry\[]). Each subscription object contains:
+* `subscriptions[]` (Optional): An array of subscription objects (SubscriptionEntry\[]). Each subscription object contains:
   * `event`: The name of the event to subscribe to. This must be a value from `ZkVerifyEvents`.
   * `callback`: A function to be called whenever the specified event occurs. Receives an event object as its argument.
   * `options` (Optional): A NewAggregationEventSubscriptionOptions object used to filter which events to listen to. This is only relevant for NewAggregationReceipt events.
