@@ -28,6 +28,7 @@ export {
 export {
   ProofData,
   VerifyTransactionInfo,
+  BatchVerifyTransactionInfo,
   VKRegistrationTransactionInfo,
   TransactionInfo,
   DomainTransactionInfo,

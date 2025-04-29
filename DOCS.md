@@ -182,6 +182,39 @@ try {
 }
 ```
 
+### Verifying a Batch of Proofs
+
+You submit an array of proofs as long as they are all of the same proof type and proof generation method.
+
+```shell
+const { events, transactionResult } = await session
+    .batchVerify()
+    .groth16({
+        library: Library.snarkjs,
+        curve: CurveType.bn254,
+    })
+    .execute([
+        {
+            proofData: {
+                proof: proof,
+                publicSignals: publicSignals,
+                vk: vk,
+            },
+            domainId: 0,
+        },
+        {
+            proofData: {
+                proof: proof,
+                publicSignals: publicSignals,
+                vk: vk,
+            },
+            domainId: 0,
+        },
+    ]);
+```
+
+If any proof fails, all will fail.
+
 ### Registering a Verification Key & Submitting a proof with the Statement Hash
 
 Register your Verification Key on chain and use it in future proof submissions by specifying the `registeredVk()` option.
@@ -357,6 +390,34 @@ const { success, message } = session
     domainId: 42, // Optional domain ID for proof categorization
   });
 ```
+
+### Batch Optimistic Proof Verification
+
+You can optimistically verify your batch like so:
+
+```shell
+const { success, message } = session.batchOptimisticVerify()
+    .groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
+    .execute([{
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  },
+  {
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }
+);
+```
+
+Note: if any proof fails, success boolean will be false.
 
 ### Domain Management (Aggregate Pallet)
 
@@ -625,6 +686,41 @@ const { events, transactionResult } = await session
 * Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
 * Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result.
 
+### `zkVerifySession.batchVerify`
+
+```typescript
+const { events, transactionResult } = await session
+  .verify()
+  .ultraplonk()
+  .nonce(1)
+  .withRegisteredVk()
+  .execute([{
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  },
+  {
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }
+  ]); // 1. Directly pass proof data
+// .execute([{ extrinsic: submittableExtrinsic, domainId: 0 }, 
+// { extrinsic: submittableExtrinsic, domainId: 0 }]); // 2. OR pass in a pre-built SubmittableExtrinsic
+```
+
+* Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
+* Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
+* Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
+* Execute:  You can either send in the raw proof details as an array using `[{ proofData: ... }, { proofData: ... }]` or verify a prebuilt extrinsic array `[{ extrinsic: ..., domainId: 0 }, { extrinsic: ..., domainId: 0 }]`
+* Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result.
+
 ### `zkVerifySession.optimisticVerify`
 
 ```typescript
@@ -644,6 +740,42 @@ const { success, message } = session
     },
     domainId: 42, // Optional domain ID for proof categorization
   });
+```
+
+* Proof Type: `.plonky2()` specifies the type of proof to be used. Options available for all supported proof types.
+* Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
+* Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
+* Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
+* Returns: A result containing a boolean `success`.  If success is false the response will also contain a `message` with further details related to the failure.
+
+### `zkVerifySession.batchOptimisticVerify`
+
+```typescript
+const { success, message } = session
+  .optimisticVerify()
+  .plonky2({
+    compressed: false,
+    hashFunction: Plonky2HashFunction.Poseidon
+  })
+  .withRegisteredVk() // optional
+  .nonce(1) // optional
+  .execute([{
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  },
+  {
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }
+  ]);
 ```
 
 * Proof Type: `.plonky2()` specifies the type of proof to be used. Options available for all supported proof types.

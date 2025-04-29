@@ -5,6 +5,7 @@ export enum TransactionType {
   DomainHold = 4,
   DomainUnregister = 5,
   Aggregate = 6,
+  BatchVerify = 7,
 }
 
 export enum TransactionStatus {

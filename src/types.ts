@@ -44,6 +44,11 @@ export interface VerifyTransactionInfo extends TransactionInfo {
   statement: string | null;
 }
 
+export interface BatchVerifyTransactionInfo extends TransactionInfo {
+  proofType: ProofType;
+  batchCount: number;
+}
+
 export interface VKRegistrationTransactionInfo extends TransactionInfo {
   proofType: ProofType;
   statementHash?: string;

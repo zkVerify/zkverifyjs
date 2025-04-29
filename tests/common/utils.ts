@@ -10,7 +10,7 @@ import {
     VerifyTransactionInfo,
     VKRegistrationTransactionInfo,
     zkVerifySession,
-    ZkVerifyEvents
+    ZkVerifyEvents, BatchVerifyTransactionInfo
 } from '../../src';
 import { EventResults, handleCommonEvents } from './eventHandlers';
 import path from "path";
@@ -254,6 +254,15 @@ export const validateVKRegistrationTransactionInfo = (
     expect(transactionInfo.proofType).toBe(expectedProofType);
     validateTransactionInfo(transactionInfo);
     expect(transactionInfo.statementHash).toBeDefined();
+};
+
+export const validateBatchVerifyTransactionInfo = (
+    transactionInfo: BatchVerifyTransactionInfo,
+    expectedProofType: string
+): void => {
+    expect(transactionInfo.proofType).toBe(expectedProofType);
+    expect(transactionInfo.batchCount).toBeGreaterThan(0);
+    validateTransactionInfo(transactionInfo);
 };
 
 export const loadProofAndVK = (proofOptions: ProofOptions) => {

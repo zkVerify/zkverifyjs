@@ -1,23 +1,32 @@
 import {
+  BatchOptimisticProofMethodMap,
+  BatchProofMethodMap,
   OptimisticProofMethodMap,
   ProofMethodMap,
   VerifyOptions,
 } from '../../types';
 import { verify } from '../../../api/verify';
 import { optimisticVerify } from '../../../api/optimisticVerify';
+import { batchVerify } from '../../../api/batchVerify';
+import { batchOptimisticVerify } from '../../../api/batchOptimisticVerify';
 import { AllProofConfigs, ProofOptions, ProofType } from '../../../config';
 import { VerificationBuilder } from '../../builders/verify';
 import { OptimisticVerificationBuilder } from '../../builders/optimisticVerify';
 import { validateProofTypeOptions } from '../../validator';
 import { VerifyInput } from '../../../api/verify/types';
 import { EventEmitter } from 'events';
-import { VerifyTransactionInfo } from '../../../types';
+import {
+  BatchVerifyTransactionInfo,
+  VerifyTransactionInfo,
+} from '../../../types';
 import { checkReadOnly } from '../../../utils/helpers';
 import { ConnectionManager } from '../connection';
 import {
   AccountConnection,
   WalletConnection,
 } from '../../../api/connection/types';
+import { BatchVerificationBuilder } from '../../builders/batchVerify';
+import { BatchOptimisticVerificationBuilder } from '../../builders/batchOptimisticVerify';
 
 export class VerificationManager {
   private readonly connectionManager: ConnectionManager;
@@ -67,7 +76,7 @@ export class VerificationManager {
    *
    * @returns {OptimisticProofMethodMap} A map of proof types to their corresponding builder methods.
    */
-  optimisticVerify(): OptimisticProofMethodMap {
+  optimisticVerify(accountAddress?: string): OptimisticProofMethodMap {
     const builderMethods: Partial<OptimisticProofMethodMap> = {};
 
     for (const proofType in ProofType) {
@@ -81,7 +90,10 @@ export class VerificationManager {
 
             validateProofTypeOptions(proofOptions);
 
-            return this.createOptimisticVerifyBuilder(proofOptions);
+            return this.createOptimisticVerifyBuilder(
+              proofOptions,
+              accountAddress,
+            );
           },
           writable: false,
           configurable: false,
@@ -91,6 +103,63 @@ export class VerificationManager {
     }
 
     return builderMethods as OptimisticProofMethodMap;
+  }
+
+  batchVerify(accountAddress?: string): BatchProofMethodMap {
+    const builderMethods: Partial<BatchProofMethodMap> = {};
+
+    for (const proofType in ProofType) {
+      if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
+        Object.defineProperty(builderMethods, proofType, {
+          value: (proofConfig?: AllProofConfigs | null) => {
+            const proofOptions: ProofOptions = {
+              proofType: proofType as ProofType,
+              config: proofConfig ?? undefined,
+            };
+
+            validateProofTypeOptions(proofOptions);
+
+            return this.createBatchVerifyBuilder(proofOptions, accountAddress);
+          },
+          writable: false,
+          configurable: false,
+          enumerable: true,
+        });
+      }
+    }
+
+    return builderMethods as BatchProofMethodMap;
+  }
+
+  batchOptimisticVerify(
+    accountAddress?: string,
+  ): BatchOptimisticProofMethodMap {
+    const builderMethods: Partial<BatchOptimisticProofMethodMap> = {};
+
+    for (const proofType in ProofType) {
+      if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
+        Object.defineProperty(builderMethods, proofType, {
+          value: (proofConfig?: AllProofConfigs | null) => {
+            const proofOptions: ProofOptions = {
+              proofType: proofType as ProofType,
+              config: proofConfig ?? undefined,
+            };
+
+            validateProofTypeOptions(proofOptions);
+
+            return this.createBatchOptimisticVerifyBuilder(
+              proofOptions,
+              accountAddress,
+            );
+          },
+          writable: false,
+          configurable: false,
+          enumerable: true,
+        });
+      }
+    }
+
+    return builderMethods as BatchOptimisticProofMethodMap;
   }
 
   /**
@@ -135,6 +204,7 @@ export class VerificationManager {
    *     - Risc0: Requires `version`.
    *     - Ultraplonk / ProofOfSql: No specific options required.
    *
+   * @param accountAddress
    * @returns {OptimisticVerificationBuilder} A new instance of `OptimisticVerificationBuilder` configured with the provided proof options.
    *
    * @throws {Error} If the provided proof options are invalid or incomplete.
@@ -142,10 +212,34 @@ export class VerificationManager {
    */
   private createOptimisticVerifyBuilder(
     proofOptions: ProofOptions,
+    accountAddress?: string,
   ): OptimisticVerificationBuilder {
     return new OptimisticVerificationBuilder(
       this.executeOptimisticVerify.bind(this),
       proofOptions,
+      accountAddress,
+    );
+  }
+
+  private createBatchVerifyBuilder(
+    proofOptions: ProofOptions,
+    accountAddress?: string,
+  ): BatchVerificationBuilder {
+    return new BatchVerificationBuilder(
+      this.executeBatchVerify.bind(this),
+      proofOptions,
+      accountAddress,
+    );
+  }
+
+  private createBatchOptimisticVerifyBuilder(
+    proofOptions: ProofOptions,
+    accountAddress?: string,
+  ): BatchOptimisticVerificationBuilder {
+    return new BatchOptimisticVerificationBuilder(
+      this.executeBatchOptimisticVerify.bind(this),
+      proofOptions,
+      accountAddress,
     );
   }
 
@@ -232,6 +326,49 @@ export class VerificationManager {
     }
 
     return optimisticVerify(
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
+      options,
+      input,
+    );
+  }
+
+  private async executeBatchVerify(
+    options: VerifyOptions,
+    input: VerifyInput[],
+  ): Promise<{
+    events: EventEmitter;
+    transactionResult: Promise<BatchVerifyTransactionInfo>;
+  }> {
+    checkReadOnly(this.connectionManager.connectionDetails);
+
+    const events = new EventEmitter();
+    const transactionResult = batchVerify(
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
+      options,
+      events,
+      input,
+    );
+
+    return { events, transactionResult };
+  }
+
+  private async executeBatchOptimisticVerify(
+    options: VerifyOptions,
+    input: VerifyInput[],
+  ): Promise<{ success: boolean; message: string }> {
+    checkReadOnly(this.connectionManager.connectionDetails);
+
+    if (!this.connectionManager.customNetwork) {
+      throw new Error(
+        'Optimistic batch verification is only supported on custom networks.',
+      );
+    }
+
+    return batchOptimisticVerify(
       this.connectionManager.connectionDetails as
         | AccountConnection
         | WalletConnection,
