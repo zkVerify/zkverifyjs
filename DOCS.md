@@ -384,7 +384,6 @@ const { success, message } = session
     version: Risc0Version.V1_1
   })
   .withRegisteredVk() // optional
-  .nonce(1) // optional
   .execute({
     proofData: {
       vk: vk,
@@ -527,7 +526,6 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
             hashFunction: Plonky2HashFunction.Poseidon
           })
           .withRegisteredVk() // optional
-          .nonce(1) // optional
           .execute({ proofData: {
               vk: vk,
               proof: proof,
@@ -729,13 +727,12 @@ const { events, transactionResult } = await session
 
 ```typescript
 const { success, message } = session
-  .optimisticVerify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
+  .optimisticVerify()
   .plonky2({
     compressed: false,
     hashFunction: Plonky2HashFunction.Poseidon
   })
   .withRegisteredVk() // optional
-  .nonce(1) // optional
   .execute({
     proofData: {
       vk: vk,
@@ -747,7 +744,6 @@ const { success, message } = session
 ```
 
 * Proof Type: `.plonky2()` specifies the type of proof to be used. Options available for all supported proof types.
-* Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
 * Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
 * Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
 * Returns: A result containing a boolean `success`.  If success is false the response will also contain a `message` with further details related to the failure.
@@ -756,13 +752,12 @@ const { success, message } = session
 
 ```typescript
 const { success, message } = session
-  .batchOptimisticVerify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
+  .batchOptimisticVerify()
   .plonky2({
     compressed: false,
     hashFunction: Plonky2HashFunction.Poseidon
   })
   .withRegisteredVk() // optional
-  .nonce(1) // optional
   .execute([{
     proofData: {
       vk: vk,
@@ -783,7 +778,6 @@ const { success, message } = session
 ```
 
 * Proof Type: `.plonky2()` specifies the type of proof to be used. Options available for all supported proof types.
-* Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
 * Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
 * Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
 * Returns: A result containing a boolean `success`.  If success is false the response will also contain a `message` with further details related to the failure.

@@ -76,7 +76,7 @@ export class VerificationManager {
    *
    * @returns {OptimisticProofMethodMap} A map of proof types to their corresponding builder methods.
    */
-  optimisticVerify(accountAddress?: string): OptimisticProofMethodMap {
+  optimisticVerify(): OptimisticProofMethodMap {
     const builderMethods: Partial<OptimisticProofMethodMap> = {};
 
     for (const proofType in ProofType) {
@@ -90,10 +90,7 @@ export class VerificationManager {
 
             validateProofTypeOptions(proofOptions);
 
-            return this.createOptimisticVerifyBuilder(
-              proofOptions,
-              accountAddress,
-            );
+            return this.createOptimisticVerifyBuilder(proofOptions);
           },
           writable: false,
           configurable: false,
@@ -144,12 +141,9 @@ export class VerificationManager {
    * Each proof type returns a `BatchOptimisticVerificationBuilder` that builds and dry-runs a `batchAll` transaction
    * to ensure all proofs would pass without submitting to the chain.
    *
-   * @param {string} [accountAddress] - The account address used for simulation.
    * @returns {BatchOptimisticProofMethodMap} A map of proof types to their optimistic batch verification builders.
    */
-  batchOptimisticVerify(
-    accountAddress?: string,
-  ): BatchOptimisticProofMethodMap {
+  batchOptimisticVerify(): BatchOptimisticProofMethodMap {
     const builderMethods: Partial<BatchOptimisticProofMethodMap> = {};
 
     for (const proofType in ProofType) {
@@ -163,10 +157,7 @@ export class VerificationManager {
 
             validateProofTypeOptions(proofOptions);
 
-            return this.createBatchOptimisticVerifyBuilder(
-              proofOptions,
-              accountAddress,
-            );
+            return this.createBatchOptimisticVerifyBuilder(proofOptions);
           },
           writable: false,
           configurable: false,
@@ -228,12 +219,10 @@ export class VerificationManager {
    */
   private createOptimisticVerifyBuilder(
     proofOptions: ProofOptions,
-    accountAddress?: string,
   ): OptimisticVerificationBuilder {
     return new OptimisticVerificationBuilder(
       this.executeOptimisticVerify.bind(this),
       proofOptions,
-      accountAddress,
     );
   }
 
@@ -274,12 +263,10 @@ export class VerificationManager {
    */
   private createBatchOptimisticVerifyBuilder(
     proofOptions: ProofOptions,
-    accountAddress?: string,
   ): BatchOptimisticVerificationBuilder {
     return new BatchOptimisticVerificationBuilder(
       this.executeBatchOptimisticVerify.bind(this),
       proofOptions,
-      accountAddress,
     );
   }
 

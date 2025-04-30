@@ -72,19 +72,19 @@ describe('batchOptimisticVerify functionality', () => {
     });
 
     it.skip('should succeed when called on a custom network with valid proof details', async () => {
-        const { input } = await createSessionAndInput('ws://custom-network');
+        const { input } = await createSessionAndInput('ws://localhost:9944');
 
         const builder = session.batchOptimisticVerify()
             .groth16({ library: Library.snarkjs, curve: CurveType.bls12381 });
 
         const { success, message } = await builder.execute(input);
 
-        expect(success).toBe(true);
         expect(message).toBe("Optimistic Verification Successful!");
+        expect(success).toBe(true);
     });
 
     it.skip('should fail when called with incorrect data', async () => {
-        const { input } = await createSessionAndInput('ws://custom-url');
+        const { input } = await createSessionAndInput('ws://localhost:9944');
         input[0].proofData!.vk = {};
 
         const builder = session.batchOptimisticVerify()
@@ -93,11 +93,11 @@ describe('batchOptimisticVerify functionality', () => {
         const { success, message } = await builder.execute(input);
 
         expect(success).toBe(false);
-        expect(message).toContain("settlementGroth16Pallet.InvalidVerificationKey");
+        expect(message).toContain("Proof at index 0 failed: Optimistic verification failed: Failed to format groth16 verification key");
     });
 
     it.skip('should fail when called with incorrect publicSignals', async () => {
-        const { input } = await createSessionAndInput('ws://custom-url', ["0x1"]);
+        const { input } = await createSessionAndInput('ws://localhost:9944', ["0x1"]);
 
         const builder = session.batchOptimisticVerify()
             .groth16({ library: Library.snarkjs, curve: CurveType.bls12381 });

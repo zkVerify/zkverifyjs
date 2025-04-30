@@ -63,7 +63,7 @@ describe('optimisticVerify functionality', () => {
     });
 
     it.skip('should succeed when called on a custom network with valid proof details', async () => {
-        const { input } = await createSessionAndInput('ws://custom-url');
+        const { input } = await createSessionAndInput('ws://localhost:9944');
 
         const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bls12381 })
         const { success, message } = await builder.execute(input);
@@ -73,7 +73,7 @@ describe('optimisticVerify functionality', () => {
     });
 
     it.skip('should fail when called with incorrect data', async () => {
-        const { input } = await createSessionAndInput('ws://custom-url');
+        const { input } = await createSessionAndInput('ws://localhost:9944');
 
         const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
         const { success, message } = await builder.execute(input);
@@ -83,7 +83,7 @@ describe('optimisticVerify functionality', () => {
     });
 
     it.skip('should fail when called with incorrect publicSignals', async () => {
-        const { input } = await createSessionAndInput('ws://custom-url', ["0x1"]);
+        const { input } = await createSessionAndInput('ws://localhost:9944', ["0x1"]);
 
         const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bls12381 })
         const { success, message } = await builder.execute(input);
