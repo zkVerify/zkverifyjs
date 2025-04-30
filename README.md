@@ -209,7 +209,9 @@ try {
 
 ## Verifying a Batch of Proofs
 
-You submit an array of proofs as long as they are all of the same proof type and proof generation method.
+You can submit a batch of proofs as an array of proof objects.
+
+- All proofs must be the same `ProofType` and proof config (e.g. groth16 created with snarkjs using bn254 curve).
 
 ```shell
 const { events, transactionResult } = await session
