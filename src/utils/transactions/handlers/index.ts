@@ -73,6 +73,22 @@ export const handleFinalized = async <T extends TransactionType>(
       break;
     }
 
+    case TransactionType.BatchVerify: {
+      const info =
+        transactionInfo as TransactionInfoByType[TransactionType.BatchVerify];
+
+      if (typeof info.batchCount === 'number' && info.batchCount > 0) {
+        safeEmit(emitter, ZkVerifyEvents.Finalized, info);
+      } else {
+        safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
+          ...info,
+          error: 'Finalized but batchCount is missing or invalid.',
+        });
+      }
+
+      break;
+    }
+
     case TransactionType.VKRegistration: {
       const info =
         transactionInfo as TransactionInfoByType[TransactionType.VKRegistration];

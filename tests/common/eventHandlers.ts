@@ -43,7 +43,8 @@ const assertCommonFields = (
 
     if (
         expectedType === TransactionType.Verify ||
-        expectedType === TransactionType.VKRegistration
+        expectedType === TransactionType.VKRegistration ||
+        expectedType === TransactionType.BatchVerify
     ) {
         expect(eventData.proofType).toBe(expectedProofType);
     } else {
@@ -63,6 +64,7 @@ const assertVerifyEventData = (eventData: any, expectAggregationData: boolean) =
     }
 
     expect(eventData.statementHash).toBeUndefined();
+    expect(eventData.batchCount).toBeUndefined();
 };
 
 const assertVKRegistrationEventData = (eventData: any) => {
@@ -70,6 +72,7 @@ const assertVKRegistrationEventData = (eventData: any) => {
     expect(eventData.statement).toBeUndefined();
     expect(eventData.domainId).toBeUndefined();
     expect(eventData.aggregationId).toBeUndefined();
+    expect(eventData.batchCount).toBeUndefined();
 };
 
 const assertDomainEventData = (eventData: any, expectedType: TransactionType) => {
@@ -79,6 +82,7 @@ const assertDomainEventData = (eventData: any, expectedType: TransactionType) =>
         expect(eventData.domainState).toBeDefined();
     }
 
+    expect(eventData.batchCount).toBeUndefined();
     expect(eventData.statementHash).toBeUndefined();
     expect(eventData.statement).toBeUndefined();
     expect(eventData.aggregationId).toBeUndefined();
@@ -98,6 +102,9 @@ const assertEventDataByType = (
     switch (expectedType) {
         case TransactionType.Verify:
             assertVerifyEventData(eventData, expectAggregationData);
+            break;
+        case TransactionType.BatchVerify:
+            assertBatchVerifyEventData(eventData);
             break;
         case TransactionType.VKRegistration:
             assertVKRegistrationEventData(eventData);
@@ -177,4 +184,15 @@ export const handleCommonEvents = (
     }, 0);
 
     return eventResults;
+};
+
+const assertBatchVerifyEventData = (eventData: any) => {
+    expect(eventData.batchCount).toBeDefined();
+    expect(typeof eventData.batchCount).toBe('number');
+    expect(eventData.batchCount).toBeGreaterThan(0);
+
+    expect(eventData.statement).toBeUndefined();
+    expect(eventData.domainId).toBeUndefined();
+    expect(eventData.aggregationId).toBeUndefined();
+    expect(eventData.statementHash).toBeUndefined();
 };

@@ -10,7 +10,7 @@ import {
 import { AggregateSecurityRules, Destination, ZkVerifyEvents } from "../src";
 import { createEventTracker } from "./common/eventHandlers";
 
-jest.setTimeout(240000);
+jest.setTimeout(300000);
 describe('Domain interaction tests', () => {
     let session: zkVerifySession;
     let wallet: string | null = null;

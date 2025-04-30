@@ -5,7 +5,7 @@ import fs from "fs";
 
 jest.setTimeout(180000);
 
-describe('optimisticVerify functionality', () => {
+describe('batchOptimisticVerify functionality', () => {
     let session: zkVerifySession;
     let wallet: string | undefined;
     let envVar: string | undefined;
@@ -19,17 +19,26 @@ describe('optimisticVerify functionality', () => {
         const groth16Data = loadGroth16Data();
         const { proof, publicSignals: defaultPublicSignals, vk } = groth16Data;
 
-        session = await zkVerifySession.start().Custom({rpc: "https://customUrl", websocket: customWsUrl}).withAccount(wallet!);
+        session = await zkVerifySession.start()
+            .Custom({ rpc: "https://customUrl", websocket: customWsUrl })
+            .withAccount(wallet!);
 
         return {
             session,
-            input: {
+            input: [{
                 proofData: {
                     proof,
                     publicSignals: publicSignals || defaultPublicSignals,
                     vk,
                 },
             },
+            {
+                proofData: {
+                    proof,
+                    publicSignals: publicSignals || defaultPublicSignals,
+                    vk,
+                },
+            }],
         };
     };
 
@@ -44,28 +53,30 @@ describe('optimisticVerify functionality', () => {
         envVar = undefined;
     });
 
-    it('should throw an error if optimisticVerify is called on a non-custom network', async () => {
+    it('should throw an error if batchOptimisticVerify is called on a non-custom network', async () => {
         session = await zkVerifySession.start().Volta().withAccount(wallet!);
 
-        const input = {
+        const input = [{
             proofData: {
                 proof: {},
                 publicSignals: [],
                 vk: {},
             },
-        };
+        }];
 
         await expect(
-            session.optimisticVerify()
+            session.batchOptimisticVerify()
                 .groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
                 .execute(input)
-        ).rejects.toThrowError('Optimistic verification is only supported on custom networks.');
+        ).rejects.toThrowError('Optimistic batch verification is only supported on custom networks.');
     });
 
     it.skip('should succeed when called on a custom network with valid proof details', async () => {
         const { input } = await createSessionAndInput('ws://localhost:9944');
 
-        const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bls12381 })
+        const builder = session.batchOptimisticVerify()
+            .groth16({ library: Library.snarkjs, curve: CurveType.bls12381 });
+
         const { success, message } = await builder.execute(input);
 
         expect(message).toBe("Optimistic Verification Successful!");
@@ -74,21 +85,26 @@ describe('optimisticVerify functionality', () => {
 
     it.skip('should fail when called with incorrect data', async () => {
         const { input } = await createSessionAndInput('ws://localhost:9944');
+        input[0].proofData!.vk = {};
 
-        const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
+        const builder = session.batchOptimisticVerify()
+            .groth16({ library: Library.snarkjs, curve: CurveType.bn128 });
+
         const { success, message } = await builder.execute(input);
 
         expect(success).toBe(false);
-        expect(message).toContain("settlementGroth16Pallet.InvalidVerificationKey: Provided an invalid verification key.");
+        expect(message).toContain("Proof at index 0 failed: Optimistic verification failed: Failed to format groth16 verification key");
     });
 
     it.skip('should fail when called with incorrect publicSignals', async () => {
         const { input } = await createSessionAndInput('ws://localhost:9944', ["0x1"]);
 
-        const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bls12381 })
+        const builder = session.batchOptimisticVerify()
+            .groth16({ library: Library.snarkjs, curve: CurveType.bls12381 });
+
         const { success, message } = await builder.execute(input);
 
         expect(success).toBe(false);
-        expect(message).toContain("settlementGroth16Pallet.VerifyError: Verify proof failed.");
+        expect(message).toContain("settlementGroth16Pallet.VerifyError");
     });
 });

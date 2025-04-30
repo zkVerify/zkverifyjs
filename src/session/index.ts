@@ -23,6 +23,8 @@ export class zkVerifySession {
 
   declare verify: VerificationManager['verify'];
   declare optimisticVerify: VerificationManager['optimisticVerify'];
+  declare batchVerify: VerificationManager['batchVerify'];
+  declare batchOptimisticVerify: VerificationManager['batchOptimisticVerify'];
   declare registerVerificationKey: VerificationKeyRegistrationManager['registerVerificationKey'];
   declare format: FormatManager['format'];
   declare subscribe: EventManager['subscribe'];

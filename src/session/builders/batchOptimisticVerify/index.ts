@@ -2,14 +2,14 @@ import { VerifyInput } from '../../../api/verify/types';
 import { ProofOptions } from '../../../config';
 import { VerifyOptions } from '../../types';
 
-export class OptimisticVerificationBuilder {
+export class BatchOptimisticVerificationBuilder {
   private readonly options: VerifyOptions;
   private registeredVkSet = false;
 
   constructor(
-    private readonly executeOptimisticVerify: (
+    private readonly executeBatchOptimisticVerify: (
       options: VerifyOptions,
-      input: VerifyInput,
+      input: VerifyInput[],
     ) => Promise<{ success: boolean; message: string }>,
     proofOptions: ProofOptions,
   ) {
@@ -26,8 +26,8 @@ export class OptimisticVerificationBuilder {
   }
 
   async execute(
-    input: VerifyInput,
+    input: VerifyInput[],
   ): Promise<{ success: boolean; message: string }> {
-    return this.executeOptimisticVerify(this.options, input);
+    return this.executeBatchOptimisticVerify(this.options, input);
   }
 }

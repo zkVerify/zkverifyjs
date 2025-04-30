@@ -25,7 +25,7 @@ Currently the following proof verifiers are supported:
             compressed: false,
             hashFunction: Plonky2HashFunction.Poseidon
         })
-        .execute({...
+        .execute({...})
 ```
 
 * Risc0 versions `V1_0`, `V1_1`, `V1_2`, `V2_0`
@@ -182,6 +182,43 @@ try {
 }
 ```
 
+### Verifying a Batch of Proofs
+
+You can submit a batch of proofs as an array of proof objects.
+
+* All proofs must be the same `ProofType` and proof config (e.g. groth16 created with snarkjs using bn254 curve).
+
+```shell
+const { events, transactionResult } = await session
+    .batchVerify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
+    .groth16({
+        library: Library.snarkjs,
+        curve: CurveType.bn254,
+    })
+    .withRegisteredVk() // optional
+    .nonce(1) // optional
+    .execute([
+        {
+            proofData: {
+                proof: proof,
+                publicSignals: publicSignals,
+                vk: vk,
+            },
+            domainId: 0,
+        },
+        {
+            proofData: {
+                proof: proof,
+                publicSignals: publicSignals,
+                vk: vk,
+            },
+            domainId: 0,
+        },
+    ]);
+```
+
+If any proof fails, all will fail.
+
 ### Registering a Verification Key & Submitting a proof with the Statement Hash
 
 Register your Verification Key on chain and use it in future proof submissions by specifying the `registeredVk()` option.
@@ -256,7 +293,7 @@ To await the final result of the transaction, use the transactionResult promise.
 
 ```typescript
 const { events, transactionResult } = await session
-  .verify()
+  .verify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
   .groth16({
     library: Library.snarkjs,
     curve: CurveType.bls12381
@@ -347,7 +384,6 @@ const { success, message } = session
     version: Risc0Version.V1_1
   })
   .withRegisteredVk() // optional
-  .nonce(1) // optional
   .execute({
     proofData: {
       vk: vk,
@@ -357,6 +393,34 @@ const { success, message } = session
     domainId: 42, // Optional domain ID for proof categorization
   });
 ```
+
+### Batch Optimistic Proof Verification
+
+You can optimistically verify your batch like so:
+
+```shell
+const { success, message } = session.batchOptimisticVerify()
+    .groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
+    .execute([{
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  },
+  {
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }
+);
+```
+
+Note: if any proof fails, `success` boolean will be false and `message` will be provided
 
 ### Domain Management (Aggregate Pallet)
 
@@ -462,7 +526,6 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
             hashFunction: Plonky2HashFunction.Poseidon
           })
           .withRegisteredVk() // optional
-          .nonce(1) // optional
           .execute({ proofData: {
               vk: vk,
               proof: proof,
@@ -625,6 +688,41 @@ const { events, transactionResult } = await session
 * Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
 * Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result.
 
+### `zkVerifySession.batchVerify`
+
+```typescript
+const { events, transactionResult } = await session
+  .batchVerify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
+  .ultraplonk()
+  .nonce(1) // Optional
+  .withRegisteredVk() // Optional
+  .execute([{
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  },
+  {
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }
+  ]); // 1. Directly pass proof data
+// .execute([{ extrinsic: submittableExtrinsic, domainId: 0 }, 
+// { extrinsic: submittableExtrinsic, domainId: 0 }]); // 2. OR pass in a pre-built SubmittableExtrinsic
+```
+
+* Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
+* Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
+* Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
+* Execute:  You can either send in the raw proof details as an array using `[{ proofData: ... }, { proofData: ... }]` or verify a prebuilt extrinsic array `[{ extrinsic: ..., domainId: 0 }, { extrinsic: ..., domainId: 0 }]`
+* Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result.
+
 ### `zkVerifySession.optimisticVerify`
 
 ```typescript
@@ -635,7 +733,6 @@ const { success, message } = session
     hashFunction: Plonky2HashFunction.Poseidon
   })
   .withRegisteredVk() // optional
-  .nonce(1) // optional
   .execute({
     proofData: {
       vk: vk,
@@ -647,7 +744,40 @@ const { success, message } = session
 ```
 
 * Proof Type: `.plonky2()` specifies the type of proof to be used. Options available for all supported proof types.
-* Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
+* Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
+* Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
+* Returns: A result containing a boolean `success`.  If success is false the response will also contain a `message` with further details related to the failure.
+
+### `zkVerifySession.batchOptimisticVerify`
+
+```typescript
+const { success, message } = session
+  .batchOptimisticVerify()
+  .plonky2({
+    compressed: false,
+    hashFunction: Plonky2HashFunction.Poseidon
+  })
+  .withRegisteredVk() // optional
+  .execute([{
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  },
+  {
+    proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+    },
+    domainId: 42, // Optional domain ID for proof categorization
+  }
+  ]);
+```
+
+* Proof Type: `.plonky2()` specifies the type of proof to be used. Options available for all supported proof types.
 * Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
 * Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
 * Returns: A result containing a boolean `success`.  If success is false the response will also contain a `message` with further details related to the failure.
@@ -809,10 +939,10 @@ const account2 = session.getAccount("myAccountAddress");
 ### `zkVerifySession.subscribe`
 
 ```typescript
-session.subscribe(subscriptions?);
+session.subscribe(subscriptions[]);
 ```
 
-* `subscriptions` (Optional): An array of subscription objects (SubscriptionEntry\[]). Each subscription object contains:
+* `subscriptions[]` (Optional): An array of subscription objects (SubscriptionEntry\[]). Each subscription object contains:
   * `event`: The name of the event to subscribe to. This must be a value from `ZkVerifyEvents`.
   * `callback`: A function to be called whenever the specified event occurs. Receives an event object as its argument.
   * `options` (Optional): A NewAggregationEventSubscriptionOptions object used to filter which events to listen to. This is only relevant for NewAggregationReceipt events.

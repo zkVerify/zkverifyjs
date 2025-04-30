@@ -8,6 +8,8 @@ import { NetworkConfig } from '../types';
 import { VerificationBuilder } from './builders/verify';
 import { OptimisticVerificationBuilder } from './builders/optimisticVerify';
 import { RegisterKeyBuilder } from './builders/register';
+import { BatchVerificationBuilder } from './builders/batchVerify';
+import { BatchOptimisticVerificationBuilder } from './builders/batchOptimisticVerify';
 
 export interface zkVerifySessionOptions {
   networkConfig: NetworkConfig;
@@ -40,4 +42,8 @@ type GenericProofMethodMap<TBuilder> = {
 export type ProofMethodMap = GenericProofMethodMap<VerificationBuilder>;
 export type OptimisticProofMethodMap =
   GenericProofMethodMap<OptimisticVerificationBuilder>;
+export type BatchProofMethodMap =
+  GenericProofMethodMap<BatchVerificationBuilder>;
+export type BatchOptimisticProofMethodMap =
+  GenericProofMethodMap<BatchOptimisticVerificationBuilder>;
 export type RegisterKeyMethodMap = GenericProofMethodMap<RegisterKeyBuilder>;

@@ -9,6 +9,7 @@ import { TransactionInfo } from '../../../types';
 export const initializeTransactionInfo = <T extends TransactionType>(
   transactionType: T,
   options: VerifyOptions,
+  batchCount?: number,
 ): TransactionInfoByType[T] => {
   const baseInfo: TransactionInfo = {
     blockHash: '',
@@ -24,6 +25,13 @@ export const initializeTransactionInfo = <T extends TransactionType>(
         domainId: options.domainId,
         aggregationId: undefined,
         statement: null,
+      } as TransactionInfoByType[T];
+
+    case TransactionType.BatchVerify:
+      return {
+        ...baseInfo,
+        proofType: options.proofOptions?.proofType,
+        batchCount: batchCount ?? 0,
       } as TransactionInfoByType[T];
 
     case TransactionType.VKRegistration:

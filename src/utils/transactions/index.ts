@@ -29,8 +29,13 @@ export const handleTransaction = async <T extends TransactionType>(
   emitter: EventEmitter,
   options: VerifyOptions,
   transactionType: T,
+  batchCount?: number,
 ): Promise<TransactionInfoByType[T]> => {
-  const transactionInfo = initializeTransactionInfo(transactionType, options);
+  const transactionInfo = initializeTransactionInfo(
+    transactionType,
+    options,
+    batchCount,
+  );
 
   return new Promise((resolve, reject) => {
     const cancelTransaction = (error: unknown) => {
