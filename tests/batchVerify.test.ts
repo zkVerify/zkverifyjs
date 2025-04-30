@@ -107,4 +107,60 @@ describe('zkVerifySession batch verify', () => {
             }
         }
     });
+
+    it('should throw an error if a proof in the batch is invalid (e.g. 2nd proof fails)', async () => {
+        console.log('Starting batch test: 2nd proof is invalid');
+
+        [envVar, wallet] = await walletPool.acquireWallet();
+
+        const proofData = loadProofAndVK({
+            proofType: ProofType.groth16,
+            config: {
+                library: Library.snarkjs,
+                curve: CurveType.bn254,
+            },
+        });
+
+        const invalidProof = '0x0';
+
+        session = await zkVerifySession.start().Volta().withAccount(wallet);
+
+        try {
+            const { events, transactionResult } = await session
+                .batchVerify()
+                .groth16({
+                    library: Library.snarkjs,
+                    curve: CurveType.bn254,
+                })
+                .execute([
+                    {
+                        proofData: {
+                            proof: proofData.proof.proof,
+                            publicSignals: proofData.proof.publicSignals,
+                            vk: proofData.vk,
+                        },
+                        domainId: 0,
+                    },
+                    {
+                        proofData: {
+                            proof: invalidProof,
+                            publicSignals: proofData.proof.publicSignals,
+                            vk: proofData.vk,
+                        },
+                        domainId: 0,
+                    },
+                ]);
+
+            await transactionResult;
+
+            throw new Error('Expected batch verify to throw, but it succeeded');
+        } catch (err) {
+            const message =
+                err instanceof Error ? err.message : JSON.stringify(err);
+
+            expect(message).toContain('batch index 1');
+            expect(message.toLowerCase()).toContain('failed to format');
+        }
+    });
+
 });

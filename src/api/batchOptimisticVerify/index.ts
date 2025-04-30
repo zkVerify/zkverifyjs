@@ -6,7 +6,6 @@ import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types';
 import { VerifyInput } from '../verify/types';
 import { interpretDryRunResponse } from '../../utils/helpers';
-import { ApiPromise } from '@polkadot/api';
 import { VerifyOptions } from '../../session/types';
 
 export const batchOptimisticVerify = async (
@@ -16,11 +15,59 @@ export const batchOptimisticVerify = async (
 ): Promise<{ success: boolean; message: string }> => {
   const { api } = connection;
 
-  try {
-    const transaction = buildBatchTransaction(api, options, input);
+  if (input.length === 0) {
+    return {
+      success: false,
+      message: 'No proofs provided for batch optimistic verification.',
+    };
+  }
 
-    const submittableExtrinsicHex = transaction.toHex();
-    const dryRunResult = await api.rpc.system.dryRun(submittableExtrinsicHex);
+  const calls: SubmittableExtrinsic<'promise'>[] = [];
+  let formatError: Error | null = null;
+
+  for (let i = 0; i < input.length; i++) {
+    const current = input[i];
+    try {
+      if ('proofData' in current && current.proofData) {
+        const { proof, publicSignals, vk } = current.proofData as ProofData;
+        const formatted: FormattedProofData = format(
+          options.proofOptions,
+          proof,
+          publicSignals,
+          vk,
+          options.registeredVk,
+        );
+        calls.push(
+          createSubmitProofExtrinsic(
+            api,
+            options.proofOptions.proofType,
+            formatted,
+            current.domainId,
+          ),
+        );
+      } else if ('extrinsic' in current && current.extrinsic) {
+        calls.push(current.extrinsic);
+      } else {
+        throw new Error('Missing both proofData and extrinsic.');
+      }
+    } catch (err) {
+      formatError = new Error(
+        `Failed to format proof at batch index ${i}: ${(err as Error).message}`,
+      );
+      break;
+    }
+  }
+
+  if (formatError) {
+    return {
+      success: false,
+      message: formatError.message,
+    };
+  }
+
+  try {
+    const batchTx = api.tx.utility.batchAll(calls);
+    const dryRunResult = await api.rpc.system.dryRun(batchTx.toHex());
     const { success, message } = await interpretDryRunResponse(
       api,
       dryRunResult.toHex(),
@@ -28,57 +75,10 @@ export const batchOptimisticVerify = async (
 
     return { success, message };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      message: `Optimistic batch verification failed: ${errorMessage}`,
+      message: `Optimistic batch verification failed: ${message}`,
     };
   }
-};
-
-/**
- * Builds a batched transaction from multiple inputs.
- * @param api - The Polkadot.js API instance.
- * @param options - Options for the proofs.
- * @param inputs - Array of VerifyInput.
- * @returns A SubmittableExtrinsic ready for dryRun.
- * @throws If inputs are invalid or cannot be formatted.
- */
-const buildBatchTransaction = (
-  api: ApiPromise,
-  options: VerifyOptions,
-  inputs: VerifyInput[],
-): SubmittableExtrinsic<'promise'> => {
-  if (inputs.length === 0) {
-    throw new Error('No proofs provided for batch optimistic verification.');
-  }
-
-  const calls = inputs.map((input) => {
-    if ('proofData' in input && input.proofData) {
-      const { proof, publicSignals, vk } = input.proofData as ProofData;
-      const formatted: FormattedProofData = format(
-        options.proofOptions,
-        proof,
-        publicSignals,
-        vk,
-        options.registeredVk,
-      );
-      return createSubmitProofExtrinsic(
-        api,
-        options.proofOptions.proofType,
-        formatted,
-        input.domainId,
-      );
-    }
-
-    if ('extrinsic' in input && input.extrinsic) {
-      return input.extrinsic;
-    }
-
-    throw new Error(
-      `Invalid input provided. Expected either 'proofData' or 'extrinsic'. Received: ${JSON.stringify(input)}`,
-    );
-  });
-
-  return api.tx.utility.batchAll(calls);
 };

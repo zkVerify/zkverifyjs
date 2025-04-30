@@ -19,13 +19,17 @@ export const batchVerify = async (
 ): Promise<BatchVerifyTransactionInfo> => {
   const { api } = connection;
 
-  try {
-    const selectedAccount = getKeyringAccountIfAvailable(
-      connection,
-      options.accountAddress,
-    );
+  const selectedAccount = getKeyringAccountIfAvailable(
+    connection,
+    options.accountAddress,
+  );
 
-    const calls: SubmittableExtrinsic<'promise'>[] = input.map((item) => {
+  const calls: SubmittableExtrinsic<'promise'>[] = [];
+  let formatError: Error | null = null;
+
+  for (let i = 0; i < input.length; i++) {
+    const item = input[i];
+    try {
       if ('proofData' in item && item.proofData) {
         const { proof, publicSignals, vk } = item.proofData;
 
@@ -37,29 +41,41 @@ export const batchVerify = async (
           options.registeredVk ?? false,
         );
 
-        return createSubmitProofExtrinsic(
+        const extrinsic = createSubmitProofExtrinsic(
           api,
           options.proofOptions.proofType,
           formatted,
           item.domainId ?? undefined,
         );
-      }
 
-      if ('extrinsic' in item && item.extrinsic) {
-        return item.extrinsic;
+        calls.push(extrinsic);
+      } else if ('extrinsic' in item && item.extrinsic) {
+        calls.push(item.extrinsic);
+      } else {
+        throw new Error('Missing both proofData and extrinsic.');
       }
-
-      throw new Error(
-        'Invalid input: Either proofData or extrinsic must be provided.',
+    } catch (err) {
+      formatError = new Error(
+        `Failed to format proof at batch index ${i}: ${(err as Error).message}`,
       );
-    });
-
-    if (calls.length === 0) {
-      throw new Error('No valid proofs provided for batch verification.');
+      break;
     }
+  }
 
-    const batchTransaction = api.tx.utility.batchAll(calls);
+  if (formatError) {
+    return Promise.reject(formatError);
+  }
 
+  if (calls.length === 0) {
+    const err = new Error('No valid proofs provided for batch verification.');
+    emitter.emit(ZkVerifyEvents.ErrorEvent, err);
+    emitter.removeAllListeners();
+    throw err;
+  }
+
+  const batchTransaction = api.tx.utility.batchAll(calls);
+
+  try {
     const result = selectedAccount
       ? await handleTransaction(
           api,
