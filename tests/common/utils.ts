@@ -36,8 +36,8 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             break;
         }
         case ProofType.plonky2: {
-            const { compressed, hashFunction } = config as Plonky2Config;
-            components.push(compressed ? 'compressed' : 'uncompressed', hashFunction.toLowerCase());
+            const { hashFunction } = config as Plonky2Config;
+            components.push(hashFunction.toLowerCase());
             break;
         }
         case ProofType.risc0: {
@@ -49,6 +49,7 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
         case ProofType.proofofsql:
             // No config
             break;
+        // ADD_NEW_PROOF_TYPE
     }
 
     return components.filter(Boolean).map(String);

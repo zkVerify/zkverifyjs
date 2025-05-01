@@ -7,7 +7,7 @@ class Plonky2Processor implements ProofProcessor {
   formatProof(
     proof: Plonky2Proof['proof'],
     options: ProofOptions,
-  ): { compressed: boolean; bytes: string } {
+  ): { bytes: string } {
     return formatter.formatProof(proof, options);
   }
 

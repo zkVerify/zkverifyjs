@@ -5,12 +5,11 @@ import { isPlonky2Config } from '../../../utils/helpers';
 export function formatProof(
   proof: Plonky2Proof['proof'],
   options: ProofOptions,
-): { compressed: boolean; bytes: string } {
+): { bytes: string } {
   validatedHexString(proof);
 
   if (isPlonky2Config(options)) {
     return {
-      compressed: options.config.compressed,
       bytes: proof,
     };
   }

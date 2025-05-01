@@ -16,13 +16,12 @@ Currently the following proof verifiers are supported:
 ```
 
 * Plonky2
-  * Must include hashFunction and whether it's compressed or not
+  * Must be an uncompressed proof include hashFunction
 
 ```typescript
     const { events, transactionResult } = await session
         .verify()
         .plonky2({
-            compressed: false,
             hashFunction: Plonky2HashFunction.Poseidon
         })
         .execute({...})
@@ -522,7 +521,6 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
   // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
   const { success, message } = session.optimisticVerify()
           .plonky2({
-            compressed: false,
             hashFunction: Plonky2HashFunction.Poseidon
           })
           .withRegisteredVk() // optional
@@ -544,7 +542,6 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
   // Execute the verification transaction on zkVerify chain
   const { events, transactionResult } = await session.verify()
           .plonky2({
-            compressed: false,
             hashFunction: Plonky2HashFunction.Poseidon
           })
           .execute({ proofData: {
@@ -729,7 +726,6 @@ const { events, transactionResult } = await session
 const { success, message } = session
   .optimisticVerify()
   .plonky2({
-    compressed: false,
     hashFunction: Plonky2HashFunction.Poseidon
   })
   .withRegisteredVk() // optional
@@ -754,7 +750,6 @@ const { success, message } = session
 const { success, message } = session
   .batchOptimisticVerify()
   .plonky2({
-    compressed: false,
     hashFunction: Plonky2HashFunction.Poseidon
   })
   .withRegisteredVk() // optional

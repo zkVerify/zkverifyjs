@@ -121,13 +121,11 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.plonky2:
-                testOptions.plonky2CompressionOptions.forEach((compressed) => {
-                    testOptions.plonky2HashFunctions.forEach((hashFunction) => {
-                        promises.push(runTest({
-                            proofType,
-                            config: { compressed, hashFunction },
-                        }));
-                    });
+                testOptions.plonky2HashFunctions.forEach((hashFunction) => {
+                    promises.push(runTest({
+                        proofType,
+                        config: { hashFunction },
+                    }));
                 });
                 break;
 

@@ -23,7 +23,5 @@ export const testOptions = {
     plonky2HashFunctions: Object.keys(Plonky2HashFunction).map(
         (key) => Plonky2HashFunction[key as keyof typeof Plonky2HashFunction]
     ),
-    // TODO: Add 'true' back once bug is fixed with compressed plonky2 proofs.
-    plonky2CompressionOptions: [false],
     // ADD_NEW_PROOF_TYPE Testing: add config options here is required for new proof type
 };

@@ -1,7 +1,7 @@
-import {Plonky2HashFunction, ProofType, TransactionType, VerifyTransactionInfo, zkVerifySession} from '../src';
-import {walletPool} from './common/walletPool';
-import {loadProofAndVK, validateVerifyTransactionInfo} from "./common/utils";
-import {handleCommonEvents} from "./common/eventHandlers";
+import { Plonky2HashFunction, ProofType, TransactionType, VerifyTransactionInfo, zkVerifySession } from '../src';
+import { walletPool } from './common/walletPool';
+import { loadProofAndVK, validateVerifyTransactionInfo } from "./common/utils";
+import { handleCommonEvents } from "./common/eventHandlers";
 
 jest.setTimeout(120000);
 describe('zkVerifySession class', () => {
@@ -32,35 +32,21 @@ describe('zkVerifySession class', () => {
 
             const expectAggregation = true;
 
-            console.log('🔐 Acquiring wallet...');
             [envVar, wallet] = await walletPool.acquireWallet();
-            console.log(`✅ Wallet acquired: ${wallet}`);
 
-            console.log('📦 Loading proof and VK...');
             const proofData = loadProofAndVK({
                 proofType: ProofType.plonky2,
                 config: {
-                    compressed: false,
-                    hashFunction: Plonky2HashFunction.Poseidon
+                    hashFunction: Plonky2HashFunction.Keccak
                 }
             });
-            console.log(JSON.stringify(proofData));
-            console.log('✅ Proof and VK loaded');
-            const proofString = proofData.proof.proof;
-            const charCount = proofString.length;
 
-            console.log(`Proof string length: ${charCount} characters`);
-
-            console.log('⚙️  Initializing session...');
             session = await zkVerifySession.start().Volta().withAccount(wallet);
-            console.log('✅ Session started');
 
-            console.log('🚀 Sending proof for verification...');
             const { events, transactionResult } = await session
                 .verify()
                 .plonky2({
-                    compressed: false,
-                    hashFunction: Plonky2HashFunction.Poseidon
+                    hashFunction: Plonky2HashFunction.Keccak
                 })
                 .execute({
                     proofData: {
@@ -70,7 +56,6 @@ describe('zkVerifySession class', () => {
                     },
                     domainId: 0,
                 });
-            console.log('✅ Proof submitted, processing events');
 
             const results = handleCommonEvents(
                 events,
@@ -79,9 +64,7 @@ describe('zkVerifySession class', () => {
                 expectAggregation
             );
 
-            console.log('📦 Awaiting transaction result...');
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
-            console.log('✅ Transaction finalized');
 
             expect(results.includedInBlockEmitted).toBe(true);
             expect(results.finalizedEmitted).toBe(true);
