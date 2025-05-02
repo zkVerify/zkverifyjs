@@ -1,4 +1,4 @@
-import { Plonky2HashFunction, ProofType, TransactionType, VerifyTransactionInfo, zkVerifySession } from '../src';
+import { CurveType, Library, ProofType, TransactionType, VerifyTransactionInfo, zkVerifySession } from '../src';
 import { walletPool } from './common/walletPool';
 import { loadProofAndVK, validateVerifyTransactionInfo } from "./common/utils";
 import { handleCommonEvents } from "./common/eventHandlers";
@@ -25,43 +25,57 @@ describe('zkVerifySession class', () => {
         }
     });
 
-    // Just used for local testing a single proof easily.
-    it.skip('should send a proof to a registered domain and get aggregation', async () => {
+    it('should send a provided extrinsic and verify the proof', async () => {
         try {
-            console.log('🧪 Starting test: should send a proof to a registered domain and get aggregation');
-
-            const expectAggregation = true;
+            console.log('🧪 Starting test: should verify a provided extrinsic');
 
             [envVar, wallet] = await walletPool.acquireWallet();
 
             const proofData = loadProofAndVK({
-                proofType: ProofType.plonky2,
+                proofType: ProofType.groth16,
                 config: {
-                    hashFunction: Plonky2HashFunction.Keccak
+                    curve: CurveType.bn254,
+                    library: Library.snarkjs
                 }
             });
 
             session = await zkVerifySession.start().Volta().withAccount(wallet);
 
+            const proofOptions = {
+                proofType: ProofType.groth16,
+                config: {
+                    curve: CurveType.bn254,
+                    library: Library.snarkjs
+                }
+            }
+
+            const formattedProof = await session.format(
+                proofOptions,
+                proofData.proof.proof,
+                proofData.proof.publicSignals,
+                proofData.vk
+            )
+
+            const submittableExtrinsic = await session.createSubmitProofExtrinsic(
+                ProofType.groth16,
+                formattedProof,
+                0)
+
             const { events, transactionResult } = await session
                 .verify()
-                .plonky2({
-                    hashFunction: Plonky2HashFunction.Keccak
+                .groth16({
+                    curve: CurveType.bn254,
+                    library: Library.snarkjs
                 })
                 .execute({
-                    proofData: {
-                        proof: proofData.proof.proof,
-                        publicSignals: proofData.proof.publicSignals,
-                        vk: proofData.vk,
-                    },
-                    domainId: 0,
+                    extrinsic: submittableExtrinsic
                 });
 
             const results = handleCommonEvents(
                 events,
-                'plonky2',
+                'groth16',
                 TransactionType.Verify,
-                expectAggregation
+                true
             );
 
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
@@ -71,7 +85,7 @@ describe('zkVerifySession class', () => {
             expect(results.errorEventEmitted).toBe(false);
 
             console.log('🔍 Validating transaction info...');
-            validateVerifyTransactionInfo(transactionInfo, 'plonky2', expectAggregation);
+            validateVerifyTransactionInfo(transactionInfo, 'groth16', true);
             console.log('✅ Test complete');
         } catch (error: unknown) {
             console.error('❌ Test failed. Error:', error);

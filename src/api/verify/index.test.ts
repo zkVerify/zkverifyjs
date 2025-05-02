@@ -327,7 +327,6 @@ describe('verify', () => {
     const mockExtrinsic = {} as SubmittableExtrinsic<'promise'>;
     const input: VerifyInput = {
       extrinsic: mockExtrinsic,
-      domainId: 42,
     };
     (handleTransaction as jest.Mock).mockResolvedValue({ success: true });
 

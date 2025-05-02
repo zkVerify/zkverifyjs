@@ -251,7 +251,6 @@ export function isPlonky2Config(
   return (
     options.proofType === ProofType.plonky2 &&
     options.config !== undefined &&
-    (options.config as Plonky2Config).compressed !== undefined &&
     (options.config as Plonky2Config).hashFunction !== undefined
   );
 }

@@ -84,7 +84,6 @@ export interface Groth16Config {
 }
 
 export interface Plonky2Config {
-  compressed: boolean;
   hashFunction: Plonky2HashFunction;
 }
 
