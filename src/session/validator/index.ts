@@ -1,4 +1,4 @@
-import { ProofType, ProofOptions } from '../../config';
+import { ProofOptions, ProofType } from '../../config';
 import {
   isGroth16Config,
   isPlonky2Config,
@@ -43,6 +43,7 @@ export function validateProofTypeOptions(options: ProofOptions): void {
 
     case ProofType.ultraplonk:
     case ProofType.proofofsql:
+    case ProofType.fflonk:
       // No specific options required for these proof types
       break;
 
