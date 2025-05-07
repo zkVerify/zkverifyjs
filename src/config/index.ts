@@ -53,7 +53,7 @@ export interface ProofConfig {
 
 export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.fflonk]: {
-    pallet: 'settlementFflonkPallet',
+    pallet: 'settlementFFlonkPallet',
     processor: FflonkProcessor,
   },
   [ProofType.groth16]: {
