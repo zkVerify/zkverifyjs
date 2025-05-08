@@ -5,6 +5,7 @@ The `zkverifyjs` package is a TypeScript library designed to facilitate sending 
 
 Currently the following proof verifiers are supported:
 
+* FFlonk
 * Groth16 (BN128, BN254, BLS12-381 elliptic curves)
   * Note - Must include `Library` and `CurveType` e.g.
 

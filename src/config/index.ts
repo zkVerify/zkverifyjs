@@ -1,17 +1,18 @@
-import { NetworkConfig, ProofProcessor } from '../types';
-import {
-  Groth16Processor,
-  Plonky2Processor,
-  ProofOfSqlProcessor,
-  Risc0Processor,
-  UltraPlonkProcessor,
-} from '../proofTypes';
 import {
   CurveType,
   Library,
   Plonky2HashFunction,
   Risc0Version,
 } from '../enums';
+import {
+  FflonkProcessor,
+  Groth16Processor,
+  Plonky2Processor,
+  ProofOfSqlProcessor,
+  Risc0Processor,
+  UltraPlonkProcessor,
+} from '../proofTypes';
+import { NetworkConfig, ProofProcessor } from '../types';
 
 export const CHAIN_SS58_PREFIX = 251; // zkVerify specific address format
 
@@ -36,6 +37,7 @@ export const SupportedNetworkConfig: Record<SupportedNetwork, NetworkConfig> = {
 };
 
 export enum ProofType {
+  fflonk = 'fflonk',
   groth16 = 'groth16',
   risc0 = 'risc0',
   ultraplonk = 'ultraplonk',
@@ -50,6 +52,10 @@ export interface ProofConfig {
 }
 
 export const proofConfigurations: Record<ProofType, ProofConfig> = {
+  [ProofType.fflonk]: {
+    pallet: 'settlementFFlonkPallet',
+    processor: FflonkProcessor,
+  },
   [ProofType.groth16]: {
     pallet: 'settlementGroth16Pallet',
     processor: Groth16Processor,
@@ -194,6 +200,16 @@ export const zkvRpc = {
     },
     ultraplonk: {
       description: 'Get the hash of an UltraPLONK verification key',
+      params: [
+        {
+          name: 'vk',
+          type: 'Bytes',
+        },
+      ],
+      type: 'H256',
+    },
+    fflonk: {
+      description: 'Get the hash of a FFLONK verification key',
       params: [
         {
           name: 'vk',

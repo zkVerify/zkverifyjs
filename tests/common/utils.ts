@@ -1,4 +1,6 @@
+import { AggregateStatementPathResult, AggregateTransactionInfo } from "../../src/types";
 import {
+    BatchVerifyTransactionInfo,
     DomainOptions,
     DomainTransactionInfo,
     ProofOptions,
@@ -7,17 +9,17 @@ import {
     TransactionInfo,
     TransactionStatus,
     TransactionType,
-    VerifyTransactionInfo,
     VKRegistrationTransactionInfo,
-    zkVerifySession,
-    ZkVerifyEvents, BatchVerifyTransactionInfo
+    VerifyTransactionInfo,
+    ZkVerifyEvents,
+    zkVerifySession
 } from '../../src';
 import { EventResults, handleCommonEvents } from './eventHandlers';
-import path from "path";
-import fs from "fs";
-import { AggregateStatementPathResult, AggregateTransactionInfo } from "../../src/types";
 import { Groth16Config, Plonky2Config, Risc0Config } from "../../src";
+
+import fs from "fs";
 import { isRisc0Config } from "../../src/utils/helpers";
+import path from "path";
 
 export interface ProofData {
     proof: any;
@@ -544,6 +546,8 @@ export function dispatchBuilder<T>(
             return methodMap.ultraplonk();
         case ProofType.proofofsql:
             return methodMap.proofofsql();
+        case ProofType.fflonk:
+            return methodMap.fflonk();
         // ADD_NEW_PROOF_TYPE - used for tests.
         default:
             throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);

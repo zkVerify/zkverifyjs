@@ -4,12 +4,13 @@ import {
   ProofOptions,
   Risc0Config,
 } from '../config';
+
+import { BatchOptimisticVerificationBuilder } from './builders/batchOptimisticVerify';
+import { BatchVerificationBuilder } from './builders/batchVerify';
 import { NetworkConfig } from '../types';
-import { VerificationBuilder } from './builders/verify';
 import { OptimisticVerificationBuilder } from './builders/optimisticVerify';
 import { RegisterKeyBuilder } from './builders/register';
-import { BatchVerificationBuilder } from './builders/batchVerify';
-import { BatchOptimisticVerificationBuilder } from './builders/batchOptimisticVerify';
+import { VerificationBuilder } from './builders/verify';
 
 export interface zkVerifySessionOptions {
   networkConfig: NetworkConfig;
@@ -36,6 +37,7 @@ type GenericProofMethodMap<TBuilder> = {
   risc0: (options: Risc0Config) => TBuilder;
   ultraplonk: () => TBuilder;
   proofofsql: () => TBuilder;
+  fflonk: () => TBuilder;
   // ADD_NEW_PROOF_TYPE
 };
 

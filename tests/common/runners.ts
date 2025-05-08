@@ -1,12 +1,13 @@
 import { ProofOptions, ProofType } from "../../src";
 import {
     loadProofAndVK,
-    performVerifyTransaction,
-    performVKRegistrationAndVerification
+    performVKRegistrationAndVerification,
+    performVerifyTransaction
 } from "./utils";
+import { proofTypeVersionExclusions, testOptions } from "./options";
+
 import { walletPool } from "./walletPool";
 import { zkVerifySession } from "../../src";
-import { proofTypeVersionExclusions, testOptions } from "./options";
 
 const logTestDetails = (proofOptions: ProofOptions, testType: string) => {
     const { proofType, config } = proofOptions;
@@ -131,6 +132,7 @@ export const generateTestPromises = (
 
             case ProofType.ultraplonk:
             case ProofType.proofofsql:
+            case ProofType.fflonk:
                 promises.push(runTest({ proofType }));
                 break;
 
