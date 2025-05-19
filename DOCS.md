@@ -155,7 +155,7 @@ const { events, transactionResult } = await session
     proofData: {
       vk: vk,
       proof: proof,
-      publicSignals: publicSignals,
+      //publicSignals: publicSignals, // Not required for Ultraplonk
     },
     domainId: 42, // Optional domain ID for proof aggregation
   }); // Execute the verification with the provided proof data
@@ -255,7 +255,7 @@ const { events: verifyEvents, transactionResult: verifyTransactionResult } =
       proofData: {
         vk: vkTransactionInfo.statementHash!,
         proof: proof,
-        publicSignals: publicSignals,
+        //publicSignals: publicSignals, // Not required for ultraplonk
       },
       domainId: 42,
     });
@@ -359,7 +359,7 @@ const { events, transactionResult } = await session
             {
               proofData: {
                 proof: proofData.proof.proof,
-                publicSignals: proofData.proof.publicSignals,
+                //publicSignals: proofData.publicSignals, // Not required for ultraplonk
                 vk: proofData.vk,
             },
   domainId,
@@ -696,14 +696,14 @@ const { events, transactionResult } = await session
     proofData: {
       vk: vk,
       proof: proof,
-      publicSignals: publicSignals,
+      //publicSignals: publicSignals, // Not required for ultraplonk
     },
     domainId: 42, // Optional domain ID for proof categorization
   }); // 1. Directly pass proof data
 // .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
 ```
 
-* Proof Type: `.ultraplonk()` specifies the type of proof to be used and its config. Options available for all supported proof types.
+* Proof Type: `.ultraplonk({})` specifies the type of proof to be used and its config. Options available for all supported proof types.
 * Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
 * Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
 * Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
@@ -723,7 +723,7 @@ const { events, transactionResult } = await session
     proofData: {
       vk: vk,
       proof: proof,
-      publicSignals: publicSignals,
+      //publicSignals: publicSignals, // Not required for ultraplonk
     },
     domainId: 42, // Optional domain ID for proof categorization
   },
