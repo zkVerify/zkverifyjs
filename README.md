@@ -29,7 +29,14 @@ Currently the following proof verifiers are supported:
     version: Risc0Version.V1_2
   })
  ```
-- Ultraplonk
+- Ultraplonk - must include number of public inputs
+```shell
+    const { events, transactionResult } = await session
+        .verify()
+        .ultraplonk({
+            numberOfPublicInputs: 1
+        })...
+```
 - Space and Time
 
 # Table of Contents
@@ -162,7 +169,9 @@ The zkVerifySession.verify method allows you to configure and execute a verifica
 ```typescript
 const { events, transactionResult } = await session
   .verify() // Optionally provide account address to verify("myaddress") if connected with multple accounts
-  .ultraplonk() // Select the proof type (e.g., ultraplonk)
+  .ultraplonk({
+    numberOfPublicInputs: 1
+  }) // Select the proof type (e.g., ultraplonk)
   .nonce(1) // Set the nonce (optional)
   .withRegisteredVk() // Indicate that the verification key is already registered (optional)
   .execute({
@@ -251,7 +260,9 @@ Register your Verification Key on chain and use it in future proof submissions b
 ```typescript
 const { events, transactionResult } = await session
   .registerVerificationKey()
-  .ultraplonk()
+  .ultraplonk({
+    numberOfPublicInputs: 1
+  })
   .execute(vk);
 const vkTransactionInfo: VKRegistrationTransactionInfo =
   await transactionResult;
@@ -259,7 +270,9 @@ const vkTransactionInfo: VKRegistrationTransactionInfo =
 const { events: verifyEvents, transactionResult: verifyTransactionResult } =
   await session
     .verify()
-    .ultraplonk()
+    .ultraplonk({
+      numberOfPublicInputs: 1
+    })
     .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
     .execute({
       proofData: {
@@ -361,12 +374,18 @@ const domainId = 1;
 // Start session
 const session = await zkVerifySession.start().Volta().withAccount(process.env.seedPhrase);
 
-const { events, transactionResult } = await session.verify().ultraplonk().execute({
-  proofData: {
-    proof: proofData.proof.proof,
-    publicSignals: proofData.proof.publicSignals,
-    vk: proofData.vk,
-  },
+const { events, transactionResult } = await session
+        .verify()
+        .ultraplonk({
+          numberOfPublicInputs: 1
+        })
+        .execute(
+            {
+              proofData: {
+                proof: proofData.proof.proof,
+                publicSignals: proofData.proof.publicSignals,
+                vk: proofData.vk,
+            },
   domainId,
 });
 
@@ -691,7 +710,9 @@ await session.close();
 ```typescript
 const { events, transactionResult } = await session
   .verify()
-  .ultraplonk()
+  .ultraplonk({
+    numberOfPublicInputs: 1
+  })
   .nonce(1)
   .withRegisteredVk()
   .execute({
@@ -705,7 +726,7 @@ const { events, transactionResult } = await session
 // .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
 ```
 
-- Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
+- Proof Type: `.ultraplonk()` specifies the type of proof to be used and its config. Options available for all supported proof types.
 - Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
 - Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
 - Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
@@ -716,7 +737,9 @@ const { events, transactionResult } = await session
 ```typescript
 const { events, transactionResult } = await session
   .batchVerify(optionalAccountAddress) // You can pass account address here if multiple connected to your session.
-  .ultraplonk()
+  .ultraplonk({
+    numberOfPublicInputs: 1
+  })
   .nonce(1) // Optional
   .withRegisteredVk() // Optional
   .execute([{
@@ -740,7 +763,7 @@ const { events, transactionResult } = await session
 // { extrinsic: submittableExtrinsic, domainId: 0 }]); // 2. OR pass in a pre-built SubmittableExtrinsic
 ```
 
-- Proof Type: `.ultraplonk()` specifies the type of proof to be used. Options available for all supported proof types.
+- Proof Type: `.ultraplonk({})` specifies the type of proof to be used and its config. Options available for all supported proof types.
 - Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
 - Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
 - Execute:  You can either send in the raw proof details as an array using `[{ proofData: ... }, { proofData: ... }]` or verify a prebuilt extrinsic array `[{ extrinsic: ..., domainId: 0 }, { extrinsic: ..., domainId: 0 }]`

@@ -3,6 +3,7 @@ import {
   isGroth16Config,
   isPlonky2Config,
   isRisc0Config,
+  isUltraplonkConfig,
 } from '../../utils/helpers';
 
 /**
@@ -42,10 +43,18 @@ export function validateProofTypeOptions(options: ProofOptions): void {
       break;
 
     case ProofType.ultraplonk:
+      if (!isUltraplonkConfig(options)) {
+        throw new Error(
+          `Proof type '${proofType}' requires a 'numberOfPublicInputs' option.`,
+        );
+      }
+      break;
     case ProofType.proofofsql:
     case ProofType.fflonk:
       // No specific options required for these proof types
       break;
+
+    //ADD_NEW_PROOF_TYPE config validation per proof type
 
     default:
       void (options as never);

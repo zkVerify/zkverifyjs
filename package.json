@@ -35,6 +35,9 @@
   "engines": {
     "node": ">= 18"
   },
+  "browser": {
+    "buffer": "buffer"
+  },
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && npm run build:commonjs && npm run build:esm && npm run build:types",
@@ -88,6 +91,7 @@
     "@polkadot/extension-dapp": "0.58.8",
     "async-mutex": "0.5.0",
     "bignumber.js": "9.3.0",
+    "buffer": "^6.0.3",
     "dotenv": "16.5.0",
     "js-sha3": "0.9.3",
     "snarkjs": "0.7.5",

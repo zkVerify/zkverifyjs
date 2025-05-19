@@ -81,7 +81,7 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
 
 export interface ProofOptions {
   proofType: ProofType;
-  config?: Groth16Config | Plonky2Config | Risc0Config;
+  config?: Groth16Config | Plonky2Config | Risc0Config | UltraplonkConfig; // ADD_NEW_PROOF_TYPE
 }
 
 export interface Groth16Config {
@@ -97,10 +97,15 @@ export interface Risc0Config {
   version: Risc0Version;
 }
 
+export interface UltraplonkConfig {
+  numberOfPublicInputs: number;
+}
+
 export type AllProofConfigs =
   | Groth16Config
   | Plonky2Config
   | Risc0Config
+  | UltraplonkConfig
   | undefined;
 // ADD_NEW_PROOF_TYPE - options if needed.
 

@@ -15,7 +15,7 @@ export interface ProofProcessor {
 
 export interface ProofData {
   proof: unknown;
-  publicSignals: unknown;
+  publicSignals?: unknown;
   vk?: unknown;
 }
 

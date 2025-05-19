@@ -1,3 +1,5 @@
+import './shims/globalBuffer';
+
 export { zkVerifySession } from './session';
 export {
   VerifyOptions,

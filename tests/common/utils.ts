@@ -20,6 +20,7 @@ import { Groth16Config, Plonky2Config, Risc0Config } from "../../src";
 import fs from "fs";
 import { isRisc0Config } from "../../src/utils/helpers";
 import path from "path";
+import {UltraplonkConfig} from "../../src/config";
 
 export interface ProofData {
     proof: any;
@@ -47,7 +48,11 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             components.push(version.toLowerCase());
             break;
         }
-        case ProofType.ultraplonk:
+        case ProofType.ultraplonk: {
+            const { numberOfPublicInputs } = config as UltraplonkConfig;
+            components.push(numberOfPublicInputs.toString());
+            break;
+        }
         case ProofType.proofofsql:
             // No config
             break;
@@ -543,7 +548,7 @@ export function dispatchBuilder<T>(
         case ProofType.risc0:
             return methodMap.risc0(proofOptions.config as Risc0Config);
         case ProofType.ultraplonk:
-            return methodMap.ultraplonk();
+            return methodMap.ultraplonk(proofOptions.config as UltraplonkConfig);
         case ProofType.proofofsql:
             return methodMap.proofofsql();
         case ProofType.fflonk:
