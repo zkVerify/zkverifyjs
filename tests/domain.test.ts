@@ -1,4 +1,4 @@
-import {ProofType, zkVerifySession} from '../src';
+import { ProofType, zkVerifySession } from '../src';
 import { walletPool } from './common/walletPool';
 import {
     loadProofAndVK,
@@ -82,12 +82,15 @@ describe('Domain interaction tests', () => {
 
         const domainId = await performRegisterDomain(session, 2, 1, { destination: Destination.None, aggregateRules: AggregateSecurityRules.Untrusted});
 
-        const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk });
+        const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk, config: {
+            numberOfPublicInputs: 1
+            } });
 
-        const { transactionResult } = await session.verify().ultraplonk().execute({
+        const { transactionResult } = await session.verify().ultraplonk({
+            numberOfPublicInputs: 1
+        }).execute({
             proofData: {
                 proof: proofData.proof.proof,
-                publicSignals: proofData.proof.publicSignals,
                 vk: proofData.vk,
             },
             domainId,
