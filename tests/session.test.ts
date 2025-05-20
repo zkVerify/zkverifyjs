@@ -133,10 +133,14 @@ describe('zkVerifySession class', () => {
 
         session.verify = jest.fn(() => mockBuilder);
 
-        const { events, transactionResult } = await session.verify().ultraplonk().execute({
+        const { events, transactionResult } = await session
+            .verify()
+            .ultraplonk({
+                numberOfPublicInputs: 1
+            })
+            .execute({
             proofData: {
                 proof: 'proofData',
-                publicSignals: 'publicSignals',
                 vk: 'vk'
             }
         });
@@ -172,13 +176,28 @@ describe('zkVerifySession class', () => {
             session.verify = jest.fn(() => mockBuilder);
 
             const [result1, result2] = await Promise.all([
-                session.verify().ultraplonk().execute({ proofData: {
+                session
+                    .verify()
+                    .ultraplonk({
+                        numberOfPublicInputs: 1
+                    })
+                    .execute(
+                        {
+                            proofData: {
                     proof: 'proofData',
-                    publicSignals: 'publicSignals',
                     vk: 'vk'
                     }
                 }),
-                session.verify().groth16({ library: Library.snarkjs, curve: CurveType.bls12381 }).execute({ proofData: {
+                session
+                    .verify()
+                    .groth16(
+                        {
+                            library: Library.snarkjs,
+                            curve: CurveType.bls12381
+                        })
+                    .execute(
+                        { proofData:
+                                {
                         proof: 'proofData',
                         publicSignals: 'publicSignals',
                         vk: 'vk'
@@ -231,7 +250,9 @@ describe('zkVerifySession class', () => {
     it('should handle setting nonces for multiple concurrent same-session calls', async () => {
         try {
             [envVar, wallet] = await walletPool.acquireWallet();
-            const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk });
+            const proofData = loadProofAndVK({ proofType: ProofType.ultraplonk, config: {
+                numberOfPublicInputs: 1
+                } });
 
             session = await zkVerifySession.start().Volta().withAccount(wallet);
 
@@ -240,10 +261,14 @@ describe('zkVerifySession class', () => {
 
             const [tx1, tx2] = await Promise.all([
                 (async () => {
-                    const { events, transactionResult } = await session.verify().ultraplonk().nonce(startingNonce).execute({
+                    const { events, transactionResult } = await session
+                        .verify()
+                        .ultraplonk({
+                            numberOfPublicInputs: 1
+                        })
+                        .nonce(startingNonce).execute({
                         proofData: {
                             proof: proofData.proof.proof,
-                            publicSignals: proofData.proof.publicSignals,
                             vk: proofData.vk
                         }
                     });
@@ -251,10 +276,17 @@ describe('zkVerifySession class', () => {
                     return { events, transactionResult };
                 })(),
                 (async () => {
-                    const { events, transactionResult } = await session.verify().ultraplonk().nonce(startingNonce + 1).execute({
+                    const { events, transactionResult } = await session
+                        .verify()
+                        .ultraplonk(
+                            {
+                                numberOfPublicInputs: 1
+                            })
+                        .nonce(startingNonce + 1)
+                        .execute(
+                            {
                         proofData: {
                             proof: proofData.proof.proof,
-                            publicSignals: proofData.proof.publicSignals,
                             vk: proofData.vk
                         }
                     });
