@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { ApiPromise } from '@polkadot/api';
 import { EventEmitter } from 'events';
 import { Delivery, DomainOptions, ProofProcessor } from '../../types';

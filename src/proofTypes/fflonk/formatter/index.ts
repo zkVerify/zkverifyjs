@@ -3,9 +3,7 @@ import {
   FflonkPublicSignals,
   FflonkVerificationKey,
 } from '../types';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { BigNumber } = require('bignumber.js');
+import BigNumber from 'bignumber.js';
 
 /**
  * Formats the FFLONK verification key.
