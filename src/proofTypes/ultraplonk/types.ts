@@ -7,5 +7,5 @@ export interface UltraPlonkVk {
 }
 
 export interface UltraPlonkPubs {
-  pubs: string | string[];
+  pubs: string;
 }

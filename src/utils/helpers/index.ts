@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { ApiPromise } from '@polkadot/api';
 import { EventEmitter } from 'events';
 import { Delivery, DomainOptions, ProofProcessor } from '../../types';
@@ -10,6 +9,7 @@ import {
   ProofOptions,
   ProofType,
   Risc0Config,
+  UltraplonkConfig,
 } from '../../config';
 import { decodeDispatchError } from '../transactions/errors';
 import { DispatchError } from '@polkadot/types/interfaces';
@@ -267,3 +267,18 @@ export function isRisc0Config(
     (options.config as Risc0Config).version !== undefined
   );
 }
+
+/**
+ * Type guard for Ultraplonk Config
+ */
+export function isUltraplonkConfig(
+  options: ProofOptions,
+): options is ProofOptions & { config: UltraplonkConfig } {
+  return (
+    options.proofType === ProofType.ultraplonk &&
+    options.config !== undefined &&
+    (options.config as UltraplonkConfig).numberOfPublicInputs !== undefined
+  );
+}
+
+// ADD_NEW_PROOF_TYPE if it has a config options object

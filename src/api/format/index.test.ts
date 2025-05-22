@@ -215,4 +215,26 @@ describe('format', () => {
 
     expect(mockProcessor.formatVk).toHaveBeenCalledWith(vkObject, proofOptions);
   });
+
+  it('should handle UltraPlonk proof and publicSignals from formatProof', () => {
+    const ultraplonkOptions = {
+      ...proofOptions,
+      proofType: ProofType.ultraplonk,
+    };
+
+    (mockProcessor.formatProof as jest.Mock).mockImplementation(() => ({
+      proof: 'ultraplonkFormattedProof',
+      publicSignals: 'ultraplonkFormattedPubs',
+    }));
+
+    const result = format(ultraplonkOptions, 'proof', 'signals', 'vk');
+
+    expect(result.formattedProof).toBe('ultraplonkFormattedProof');
+    expect(result.formattedPubs).toBe('ultraplonkFormattedPubs');
+    expect(mockProcessor.formatPubs).not.toHaveBeenCalled();
+    expect(mockProcessor.formatVk).toHaveBeenCalledWith(
+      'vk',
+      ultraplonkOptions,
+    );
+  });
 });

@@ -131,6 +131,14 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.ultraplonk:
+                testOptions.ultraplonkPublicInputCounts.forEach((numberOfPublicInputs) => {
+                    promises.push(runTest({
+                        proofType,
+                        config: { numberOfPublicInputs },
+                    }));
+                });
+                break;
+
             case ProofType.proofofsql:
             case ProofType.fflonk:
                 promises.push(runTest({ proofType }));

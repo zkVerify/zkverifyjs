@@ -1,6 +1,6 @@
 {
   "name": "zkverifyjs",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "Horizen Labs <research@horizenlabs.io>",
   "license": "GPL-3.0",
@@ -34,6 +34,9 @@
   ],
   "engines": {
     "node": ">= 18"
+  },
+  "browser": {
+    "buffer": "buffer"
   },
   "scripts": {
     "clean": "rm -rf dist",
@@ -88,7 +91,7 @@
     "@polkadot/extension-dapp": "0.58.8",
     "async-mutex": "0.5.0",
     "bignumber.js": "9.3.0",
-    "dotenv": "16.5.0",
+    "buffer": "^6.0.3",
     "js-sha3": "0.9.3",
     "snarkjs": "0.7.5",
     "web3": "4.16.0"
@@ -110,6 +113,7 @@
     "axios": "1.8.2",
     "babel-plugin-add-import-extension": "^1.6.0",
     "conventional-changelog-cli": "5.0.0",
+    "dotenv": "16.5.0",
     "eslint": "9.25.1",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.2.6",

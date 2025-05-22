@@ -26,7 +26,7 @@ describe('zkVerifySession class', () => {
     });
 
     // Just used for local testing a single proof easily.
-    it.skip('should send a proof to a registered domain and get aggregation', async () => {
+    it('should send a proof to a registered domain and get aggregation', async () => {
         try {
             console.log('🧪 Starting test: should send a proof to a registered domain and get aggregation');
 
@@ -35,9 +35,9 @@ describe('zkVerifySession class', () => {
             [envVar, wallet] = await walletPool.acquireWallet();
 
             const proofData = loadProofAndVK({
-                proofType: ProofType.plonky2,
+                proofType: ProofType.ultraplonk,
                 config: {
-                    hashFunction: Plonky2HashFunction.Keccak
+                    numberOfPublicInputs: 1
                 }
             });
 
@@ -45,13 +45,13 @@ describe('zkVerifySession class', () => {
 
             const { events, transactionResult } = await session
                 .verify()
-                .plonky2({
-                    hashFunction: Plonky2HashFunction.Keccak
+                .ultraplonk({
+                    numberOfPublicInputs: 1
                 })
                 .execute({
                     proofData: {
                         proof: proofData.proof.proof,
-                        publicSignals: proofData.proof.publicSignals,
+                        publicSignals: proofData.proof.proof,
                         vk: proofData.vk,
                     },
                     domainId: 0,
@@ -59,7 +59,7 @@ describe('zkVerifySession class', () => {
 
             const results = handleCommonEvents(
                 events,
-                'plonky2',
+                'ultraplonk',
                 TransactionType.Verify,
                 expectAggregation
             );
@@ -71,7 +71,7 @@ describe('zkVerifySession class', () => {
             expect(results.errorEventEmitted).toBe(false);
 
             console.log('🔍 Validating transaction info...');
-            validateVerifyTransactionInfo(transactionInfo, 'plonky2', expectAggregation);
+            validateVerifyTransactionInfo(transactionInfo, 'ultraplonk', expectAggregation);
             console.log('✅ Test complete');
         } catch (error: unknown) {
             console.error('❌ Test failed. Error:', error);
