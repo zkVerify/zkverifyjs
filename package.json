@@ -2,15 +2,15 @@
   "name": "zkverifyjs",
   "version": "0.14.0",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
-  "author": "Horizen Labs <research@horizenlabs.io>",
+  "author": "zkVerify <web3-platform@zkverify.io>",
   "license": "GPL-3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/HorizenLabs/zkverifyjs.git"
+    "url": "https://github.com/zkVerify/zkverifyjs.git"
   },
   "bugs": {
-    "url": "https://github.com/HorizenLabs/zkverifyjs/issues",
-    "email": "support@horizenlabs.io"
+    "url": "https://github.com/zkVerify/zkverifyjs/issues",
+    "email": "web3-platform@zkverify.io"
   },
   "main": "dist/commonjs/index.js",
   "module": "dist/esm/index.js",
