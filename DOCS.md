@@ -28,7 +28,7 @@ Currently the following proof verifiers are supported:
         .execute({...})
 ```
 
-* Risc0 versions `V1_0`, `V1_1`, `V1_2`, `V2_0`
+* Risc0 versions `V1_0`, `V1_1`, `V1_2`, `V2_0`, `V2_1`
   * Note - Version must be included for Risc0 e.g.
 
 ```typescript

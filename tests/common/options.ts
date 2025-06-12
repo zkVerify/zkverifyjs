@@ -1,8 +1,8 @@
 import { CurveType, Library, Plonky2HashFunction, ProofType, Risc0Version } from "../../src";
 
-//TODO: Update this once we have V1_1 test data and V2_0 is available
+//TODO: Risc0 Version Exclusions - Update this once we have V1_1 test data and V2_1 is available
 export const proofTypeVersionExclusions: Partial<Record<ProofType, string[]>> = {
-    [ProofType.risc0]: ["V1_1", "V2_0"]
+    [ProofType.risc0]: ["V1_1", "V2_1"]
 };
 
 export type TestOptions = typeof testOptions;
