@@ -214,6 +214,28 @@ export function normalizeDeliveryFromOptions(options: DomainOptions): Delivery {
 }
 
 /**
+ * Extracts a human-readable error message from various error types.
+ *
+ * @param err - The error object to extract a message from.
+ * @returns A string message describing the error.
+ */
+export const extractErrorMessage = (err: unknown): string => {
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  if (typeof err === 'object' && err !== null) {
+    const maybeError = err as Record<string, unknown>;
+    if (typeof maybeError.error === 'string') {
+      return maybeError.error;
+    }
+    return JSON.stringify(err);
+  }
+
+  return String(err);
+};
+
+/**
  * Safe wrapper for emitting events without crashing.
  */
 export const safeEmit = (
