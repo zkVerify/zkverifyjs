@@ -14,11 +14,15 @@ import { ProofType } from '../../config';
 import { KeyringPair } from '@polkadot/keyring/types';
 import * as helpers from '../../utils/helpers';
 
-jest.mock('../../utils/helpers', () => ({
-  getProofPallet: jest.fn(),
-  getProofProcessor: jest.fn(),
-  getSelectedAccount: jest.fn(),
-}));
+jest.mock('../../utils/helpers', () => {
+  const actual = jest.requireActual('../../utils/helpers');
+  return {
+    ...actual,
+    getProofPallet: jest.fn(),
+    getProofProcessor: jest.fn(),
+    getSelectedAccount: jest.fn(),
+  };
+});
 
 jest.mock('../../utils/transactions', () => ({
   handleTransaction: jest.fn(),
@@ -118,46 +122,52 @@ describe('registerVk', () => {
   it('should throw an error for unsupported proof type', async () => {
     (getProofProcessor as jest.Mock).mockResolvedValue(null);
 
-    await expect(
-      registerVk(connection, mockOptions, mockVerificationKey),
-    ).rejects.toThrow(
-      `Unsupported proof type: ${mockOptions.proofOptions.proofType}`,
-    );
-  });
-
-  it('should throw an error for invalid verification key', async () => {
-    await expect(registerVk(connection, mockOptions, null)).rejects.toThrow(
-      'verificationKey cannot be null, undefined, or an empty string',
-    );
-
-    await expect(registerVk(connection, mockOptions, '')).rejects.toThrow(
-      'verificationKey cannot be null, undefined, or an empty string',
-    );
-  });
-
-  it('should emit error event and reject if transaction fails', async () => {
-    const mockError = new Error('Transaction failed');
-    (handleTransaction as jest.Mock).mockRejectedValue(mockError);
-
-    const { events, transactionResult } = await registerVk(
+    const { transactionResult } = await registerVk(
       connection,
       mockOptions,
       mockVerificationKey,
     );
 
-    const errorHandler = jest.fn();
-    events.on(ZkVerifyEvents.ErrorEvent, errorHandler);
+    await expect(transactionResult).rejects.toThrow(
+      `Unsupported proof type: ${mockOptions.proofOptions.proofType}`,
+    );
+  });
+
+  it('should throw an error for invalid verification key', async () => {
+    const result1 = await registerVk(connection, mockOptions, null);
+    await expect(result1.transactionResult).rejects.toThrow(
+      'verificationKey cannot be null, undefined, or an empty string',
+    );
+
+    const result2 = await registerVk(connection, mockOptions, '');
+    await expect(result2.transactionResult).rejects.toThrow(
+      'verificationKey cannot be null, undefined, or an empty string',
+    );
+  });
+
+  it('should reject if transaction fails', async () => {
+    const mockError = new Error('Transaction failed');
+    (handleTransaction as jest.Mock).mockRejectedValue(mockError);
+
+    const { transactionResult } = await registerVk(
+      connection,
+      mockOptions,
+      mockVerificationKey,
+    );
 
     await expect(transactionResult).rejects.toThrow('Transaction failed');
-    expect(errorHandler).toHaveBeenCalledWith(mockError);
   });
 
   it('should throw an error if proof pallet is not found', async () => {
     (getProofPallet as jest.Mock).mockReturnValue(null);
 
-    await expect(
-      registerVk(connection, mockOptions, mockVerificationKey),
-    ).rejects.toThrow(
+    const { transactionResult } = await registerVk(
+      connection,
+      mockOptions,
+      mockVerificationKey,
+    );
+
+    await expect(transactionResult).rejects.toThrow(
       `Unsupported proof type: ${mockOptions.proofOptions.proofType}`,
     );
   });
