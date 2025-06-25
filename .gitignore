@@ -9,3 +9,4 @@ coverage/
 *.d.ts
 *.*.map
 *.tgz
+tmp

@@ -62,6 +62,7 @@ Currently the following proof verifiers are supported:
     - [zkVerifySession.getAggregateStatementPath](#zkverifysessiongetaggregatestatementpath)
     - [zkVerifySession.getVkHash](#zkverifysessiongetvkhash)
     - [zkVerifySession.format](#zkverifysessionformat)
+    - [zkVerifySession.formatVk](#zkverifysessionformatvk)
     - [zkVerifySession.createSubmitProofExtrinsic](#zkverifysessioncreatesubmitproofextrinsic)
     - [zkVerifySession.createExtrinsicHex](#zkverifysessioncreateextrinsichex)
     - [zkVerifySession.createExtrinsicFromHex](#zkverifysessioncreateextrinsicfromhex)
@@ -852,11 +853,17 @@ const result = await session.getAggregateStatementPath(aggregationReceipt.blockH
 ## `zkVerifySession.getVkHash`
 
 ```typescript
-const vkHash = await session.getVkHash(ProofType.groth16, formattedVk)
+const vkHash = await session.getVkHash({
+  proofType: ProofType.groth16,
+  config: {
+    curve: CurveType.bn254,
+    library: Library.snarkjs
+  }
+}, verificationKey);
 ```
 
-- `proofType`: An enum value representing the type of proof being formatted (e.g., ProofType.groth16).
-- `formattedVk`: A verification key that has been formatted beforehand using `zkVerifySession.format`
+- `proofOptions`: `ProofOptions` object containing the ProofType and an optional `config` object for certain proof types.
+- `verificationKey`: A raw verification key from a supported library
 - Returns: A verification key hash as a 0x string
 
 ## `zkVerifySession.format`
@@ -875,6 +882,24 @@ const { formattedVk, formattedProof, formattedPubs } = await session.format(proo
   - formattedVk: The formatted verification key.
   - formattedProof: The formatted proof data.
   - formattedPubs: The formatted public signals.
+
+## `zkVerifySession.formatVk`
+
+```typescript
+const proofOptions = {
+  proofType: ProofType.groth16,
+  config: {
+    curve: CurveType.bls12381,
+    library: Library.snarkjs,
+  },
+};
+
+const formattedVk = await session.formatVk(proofOptions, vk);
+
+```
+- `proofOptions`: `ProofOptions` object containing the ProofType and an optional `config` object for certain proof types.
+- `vk`: A raw verification key from a supported library
+- Returns: a formatted verification key object.
 
 ## `zkVerifySession.createSubmitProofExtrinsic`
 

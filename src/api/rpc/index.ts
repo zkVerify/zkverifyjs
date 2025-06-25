@@ -1,6 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { AggregateStatementPathResult } from '../../types';
-import { ProofType } from '../../config';
+import { ProofOptions } from '../../config';
+import { formatVk } from '../format';
 
 export async function getAggregateStatementPath(
   api: ApiPromise,
@@ -80,7 +81,7 @@ export async function getAggregateStatementPath(
 
 export async function getVkHash(
   api: ApiPromise,
-  proofType: ProofType,
+  proofOptions: ProofOptions,
   vk: unknown,
 ): Promise<string> {
   try {
@@ -90,22 +91,30 @@ export async function getVkHash(
       );
     }
 
+    const formattedVk = await formatVk(proofOptions, vk);
+
     // @ts-expect-error: Custom RPC methods are not recognized by TypeScript
     if (!api.rpc.vk_hash || typeof api.rpc.vk_hash !== 'object') {
-      throw new Error(`RPC method for ${proofType} is not registered.`);
+      throw new Error(
+        `RPC method for ${proofOptions.proofType} is not registered.`,
+      );
     }
 
     // @ts-expect-error: Custom RPC methods are not recognized by TypeScript
-    const rpcCall = api.rpc.vk_hash[proofType];
+    const rpcCall = api.rpc.vk_hash[proofOptions.proofType];
 
     if (typeof rpcCall !== 'function') {
-      throw new Error(`RPC method for ${proofType} is not registered.`);
+      throw new Error(
+        `RPC method for ${proofOptions.proofType} is not registered.`,
+      );
     }
 
-    const result = await rpcCall(vk);
+    const result = await rpcCall(formattedVk);
 
     if (!result || typeof result.toString !== 'function') {
-      throw new Error(`No VK hash found for proof type "${proofType}".`);
+      throw new Error(
+        `No VK hash found for proof type "${proofOptions.proofType}".`,
+      );
     }
 
     const hash = result.toString();
@@ -115,13 +124,15 @@ export async function getVkHash(
       !hash.startsWith('0x') ||
       hash.length <= 2
     ) {
-      throw new Error(`No VK hash found for proof type "${proofType}".`);
+      throw new Error(
+        `No VK hash found for proof type "${proofOptions.proofType}".`,
+      );
     }
 
     return hash;
   } catch (err) {
     throw new Error(
-      `RPC call for ${proofType} failed: ${
+      `RPC call for ${proofOptions.proofType} failed: ${
         err instanceof Error ? err.message : String(err)
       }`,
     );

@@ -109,3 +109,27 @@ export function format(
     formattedVk,
   };
 }
+
+export function formatVk(options: ProofOptions, vk: unknown): unknown {
+  const processor: ProofProcessor = getProofProcessor(options.proofType);
+
+  if (!processor) {
+    throw new Error(`Unsupported proof type: ${options.proofType}`);
+  }
+
+  if (vk === null || vk === undefined || vk === '') {
+    throw new Error(`${options.proofType}: Verification Key must be provided.`);
+  }
+
+  try {
+    return processor.formatVk(vk, options);
+  } catch (error) {
+    const vkSnippet =
+      typeof vk === 'string'
+        ? vk.slice(0, 50)
+        : JSON.stringify(vk).slice(0, 50);
+    throw new Error(
+      `Failed to format ${options.proofType} verification key: ${error instanceof Error ? error.message : 'Unknown error'}. Verification key snippet: "${vkSnippet}..."`,
+    );
+  }
+}
