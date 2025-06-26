@@ -87,11 +87,11 @@
     "zkp"
   ],
   "dependencies": {
-    "@polkadot/api": "15.9.2",
-    "@polkadot/extension-dapp": "0.58.8",
+    "@polkadot/api": "16.2.2",
+    "@polkadot/extension-dapp": "0.60.1",
     "async-mutex": "0.5.0",
     "bignumber.js": "9.3.0",
-    "buffer": "^6.0.3",
+    "buffer": "6.0.3",
     "js-sha3": "0.9.3",
     "snarkjs": "0.7.5",
     "web3": "4.16.0"
