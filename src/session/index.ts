@@ -27,6 +27,7 @@ export class zkVerifySession {
   declare batchOptimisticVerify: VerificationManager['batchOptimisticVerify'];
   declare registerVerificationKey: VerificationKeyRegistrationManager['registerVerificationKey'];
   declare format: FormatManager['format'];
+  declare formatVk: FormatManager['formatVk'];
   declare subscribe: EventManager['subscribe'];
   declare unsubscribe: EventManager['unsubscribe'];
   declare waitForAggregationReceipt: EventManager['waitForAggregationReceipt'];

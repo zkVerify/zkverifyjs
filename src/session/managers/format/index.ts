@@ -1,5 +1,5 @@
 import { FormattedProofData } from '../../../api/format/types';
-import { format } from '../../../api/format';
+import { format, formatVk } from '../../../api/format';
 import { ProofOptions } from '../../../config';
 
 /**
@@ -25,5 +25,17 @@ export class FormatManager {
     registeredVk?: boolean,
   ): Promise<FormattedProofData> {
     return format(proofOptions, proof, publicSignals, vk, registeredVk);
+  }
+
+  /**
+   * Formats a verification key using the configured proof processor.
+   *
+   * @param proofOptions - The options for the proof, including type, library, and curve.
+   * @param vk - The verification key to format.
+   * @returns The formatted verification key.
+   * @throws Throws an error if formatting fails.
+   */
+  async formatVk(proofOptions: ProofOptions, vk: unknown): Promise<unknown> {
+    return formatVk(proofOptions, vk);
   }
 }

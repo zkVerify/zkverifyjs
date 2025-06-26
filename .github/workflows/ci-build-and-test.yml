@@ -53,6 +53,15 @@ jobs:
       - name: Run build
         run: npm run build
 
+      - name: Install circom
+        run: |
+          wget https://github.com/iden3/circom/releases/download/v2.2.2/circom-linux-amd64 -O circom
+          chmod +x circom
+          sudo mv circom /usr/local/bin/
+
+      - name: Install snarkjs
+        run: npm install -g snarkjs
+
       - name: Run tests & generate test output files
         id: run_tests
         run: |

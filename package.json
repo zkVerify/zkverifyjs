@@ -1,6 +1,6 @@
 {
   "name": "zkverifyjs",
-  "version": "0.14.2",
+  "version": "0.14.3",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "zkVerify <web3-platform@zkverify.io>",
   "license": "GPL-3.0",
@@ -87,11 +87,11 @@
     "zkp"
   ],
   "dependencies": {
-    "@polkadot/api": "15.9.2",
-    "@polkadot/extension-dapp": "0.58.8",
+    "@polkadot/api": "16.2.2",
+    "@polkadot/extension-dapp": "0.60.1",
     "async-mutex": "0.5.0",
     "bignumber.js": "9.3.0",
-    "buffer": "^6.0.3",
+    "buffer": "6.0.3",
     "js-sha3": "0.9.3",
     "snarkjs": "0.7.5",
     "web3": "4.16.0"
@@ -104,6 +104,7 @@
     "@eslint/js": "9.25.1",
     "@jest/globals": "29.7.0",
     "@types/debug": "4.1.12",
+    "@types/fs-extra": "11.0.4",
     "@types/jest": "29.5.14",
     "@types/node": "20.17.32",
     "@types/snarkjs": "0.7.9",
@@ -118,6 +119,7 @@
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.2.6",
     "fastify": "4.29.1",
+    "fs-extra": "11.3.0",
     "globals": "15.15.0",
     "husky": "9.1.7",
     "jest": "29.7.0",
@@ -134,7 +136,7 @@
     "unist-util-visit": "5.0.0"
   },
   "overrides": {
-    "@polkadot/util": "13.4.4"
+    "@polkadot/util": "13.5.2"
   },
   "sideEffects": false
 }

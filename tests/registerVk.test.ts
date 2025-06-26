@@ -1,7 +1,7 @@
-import { CurveType, Library, zkVerifySession } from '../src';
+import { CurveType, Library, ProofType, zkVerifySession } from '../src';
 import { walletPool } from './common/walletPool';
 import * as path from 'path';
-import * as fs from 'fs/promises';
+import { generateAndProve } from "./common/generators/scripts/generateAndProve";
 
 jest.setTimeout(240000);
 
@@ -26,26 +26,59 @@ describe('zkVerifySession.registerVerificationKey error handling', () => {
         }
     });
 
-    it('should throw an error when registering an already registered verification key', async () => {
+    it('should successfully register a new vk & throw an error when registering an already registered vk & retrieve an existing vk', async () => {
         [envVar, wallet] = await walletPool.acquireWallet();
 
-        const vkPath = path.resolve(__dirname, 'common/data/verificationKeys', 'groth16_gnark_bn254_vk.json');
-        const alreadyRegisteredVk = JSON.parse(await fs.readFile(vkPath, 'utf-8'));
+        const outDir = path.resolve(__dirname, '../tmp');
+        const inputX = 7;
+
+        const {
+            verificationKey,
+            verifyOutput,
+        } = await generateAndProve(outDir, inputX);
+
+        expect(verifyOutput).toContain('OK!');;
+
+        console.log(verificationKey);
 
         session = await zkVerifySession.start().Volta().withAccount(wallet);
+
+        const { transactionResult } = await session.registerVerificationKey()
+            .groth16({
+            curve: CurveType.bn254,
+            library: Library.snarkjs,
+            })
+            .execute(verificationKey);
+
+        const result = await transactionResult;
+
+        expect(result.statementHash).toBeDefined();
+        expect(typeof result.statementHash).toBe('string');
+        expect(result.statementHash).toMatch(/^0x[a-fA-F0-9]+$/);
 
         const registerAgain = async () => {
             const { transactionResult } = await session
                 .registerVerificationKey()
                 .groth16({
                     curve: CurveType.bn254,
-                    library: Library.gnark,
+                    library: Library.snarkjs,
                 })
-                .execute(alreadyRegisteredVk);
+                .execute(verificationKey);
 
             await transactionResult;
         };
 
         await expect(registerAgain()).rejects.toThrow(/Verification key has already been registered/i);
+
+        const vkHash = await session.getVkHash({
+            proofType: ProofType.groth16,
+            config: {
+                curve: CurveType.bn254,
+                library: Library.snarkjs
+            }
+        }, verificationKey);
+
+        expect(vkHash).toBeDefined();
+        expect(vkHash).toBe(result.statementHash);
     });
 });
