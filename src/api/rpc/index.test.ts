@@ -3,6 +3,8 @@ import { ApiPromise } from '@polkadot/api';
 import { jest } from '@jest/globals';
 import { AggregateStatementPathResult } from '../../types';
 import { ProofType } from '../../config';
+import { CurveType, Library } from '../../enums';
+import * as formatModule from '../format';
 
 describe('getAggregateStatementPath', () => {
   let api: ApiPromise;
@@ -142,6 +144,16 @@ describe('getVkHash', () => {
   let api: ApiPromise;
   const validHash = '0xabc123deadbeef';
 
+  const proofOptions = {
+    proofType: ProofType.groth16,
+    config: {
+      curve: CurveType.bn254,
+      library: Library.snarkjs,
+    },
+  };
+
+  jest.spyOn(formatModule, 'formatVk').mockReturnValue('0xformattedvk');
+
   beforeEach(() => {
     api = {
       rpc: {
@@ -161,7 +173,7 @@ describe('getVkHash', () => {
   it('should return a valid hash for groth16', async () => {
     const vk = { dummy: 'vk' };
 
-    const result = await getVkHash(api, ProofType.groth16, vk);
+    const result = await getVkHash(api, proofOptions, vk);
 
     expect(typeof result).toBe('string');
     expect(result).toBe(validHash);
@@ -178,7 +190,7 @@ describe('getVkHash', () => {
 
     const vk = { dummy: 'vk' };
 
-    await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
+    await expect(getVkHash(api, proofOptions, vk)).rejects.toThrow(
       'RPC call for groth16 failed: No VK hash found for proof type "groth16".',
     );
   });
@@ -188,7 +200,7 @@ describe('getVkHash', () => {
 
     const vk = { some: 'vk' };
 
-    await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
+    await expect(getVkHash(api, proofOptions, vk)).rejects.toThrow(
       'RPC call for groth16 failed: RPC method for groth16 is not registered.',
     );
   });
@@ -199,7 +211,7 @@ describe('getVkHash', () => {
 
     const vk = { dummy: 'vk' };
 
-    await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
+    await expect(getVkHash(api, proofOptions, vk)).rejects.toThrow(
       'RPC call for groth16 failed: RPC method for groth16 is not registered.',
     );
   });
@@ -212,7 +224,7 @@ describe('getVkHash', () => {
 
     const vk = { dummy: 'vk' };
 
-    await expect(getVkHash(api, ProofType.groth16, vk)).rejects.toThrow(
+    await expect(getVkHash(api, proofOptions, vk)).rejects.toThrow(
       'RPC call for groth16 failed: No VK hash found for proof type "groth16".',
     );
   });
