@@ -136,7 +136,7 @@
     "unist-util-visit": "5.0.0"
   },
   "overrides": {
-    "@polkadot/util": "13.4.4"
+    "@polkadot/util": "13.5.2"
   },
   "sideEffects": false
 }
