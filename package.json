@@ -1,6 +1,6 @@
 {
   "name": "zkverifyjs",
-  "version": "0.14.4",
+  "version": "0.15.0",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "zkVerify <web3-platform@zkverify.io>",
   "license": "GPL-3.0",
