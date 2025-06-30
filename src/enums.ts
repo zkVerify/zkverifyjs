@@ -50,8 +50,9 @@ export enum Plonky2HashFunction {
 }
 
 export enum Library {
-  snarkjs = 'snarkjs',
+  arkworks = 'arkworks',
   gnark = 'gnark',
+  snarkjs = 'snarkjs',
 }
 
 export enum CurveType {

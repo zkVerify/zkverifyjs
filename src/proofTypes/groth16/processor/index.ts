@@ -9,12 +9,14 @@ import { ProofProcessor } from '../../../types';
 import { ProofOptions } from '../../../config';
 import { isGroth16Config } from '../../../utils/helpers';
 import { Library } from '../../../enums';
-import * as snarkjsFormatter from '../formatter/snarkjs';
+import * as arkworksFormatter from '../formatter/arkworks';
 import * as gnarkFormatter from '../formatter/gnark';
+import * as snarkjsFormatter from '../formatter/snarkjs';
 
 const formatterMap: Record<Library, Formatter> = {
-  [Library.snarkjs]: snarkjsFormatter,
-  [Library.gnark]: gnarkFormatter,
+  [Library.arkworks]: arkworksFormatter.default,
+  [Library.gnark]: gnarkFormatter.default,
+  [Library.snarkjs]: snarkjsFormatter.default,
 };
 
 class Groth16Processor implements ProofProcessor {

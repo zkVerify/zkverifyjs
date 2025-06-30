@@ -3,6 +3,7 @@ import {
   Groth16VerificationKeyInput,
   Proof,
   ProofInput,
+  SnarkJSProofInput,
 } from '../../types';
 import {
   extractCurve,
@@ -32,7 +33,22 @@ export const formatProof = (
     );
   }
 
-  const proofData = unstringifyBigInts(proof) as ProofInput;
+  const raw = unstringifyBigInts(proof);
+  if (
+    !raw ||
+    typeof raw !== 'object' ||
+    !('pi_a' in raw) ||
+    !('pi_b' in raw) ||
+    !('pi_c' in raw)
+  ) {
+    const snippet = JSON.stringify(proof).slice(0, 80);
+    throw new Error(
+      `Invalid SnarkJS proof format. Expected pi_a, pi_b, pi_c. Snippet: "${snippet}..."`,
+    );
+  }
+
+  const proofData = raw as SnarkJSProofInput;
+
   const curve = extractCurve(options.config.curve);
   const endianess = getEndianess(curve);
 
