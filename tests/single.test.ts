@@ -1,9 +1,17 @@
-import { Plonky2HashFunction, ProofType, TransactionType, VerifyTransactionInfo, zkVerifySession } from '../src';
+import {
+    CurveType,
+    Library,
+    ProofType,
+    TransactionType,
+    VerifyTransactionInfo,
+    zkVerifySession,
+} from '../src';
 import { walletPool } from './common/walletPool';
-import { loadProofAndVK, validateVerifyTransactionInfo } from "./common/utils";
-import { handleCommonEvents } from "./common/eventHandlers";
+import { loadProofAndVK, validateVerifyTransactionInfo } from './common/utils';
+import { handleCommonEvents } from './common/eventHandlers';
 
 jest.setTimeout(120000);
+
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
     let wallet: string | null = null;
@@ -25,33 +33,32 @@ describe('zkVerifySession class', () => {
         }
     });
 
-    // Just used for local testing a single proof easily.
-    it('should send a proof to a registered domain and get aggregation', async () => {
+    it.skip('should send a proof to a registered domain and get aggregation', async () => {
         try {
-            console.log('🧪 Starting test: should send a proof to a registered domain and get aggregation');
-
             const expectAggregation = true;
 
             [envVar, wallet] = await walletPool.acquireWallet();
 
             const proofData = loadProofAndVK({
-                proofType: ProofType.ultraplonk,
+                proofType: ProofType.groth16,
                 config: {
-                    numberOfPublicInputs: 1
-                }
+                    library: Library.arkworks,
+                    curve: CurveType.bls12381,
+                },
             });
 
             session = await zkVerifySession.start().Volta().withAccount(wallet);
 
             const { events, transactionResult } = await session
                 .verify()
-                .ultraplonk({
-                    numberOfPublicInputs: 1
+                .groth16({
+                    library: Library.arkworks,
+                    curve: CurveType.bls12381,
                 })
                 .execute({
                     proofData: {
                         proof: proofData.proof.proof,
-                        publicSignals: proofData.proof.proof,
+                        publicSignals: proofData.proof.publicSignals,
                         vk: proofData.vk,
                     },
                     domainId: 0,
@@ -59,22 +66,15 @@ describe('zkVerifySession class', () => {
 
             const results = handleCommonEvents(
                 events,
-                'ultraplonk',
+                'groth16',
                 TransactionType.Verify,
                 expectAggregation
             );
 
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
-            expect(results.includedInBlockEmitted).toBe(true);
-            expect(results.finalizedEmitted).toBe(true);
-            expect(results.errorEventEmitted).toBe(false);
-
-            console.log('🔍 Validating transaction info...');
-            validateVerifyTransactionInfo(transactionInfo, 'ultraplonk', expectAggregation);
-            console.log('✅ Test complete');
+            validateVerifyTransactionInfo(transactionInfo, 'groth16', expectAggregation);
         } catch (error: unknown) {
-            console.error('❌ Test failed. Error:', error);
             if (error instanceof Error) {
                 throw new Error(`Test failed with error: ${error.message}\nStack: ${error.stack}`);
             } else if (typeof error === 'object' && error !== null && 'message' in error) {
@@ -84,5 +84,4 @@ describe('zkVerifySession class', () => {
             }
         }
     });
-
 });

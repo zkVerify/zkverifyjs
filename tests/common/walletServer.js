@@ -2,7 +2,7 @@ const Fastify = require('fastify');
 const { Mutex } = require('async-mutex');
 const { Keyring } = require('@polkadot/api');
 const { cryptoWaitReady } = require('@polkadot/util-crypto');
-require('dotenv').config()
+require('dotenv').config();
 
 const fastify = Fastify();
 const availableWallets = new Map();
@@ -40,17 +40,16 @@ async function initializeWallets() {
             }
         });
 
-    console.log(`-- Wallet Pool Initialized -- `);
+    console.log(`-- Wallet Pool Initialized --`);
     console.log(`- Total Seed Phrases Found: ${total}`);
-
-    console.log(`- ✅   Valid Wallets: ${valid}`);
-    console.log(`- ❌   Invalid Wallets: ${invalidKeys.length}`);
+    console.log(`- ✅ Valid Wallets: ${valid}`);
+    console.log(`- ❌ Invalid Wallets: ${invalidKeys.length}`);
     if (invalidKeys.length > 0) {
         console.log(`- Invalid Env Keys: ${invalidKeys.join(', ')}`);
     }
 
     if (valid === 0) {
-        console.error("🚨  No valid wallets available. Shutting down.");
+        console.error("🚨 No valid wallets available. Shutting down.");
         process.exit(1);
     }
 }
@@ -78,9 +77,9 @@ fastify.post('/release', async (request, reply) => {
         const wallet = inUseWallets.get(key);
         inUseWallets.delete(key);
 
-        function addWallet(){
+        function addWallet() {
             availableWallets.set(key, wallet);
-            if(requestQueue.length > 0){
+            if (requestQueue.length > 0) {
                 requestQueue.shift();
             }
         }
@@ -90,19 +89,37 @@ fastify.post('/release', async (request, reply) => {
     });
 });
 
-initializeWallets().then(() => {
-    fastify.listen({ port: 3001 }, () => {});
-}).catch((error) => {
-    console.error("Failed to initialize wallets:", error);
-    process.exit(1);
-});
+initializeWallets()
+    .then(() => {
+        const startServer = async (port = 3001) => {
+            try {
+                await fastify.listen({ port });
+                process.env.WALLET_POOL_PORT = port.toString();
+                console.log(`Wallet server started on http://localhost:${port}`);
+            } catch (err) {
+                if (err.code === 'EADDRINUSE') {
+                    console.warn(`Port ${port} in use, trying ${port + 1}...`);
+                    startServer(port + 1);
+                } else {
+                    console.error(`Failed to start wallet server: ${err.message}`);
+                    process.exit(1);
+                }
+            }
+        };
+
+        startServer();
+    })
+    .catch((error) => {
+        console.error("Failed to initialize wallets:", error);
+        process.exit(1);
+    });
 
 process.on('SIGTERM', () => {
-    console.log('👋 Wallet server received SIGTERM. Shutting down.');
+    console.log('Wallet server received SIGTERM. Shutting down.');
     fastify.close().then(() => process.exit(0));
 });
 
 process.on('SIGINT', () => {
-    console.log('👋 Wallet server received SIGINT. Shutting down.');
+    console.log('Wallet server received SIGINT. Shutting down.');
     fastify.close().then(() => process.exit(0));
 });
