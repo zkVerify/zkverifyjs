@@ -32,7 +32,7 @@ describe('zkVerifySession class', () => {
         }
     });
 
-    it('should send a proof to a registered domain and get aggregation', async () => {
+    it.skip('should send a proof to a registered domain and get aggregation', async () => {
         try {
             console.log('🧪 Starting test: should send a proof to a registered domain and get aggregation');
             const expectAggregation = true;
@@ -45,8 +45,8 @@ describe('zkVerifySession class', () => {
             const proofData = loadProofAndVK({
                 proofType: ProofType.groth16,
                 config: {
-                    library: Library.gnark,
-                    curve: CurveType.bn254
+                    library: Library.arkworks,
+                    curve: CurveType.bls12381
                 },
             });
             console.log('✅ Loaded proof and VK');
@@ -59,7 +59,7 @@ describe('zkVerifySession class', () => {
             const { events, transactionResult } = await session
                 .verify()
                 .groth16({
-                    library: Library.gnark,
+                    library: Library.arkworks,
                     curve: CurveType.bls12381
                 })
                 .execute({

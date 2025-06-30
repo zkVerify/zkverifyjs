@@ -6,6 +6,7 @@ import {
 } from '../../types';
 import { ProofOptions } from '../../../../config';
 import { isGroth16Config } from '../../../../utils/helpers';
+import { extractCurve } from '../utils';
 
 /**
  * Arkworks VK format already matches Groth16VerificationKey shape.
@@ -19,10 +20,6 @@ export const formatProof = (
   proof: ProofInput,
   options: ProofOptions,
 ): Proof => {
-  console.log('[Arkworks] formatProof called');
-  console.log('[Arkworks] Raw proof input:', JSON.stringify(proof, null, 2));
-  console.log('[Arkworks] Proof options:', options);
-
   if (!isGroth16Config(options)) {
     throw new Error(
       'Expected Groth16 config but received invalid configuration.',
@@ -40,27 +37,22 @@ export const formatProof = (
     typeof proof.curve !== 'string'
   ) {
     const snippet = JSON.stringify(proof).slice(0, 80);
-    console.error('[Arkworks] Invalid proof structure. Snippet:', snippet);
     throw new Error(
       `Invalid Arkworks proof format. Expected { curve, proof: { a, b, c } }. Snippet: "${snippet}..."`,
     );
   }
 
   const ark = proof as ArkworksProofInput;
+  const curve = extractCurve(options.config.curve);
 
-  console.log('[Arkworks] Parsed Arkworks proof input:', ark);
-
-  const formatted: Proof = {
-    curve: ark.curve,
+  return {
+    curve,
     proof: {
       a: ark.proof.a,
       b: ark.proof.b,
       c: ark.proof.c,
     },
   };
-
-  console.log('[Arkworks] Returning formatted proof:', formatted);
-  return formatted;
 };
 
 /**
@@ -70,22 +62,19 @@ export const formatVk = (
   vk: ArkworksVerificationKey,
   options: ProofOptions,
 ): Groth16VerificationKey => {
-  console.log('[Arkworks] formatVk called');
-  console.log('[Arkworks] Raw VK input:', JSON.stringify(vk, null, 2));
-  console.log('[Arkworks] Proof options:', options);
-
   if (!isGroth16Config(options)) {
     throw new Error(
       'Expected Groth16 config but received invalid configuration.',
     );
   }
 
+  const curve = extractCurve(options.config.curve);
+
   const result = {
     ...vk,
-    curve: vk.curve ?? options.config.curve,
+    curve,
   };
 
-  console.log('[Arkworks] Returning formatted VK:', result);
   return result;
 };
 
@@ -93,7 +82,6 @@ export const formatVk = (
  * Arkworks public signals require no transformation.
  */
 export const formatPubs = (pubs: string[]): string[] => {
-  console.log('[Arkworks] formatPubs called with:', pubs);
   return pubs;
 };
 

@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 
 class WalletPool {
     private readonly walletServerUrl: string;
-    private readonly maxRetries = 20;
+    private readonly maxRetries = 30;
     private readonly baseDelay = 500;
 
     constructor() {
