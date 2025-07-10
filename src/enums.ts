@@ -37,10 +37,6 @@ export enum ZkVerifyEvents {
 }
 
 export enum Risc0Version {
-  V1_0 = 'V1_0',
-  V1_1 = 'V1_1',
-  V1_2 = 'V1_2',
-  V2_0 = 'V2_0',
   V2_1 = 'V2_1',
 }
 

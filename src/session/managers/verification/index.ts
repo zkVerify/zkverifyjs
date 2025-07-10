@@ -178,7 +178,7 @@ export class VerificationManager {
    *     - Groth16: Requires `library` and `curve`.
    *     - Plonky2: Requires `compressed` (boolean) and `hashFunction`.
    *     - Risc0: Requires `version`.
-   *     - Ultraplonk / ProofOfSql: No specific options required.
+   *     - Ultraplonk: No specific options required.
    *
    * @param {string} [accountAddress] - The account to use for verification.
    *   - If a `string`, it represents the account address.
@@ -209,7 +209,7 @@ export class VerificationManager {
    *     - Groth16: Requires `library` and `curve`.
    *     - Plonky2: Requires `compressed` (boolean) and `hashFunction`.
    *     - Risc0: Requires `version`.
-   *     - Ultraplonk / ProofOfSql: No specific options required.
+   *     - Ultraplonk: No specific options required.
    *
    * @param accountAddress
    * @returns {OptimisticVerificationBuilder} A new instance of `OptimisticVerificationBuilder` configured with the provided proof options.
