@@ -1,14 +1,7 @@
-import { execFile as execFileCb } from 'child_process';
-import { promisify } from 'util';
+import execa from 'execa';
 import fs from 'fs-extra';
 import path from 'path';
 import crypto from 'crypto';
-
-const execFile = promisify(execFileCb) as (
-    file: string,
-    args?: readonly string[],
-    options?: any
-) => Promise<{ stdout: string; stderr: string }>;
 
 export async function generateAndProve(baseDir: string, x: number) {
     const circuitTag = crypto.randomUUID().replace(/-/g, '');
@@ -19,27 +12,34 @@ export async function generateAndProve(baseDir: string, x: number) {
 
     const constraintCount = crypto.randomInt(2, 20);
 
+    // Generate random constants for each constraint
+    const randomConstants = Array.from({ length: constraintCount }, () => crypto.randomInt(1, 2 ** 31));
+    // Optionally, add a random salt
+    const salt = crypto.randomInt(1, 2 ** 31);
+
     const circuitCode = `
-template UniqueCircuit() {
+template UniqueCircuit(salt) {
     signal input x;
     signal output y;
     signal tmp[${constraintCount}];
 
-    tmp[0] <== x * x + 1;
+    tmp[0] <== x * x + salt + ${randomConstants[0]};
 
     ${Array.from({ length: constraintCount - 1 }, (_, i) => `
-    tmp[${i + 1}] <== tmp[${i}] * tmp[${i}] + ${i + 2};
+    tmp[${i + 1}] <== tmp[${i}] * tmp[${i}] + salt + ${randomConstants[i + 1]};
     `).join('\n')}
 
     y <== tmp[${constraintCount - 1}];
 }
 
-component main = UniqueCircuit();
+component main = UniqueCircuit(${salt});
 `;
 
     try {
         await fs.ensureDir(outDir);
+        console.log(`Circuit: ${circuitName}`);
         await fs.writeFile(circuitFile, circuitCode);
+        console.log(`Circuit SHA-256: ${crypto.createHash('sha256').update(circuitCode).digest('hex')}`);
 
         const inputPath = path.join(outDir, 'input.json');
         await fs.writeJSON(inputPath, { x });
@@ -51,14 +51,30 @@ component main = UniqueCircuit();
         const vkPath = path.join(outDir, 'vk.json');
         const r1csPath = path.join(outDir, `${circuitName}.r1cs`);
 
-        await execFile('circom', [circuitFile, '--r1cs', '--wasm', '--sym', '-o', outDir]);
-        await execFile('snarkjs', ['groth16', 'setup', r1csPath, ptauPath, zkeyPath]);
-        await execFile('snarkjs', ['wtns', 'calculate', `${outDir}/${circuitName}_js/${circuitName}.wasm`, inputPath, witnessPath]);
-        await execFile('snarkjs', ['groth16', 'prove', zkeyPath, witnessPath, proofPath, publicPath]);
-        await execFile('snarkjs', ['zkey', 'export', 'verificationkey', zkeyPath, vkPath]);
+        console.log(`Compiling circuit...`);
+        await execa('circom', [circuitFile, '--r1cs', '--wasm', '--sym', '-o', outDir]);
+
+        const r1csHash = crypto.createHash('sha256').update(await fs.readFile(r1csPath)).digest('hex');
+        console.log(`R1CS SHA-256: ${r1csHash}`);
+
+        console.log(`Running trusted setup...`);
+        await execa('snarkjs', ['groth16', 'setup', r1csPath, ptauPath, zkeyPath]);
+
+        console.log(`Generating witness...`);
+        await execa('snarkjs', ['wtns', 'calculate', `${outDir}/${circuitName}_js/${circuitName}.wasm`, inputPath, witnessPath]);
+
+        console.log(`Generating proof...`);
+        await execa('snarkjs', ['groth16', 'prove', zkeyPath, witnessPath, proofPath, publicPath]);
+
+        console.log(`Exporting verification key...`);
+        await execa('snarkjs', ['zkey', 'export', 'verificationkey', zkeyPath, vkPath]);
 
         const vkRaw = await fs.readFile(vkPath, 'utf8');
-        const { stdout } = await execFile('snarkjs', ['groth16', 'verify', vkPath, publicPath, proofPath]);
+        const vkHash = crypto.createHash('sha256').update(vkRaw).digest('hex');
+        console.log(`VK SHA-256: ${vkHash}`);
+
+        const { stdout } = await execa('snarkjs', ['groth16', 'verify', vkPath, publicPath, proofPath]);
+        console.log(`Verification: ${stdout.trim()}`);
 
         return {
             circuitTag,

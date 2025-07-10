@@ -22,11 +22,11 @@ Currently the following proof verifiers are supported:
         })
         .execute({...})
 ```
-- Risc0 versions `V1_0`, `V1_1`, `V1_2`, `V2_0`, `V2_1`
+- Risc0 versions `V2_1`
   - Note - Version must be included for Risc0 e.g.
 ```typescript
   .risc0({
-    version: Risc0Version.V1_2
+    version: Risc0Version.V2_1
   })
  ```
 - Ultraplonk - must include number of public inputs
@@ -302,7 +302,7 @@ import {Risc0Version} from "./enums";
 const {events, transactionResult} = await session
         .verify()
         .risc0({
-          version: Risc0Version.V1_2
+          version: Risc0Version.V2_1
         })
         .execute({
           proofData: {
@@ -427,7 +427,7 @@ const session = await zkVerifySession
 const { success, message } = session
   .optimisticVerify()
   .risc0({
-    version: Risc0Version.V1_1
+    version: Risc0Version.V2_1
   })
   .withRegisteredVk() // optional
   .execute({

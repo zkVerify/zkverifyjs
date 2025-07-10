@@ -53,9 +53,6 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             components.push(numberOfPublicInputs.toString());
             break;
         }
-        case ProofType.proofofsql:
-            // No config
-            break;
         // ADD_NEW_PROOF_TYPE
     }
 
@@ -549,8 +546,6 @@ export function dispatchBuilder<T>(
             return methodMap.risc0(proofOptions.config as Risc0Config);
         case ProofType.ultraplonk:
             return methodMap.ultraplonk(proofOptions.config as UltraplonkConfig);
-        case ProofType.proofofsql:
-            return methodMap.proofofsql();
         case ProofType.fflonk:
             return methodMap.fflonk();
         // ADD_NEW_PROOF_TYPE - used for tests.

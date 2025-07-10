@@ -49,7 +49,6 @@ export function validateProofTypeOptions(options: ProofOptions): void {
         );
       }
       break;
-    case ProofType.proofofsql:
     case ProofType.fflonk:
       // No specific options required for these proof types
       break;

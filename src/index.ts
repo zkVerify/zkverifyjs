@@ -15,6 +15,7 @@ export {
   Groth16Config,
   Plonky2Config,
   Risc0Config,
+  UltraplonkConfig,
 } from './config';
 export {
   ZkVerifyEvents,

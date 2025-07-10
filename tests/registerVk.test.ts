@@ -1,7 +1,9 @@
-import { CurveType, Library, ProofType, zkVerifySession } from '../src';
-import { walletPool } from './common/walletPool';
+import {CurveType, Library, ProofType, TransactionType, VerifyTransactionInfo, zkVerifySession} from '../src';
+import {walletPool} from './common/walletPool';
 import * as path from 'path';
-import { generateAndProve } from "./common/generators/scripts/generateAndProve";
+import {generateAndProve} from "./common/generators/scripts/generateAndProve";
+import {validateVerifyTransactionInfo} from "./common/utils";
+import {handleCommonEvents} from "./common/eventHandlers";
 
 jest.setTimeout(240000);
 
@@ -33,8 +35,10 @@ describe('zkVerifySession.registerVerificationKey error handling', () => {
         const inputX = 7;
 
         const {
+            proof,
+            publicSignals,
             verificationKey,
-            verifyOutput,
+            verifyOutput
         } = await generateAndProve(outDir, inputX);
 
         expect(verifyOutput).toContain('OK!');;
@@ -43,11 +47,18 @@ describe('zkVerifySession.registerVerificationKey error handling', () => {
 
         session = await zkVerifySession.start().Volta().withAccount(wallet);
 
+        const account = session.getAccount();
+
+        const nonce = await session.api.rpc.system.accountNextIndex(account.address);
+
+        console.log("nonce: " + nonce.toNumber())
+
         const { transactionResult } = await session.registerVerificationKey()
             .groth16({
             curve: CurveType.bn254,
             library: Library.snarkjs,
             })
+            .nonce(nonce.toNumber())
             .execute(verificationKey);
 
         const result = await transactionResult;
@@ -63,6 +74,7 @@ describe('zkVerifySession.registerVerificationKey error handling', () => {
                     curve: CurveType.bn254,
                     library: Library.snarkjs,
                 })
+                .nonce(nonce.toNumber() +1)
                 .execute(verificationKey);
 
             await transactionResult;
@@ -80,5 +92,32 @@ describe('zkVerifySession.registerVerificationKey error handling', () => {
 
         expect(vkHash).toBeDefined();
         expect(vkHash).toBe(result.statementHash);
+
+        const { events, transactionResult: verifyResult } = await session.verify()
+            .groth16(
+                {
+                    curve: CurveType.bn254,
+                    library: Library.snarkjs
+                }
+            )
+            .withRegisteredVk()
+            .execute( {
+                proofData: {
+                    proof: proof,
+                    publicSignals: publicSignals,
+                    vk: vkHash
+                }
+            });
+
+        handleCommonEvents(
+            events,
+            'groth16',
+            TransactionType.Verify,
+            false
+        );
+
+        const transactionInfo: VerifyTransactionInfo = await verifyResult;
+
+        validateVerifyTransactionInfo(transactionInfo, 'groth16', false);
     });
 });

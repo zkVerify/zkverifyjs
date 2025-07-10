@@ -139,7 +139,6 @@ export const generateTestPromises = (
                 });
                 break;
 
-            case ProofType.proofofsql:
             case ProofType.fflonk:
                 promises.push(runTest({ proofType }));
                 break;

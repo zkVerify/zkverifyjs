@@ -8,7 +8,6 @@ import {
   FflonkProcessor,
   Groth16Processor,
   Plonky2Processor,
-  ProofOfSqlProcessor,
   Risc0Processor,
   UltraPlonkProcessor,
 } from '../proofTypes';
@@ -41,7 +40,6 @@ export enum ProofType {
   groth16 = 'groth16',
   risc0 = 'risc0',
   ultraplonk = 'ultraplonk',
-  proofofsql = 'proofofsql',
   plonky2 = 'plonky2',
   // ADD_NEW_PROOF_TYPE
 }
@@ -67,10 +65,6 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.ultraplonk]: {
     pallet: 'settlementUltraplonkPallet',
     processor: UltraPlonkProcessor,
-  },
-  [ProofType.proofofsql]: {
-    pallet: 'settlementProofOfSqlPallet',
-    processor: ProofOfSqlProcessor,
   },
   [ProofType.plonky2]: {
     pallet: 'settlementPlonky2Pallet',
@@ -183,16 +177,6 @@ export const zkvRpc = {
       ],
       type: 'H256',
     },
-    proofofsql: {
-      description: 'Get the hash of a Proof-of-SQL verification key',
-      params: [
-        {
-          name: 'vk',
-          type: 'Bytes',
-        },
-      ],
-      type: 'H256',
-    },
     risc0: {
       description: 'Get the hash of a Risc0 verification key',
       params: [
@@ -223,5 +207,6 @@ export const zkvRpc = {
       ],
       type: 'H256',
     },
+    // ADD_NEW_PROOF_TYPE
   },
 };

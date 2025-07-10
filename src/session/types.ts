@@ -37,7 +37,6 @@ type GenericProofMethodMap<TBuilder> = {
   plonky2: (options: Plonky2Config) => TBuilder;
   risc0: (options: Risc0Config) => TBuilder;
   ultraplonk: (options: UltraplonkConfig) => TBuilder;
-  proofofsql: () => TBuilder;
   fflonk: () => TBuilder;
   // ADD_NEW_PROOF_TYPE
 };
