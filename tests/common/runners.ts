@@ -143,6 +143,10 @@ export const generateTestPromises = (
                 promises.push(runTest({ proofType }));
                 break;
 
+            case ProofType.SP1:
+                promises.push(runTest({ proofType }));
+                break;
+
             // ADD_NEW_PROOF_TYPE - generateTestPromises
         }
     });

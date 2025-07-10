@@ -53,6 +53,10 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             components.push(numberOfPublicInputs.toString());
             break;
         }
+        case ProofType.SP1: {
+            // No Config
+            break;
+        }
         // ADD_NEW_PROOF_TYPE
     }
 
@@ -548,6 +552,8 @@ export function dispatchBuilder<T>(
             return methodMap.ultraplonk(proofOptions.config as UltraplonkConfig);
         case ProofType.fflonk:
             return methodMap.fflonk();
+        case ProofType.SP1:
+            return methodMap.SP1();
         // ADD_NEW_PROOF_TYPE - used for tests.
         default:
             throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);

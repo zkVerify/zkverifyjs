@@ -41,6 +41,7 @@ export enum ProofType {
   risc0 = 'risc0',
   ultraplonk = 'ultraplonk',
   plonky2 = 'plonky2',
+  SP1 = 'SP1',
   // ADD_NEW_PROOF_TYPE
 }
 
@@ -69,6 +70,10 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.plonky2]: {
     pallet: 'settlementPlonky2Pallet',
     processor: Plonky2Processor,
+  },
+  [ProofType.SP1]: {
+    pallet: 'settlementSP1Pallet',
+    processor: SP1Processor,
   },
   // ADD_NEW_PROOF_TYPE - configurations
 };
