@@ -50,9 +50,9 @@ export function validateProofTypeOptions(options: ProofOptions): void {
       }
       break;
     case ProofType.fflonk:
+    case ProofType.sp1:
       // No specific options required for these proof types
       break;
-
     //ADD_NEW_PROOF_TYPE config validation per proof type
 
     default:

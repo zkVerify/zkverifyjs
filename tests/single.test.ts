@@ -40,21 +40,14 @@ describe('zkVerifySession class', () => {
             [envVar, wallet] = await walletPool.acquireWallet();
 
             const proofData = loadProofAndVK({
-                proofType: ProofType.groth16,
-                config: {
-                    library: Library.arkworks,
-                    curve: CurveType.bls12381,
-                },
+                proofType: ProofType.sp1,
             });
 
             session = await zkVerifySession.start().Volta().withAccount(wallet);
 
             const { events, transactionResult } = await session
                 .verify()
-                .groth16({
-                    library: Library.arkworks,
-                    curve: CurveType.bls12381,
-                })
+                .sp1()
                 .execute({
                     proofData: {
                         proof: proofData.proof.proof,
@@ -66,14 +59,14 @@ describe('zkVerifySession class', () => {
 
             const results = handleCommonEvents(
                 events,
-                'groth16',
+                'sp1',
                 TransactionType.Verify,
                 expectAggregation
             );
 
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
-            validateVerifyTransactionInfo(transactionInfo, 'groth16', expectAggregation);
+            validateVerifyTransactionInfo(transactionInfo, 'sp1', expectAggregation);
         } catch (error: unknown) {
             if (error instanceof Error) {
                 throw new Error(`Test failed with error: ${error.message}\nStack: ${error.stack}`);

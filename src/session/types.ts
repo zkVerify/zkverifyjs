@@ -38,6 +38,7 @@ type GenericProofMethodMap<TBuilder> = {
   risc0: (options: Risc0Config) => TBuilder;
   ultraplonk: (options: UltraplonkConfig) => TBuilder;
   fflonk: () => TBuilder;
+  sp1: () => TBuilder;
   // ADD_NEW_PROOF_TYPE
 };
 

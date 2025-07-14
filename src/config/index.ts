@@ -9,6 +9,7 @@ import {
   Groth16Processor,
   Plonky2Processor,
   Risc0Processor,
+  SP1Processor,
   UltraPlonkProcessor,
 } from '../proofTypes';
 import { NetworkConfig, ProofProcessor } from '../types';
@@ -41,6 +42,7 @@ export enum ProofType {
   risc0 = 'risc0',
   ultraplonk = 'ultraplonk',
   plonky2 = 'plonky2',
+  sp1 = 'sp1',
   // ADD_NEW_PROOF_TYPE
 }
 
@@ -69,6 +71,10 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.plonky2]: {
     pallet: 'settlementPlonky2Pallet',
     processor: Plonky2Processor,
+  },
+  [ProofType.sp1]: {
+    pallet: 'settlementSp1Pallet',
+    processor: SP1Processor,
   },
   // ADD_NEW_PROOF_TYPE - configurations
 };
@@ -203,6 +209,16 @@ export const zkvRpc = {
         {
           name: 'vk',
           type: 'Bytes',
+        },
+      ],
+      type: 'H256',
+    },
+    sp1: {
+      description: 'Get the hash of an SP1 verification key',
+      params: [
+        {
+          name: 'vk',
+          type: 'H256',
         },
       ],
       type: 'H256',
