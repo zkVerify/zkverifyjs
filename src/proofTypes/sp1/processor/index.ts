@@ -1,25 +1,18 @@
 import { ProofProcessor } from '../../../types';
-import { UltraPlonkProof, UltraPlonkVk, UltraPlonkPubs } from '../types';
+import { SP1Pubs, SP1Vk } from '../types';
 import * as formatter from '../formatter';
-import { ProofOptions } from '../../../config';
 
 class SP1Processor implements ProofProcessor {
-  formatProof(
-    proof: UltraPlonkProof['proof'],
-    options: ProofOptions,
-  ): {
-    proof: string;
-    publicSignals: string[];
-  } {
-    return formatter.formatProof(proof, options);
+  formatProof(proof: string): string {
+    return formatter.formatProof(proof);
   }
 
-  formatVk(vk: UltraPlonkVk['vk']): string {
+  formatVk(vk: SP1Vk['vk']): string {
     return formatter.formatVk(vk);
   }
 
-  formatPubs(pubs: UltraPlonkPubs['pubs'], options: ProofOptions): string[] {
-    return formatter.formatPubs(pubs, options);
+  formatPubs(pubs: SP1Pubs['pubs']): string {
+    return formatter.formatPubs(pubs);
   }
 }
 

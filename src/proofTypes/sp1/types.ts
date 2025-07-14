@@ -1,11 +1,12 @@
-export interface UltraPlonkProof {
+export interface SP1Proof {
   proof: string;
+  version: string;
 }
 
-export interface UltraPlonkVk {
+export interface SP1Vk {
   vk: string;
 }
 
-export interface UltraPlonkPubs {
+export interface SP1Pubs {
   pubs: string;
 }
