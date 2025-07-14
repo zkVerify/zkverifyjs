@@ -47,7 +47,14 @@ Currently the following proof verifiers are supported:
         })...
 ```
 
-* Space and Time
+* SP1
+
+```typescript
+    const { events, transactionResult } = await session
+        .verify()
+        .sp1()
+        .execute({...})
+```
 
 ## Installation
 

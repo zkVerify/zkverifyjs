@@ -37,7 +37,13 @@ Currently the following proof verifiers are supported:
             numberOfPublicInputs: 1
         })...
 ```
-- Space and Time
+- SP1
+```typescript
+    const { events, transactionResult } = await session
+        .verify()
+        .sp1()
+        .execute({...})
+```
 
 # Table of Contents
 
