@@ -180,6 +180,16 @@ describe('getVkHash', () => {
     expect(result.startsWith('0x')).toBe(true);
   });
 
+  it('should return a valid hash when vk is a string', async () => {
+    const vk = '0xabc123formattedvk';
+
+    const result = await getVkHash(api, proofOptions, vk);
+
+    expect(typeof result).toBe('string');
+    expect(result).toBe(validHash);
+    expect(result.startsWith('0x')).toBe(true);
+  });
+
   it('should throw if the returned hash is not a valid 0x string', async () => {
     // @ts-expect-error: Custom RPC method 'rpc.vk_hash' is not recognized by TypeScript's type system
     (api.rpc.vk_hash.groth16 as jest.Mock).mockImplementation(() => {
