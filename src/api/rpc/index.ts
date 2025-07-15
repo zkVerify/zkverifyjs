@@ -85,9 +85,12 @@ export async function getVkHash(
   vk: unknown,
 ): Promise<string> {
   try {
-    if (typeof vk !== 'object' || vk === null) {
+    if (
+      typeof vk !== 'string' &&
+      (typeof vk !== 'object' || vk === null || Array.isArray(vk))
+    ) {
       throw new Error(
-        `Invalid VK format: expected an object, got ${typeof vk}`,
+        `Invalid VK format: expected a string or non-null object, got ${typeof vk}`,
       );
     }
 
