@@ -5,9 +5,13 @@ import { ProofData } from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types';
 import { VerifyInput } from '../verify/types';
-import { interpretDryRunResponse } from '../../utils/helpers';
+import {
+  getKeyringAccountIfAvailable,
+  interpretDryRunResponse,
+} from '../../utils/helpers';
 import { ApiPromise } from '@polkadot/api';
 import { VerifyOptions } from '../../session/types';
+import { KeyringPair } from '@polkadot/keyring/types';
 
 export const optimisticVerify = async (
   connection: AccountConnection | WalletConnection,
@@ -18,6 +22,18 @@ export const optimisticVerify = async (
 
   try {
     const transaction = buildTransaction(api, options, input);
+
+    const selectedAccount: KeyringPair | undefined =
+      getKeyringAccountIfAvailable(connection, options.accountAddress);
+
+    if (!selectedAccount) {
+      throw new Error(
+        'No active session account available for optimisticVerify',
+      );
+    }
+
+    const nonce = options.nonce ?? -1;
+    await transaction.signAsync(selectedAccount, { nonce });
 
     const submittableExtrinsicHex = transaction.toHex();
     const dryRunResult = await api.rpc.system.dryRun(submittableExtrinsicHex);
