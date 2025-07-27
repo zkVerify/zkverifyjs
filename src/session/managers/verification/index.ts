@@ -143,7 +143,9 @@ export class VerificationManager {
    *
    * @returns {BatchOptimisticProofMethodMap} A map of proof types to their optimistic batch verification builders.
    */
-  batchOptimisticVerify(): BatchOptimisticProofMethodMap {
+  batchOptimisticVerify(
+    accountAddress?: string,
+  ): BatchOptimisticProofMethodMap {
     const builderMethods: Partial<BatchOptimisticProofMethodMap> = {};
 
     for (const proofType in ProofType) {
@@ -157,7 +159,10 @@ export class VerificationManager {
 
             validateProofTypeOptions(proofOptions);
 
-            return this.createBatchOptimisticVerifyBuilder(proofOptions);
+            return this.createBatchOptimisticVerifyBuilder(
+              proofOptions,
+              accountAddress,
+            );
           },
           writable: false,
           configurable: false,
@@ -211,7 +216,7 @@ export class VerificationManager {
    *     - Risc0: Requires `version`.
    *     - Ultraplonk: No specific options required.
    *
-   * @param accountAddress
+   * @param {string} [accountAddress] - Optional account address to sign and submit the transaction.
    * @returns {OptimisticVerificationBuilder} A new instance of `OptimisticVerificationBuilder` configured with the provided proof options.
    *
    * @throws {Error} If the provided proof options are invalid or incomplete.
@@ -219,10 +224,12 @@ export class VerificationManager {
    */
   private createOptimisticVerifyBuilder(
     proofOptions: ProofOptions,
+    accountAddress?: string,
   ): OptimisticVerificationBuilder {
     return new OptimisticVerificationBuilder(
       this.executeOptimisticVerify.bind(this),
       proofOptions,
+      accountAddress,
     );
   }
 
@@ -263,10 +270,12 @@ export class VerificationManager {
    */
   private createBatchOptimisticVerifyBuilder(
     proofOptions: ProofOptions,
+    accountAddress?: string,
   ): BatchOptimisticVerificationBuilder {
     return new BatchOptimisticVerificationBuilder(
       this.executeBatchOptimisticVerify.bind(this),
       proofOptions,
+      accountAddress,
     );
   }
 

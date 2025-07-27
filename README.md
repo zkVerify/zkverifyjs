@@ -431,11 +431,12 @@ const session = await zkVerifySession
   .withAccount('your-seed-phrase');
 
 const { success, message } = session
-  .optimisticVerify()
+  .optimisticVerify(accountAddress?) // Optional account address
   .risc0({
     version: Risc0Version.V2_1
   })
   .withRegisteredVk() // optional
+  .nonce(1) // optional nonce
   .execute({
     proofData: {
       vk: vk,
@@ -572,11 +573,12 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
           .withAccount('your-seed-phrase');
   
   // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
-  const { success, message } = session.optimisticVerify()
+  const { success, message } = session.optimisticVerify(address?) // optional address
           .plonky2({
             hashFunction: Plonky2HashFunction.Poseidon
           })
           .withRegisteredVk() // optional
+          .nonce(1) // optional
           .execute({ proofData: {
               vk: vk,
               proof: proof,
@@ -781,11 +783,12 @@ const { events, transactionResult } = await session
 
 ```typescript
 const { success, message } = session
-  .optimisticVerify()
+  .optimisticVerify(address?) // Optional address input
   .plonky2({
     hashFunction: Plonky2HashFunction.Poseidon
   })
   .withRegisteredVk() // optional
+  .nonce(1) // optional
   .execute({
     proofData: {
       vk: vk,
@@ -810,6 +813,7 @@ const { success, message } = session
     hashFunction: Plonky2HashFunction.Poseidon
   })
   .withRegisteredVk() // optional
+  .nonce(1) // optional
   .execute([{
     proofData: {
       vk: vk,

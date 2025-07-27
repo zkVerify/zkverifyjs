@@ -4,6 +4,7 @@ import { VerifyOptions } from '../../types';
 
 export class BatchOptimisticVerificationBuilder {
   private readonly options: VerifyOptions;
+  private nonceSet = false;
   private registeredVkSet = false;
 
   constructor(
@@ -12,8 +13,18 @@ export class BatchOptimisticVerificationBuilder {
       input: VerifyInput[],
     ) => Promise<{ success: boolean; message: string }>,
     proofOptions: ProofOptions,
+    accountAddress?: string,
   ) {
-    this.options = { proofOptions };
+    this.options = { proofOptions, accountAddress };
+  }
+
+  nonce(nonce: number): this {
+    if (this.nonceSet) {
+      throw new Error('Nonce can only be set once.');
+    }
+    this.nonceSet = true;
+    this.options.nonce = nonce;
+    return this;
   }
 
   withRegisteredVk(): this {
