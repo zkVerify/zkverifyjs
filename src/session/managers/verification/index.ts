@@ -76,7 +76,7 @@ export class VerificationManager {
    *
    * @returns {OptimisticProofMethodMap} A map of proof types to their corresponding builder methods.
    */
-  optimisticVerify(): OptimisticProofMethodMap {
+  optimisticVerify(accountAddress?: string): OptimisticProofMethodMap {
     const builderMethods: Partial<OptimisticProofMethodMap> = {};
 
     for (const proofType in ProofType) {
@@ -90,7 +90,10 @@ export class VerificationManager {
 
             validateProofTypeOptions(proofOptions);
 
-            return this.createOptimisticVerifyBuilder(proofOptions);
+            return this.createOptimisticVerifyBuilder(
+              proofOptions,
+              accountAddress,
+            );
           },
           writable: false,
           configurable: false,
