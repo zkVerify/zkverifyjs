@@ -44,7 +44,7 @@ describe('optimisticVerify functionality', () => {
         envVar = undefined;
     });
 
-    it.skip('should throw an error if optimisticVerify is called on a non-custom network', async () => {
+    it('should throw an error if optimisticVerify is called on a non-custom network', async () => {
         session = await zkVerifySession.start().Volta().withAccount(wallet!);
 
         const input = {
@@ -68,7 +68,7 @@ describe('optimisticVerify functionality', () => {
         const accountAddress = session.getAccount().address;
         const nonce = await session.api.rpc.system.accountNextIndex(accountAddress);
 
-        const builder = session.optimisticVerify().groth16({ library: Library.snarkjs, curve: CurveType.bls12381 }).nonce(nonce.toNumber())
+        const builder = session.optimisticVerify(accountAddress).groth16({ library: Library.snarkjs, curve: CurveType.bls12381 }).nonce(nonce.toNumber())
         const { success, message } = await builder.execute(input);
 
         expect(message).toBe("Optimistic Verification Successful!");
