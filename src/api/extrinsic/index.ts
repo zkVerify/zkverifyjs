@@ -65,26 +65,27 @@ export const createExtrinsicHex = (
 };
 
 /**
- * Recreates an extrinsic from its hex-encoded representation.
+ * Reconstructs a SubmittableExtrinsic from a hex-encoded extrinsic string.
+ * The method is extracted and wrapped in a new submittable extrinsic.
  *
- * @param {ApiPromise} api - The Polkadot API instance.
- * @param {string} extrinsicHex - Hex-encoded string of the SubmittableExtrinsic.
- * @returns {SubmittableExtrinsic<'promise'>} The reconstructed SubmittableExtrinsic.
- * @throws {Error} - Throws an error if the reconstruction from hex fails.
+ * Note: This does not preserve the original signature.
+ *
+ * @param api - The Polkadot API instance.
+ * @param extrinsicHex - Hex-encoded string of the extrinsic.
+ * @returns A signable SubmittableExtrinsic<'promise'>.
+ * @throws {Error} - If the extrinsic cannot be decoded or wrapped.
  */
 export const createExtrinsicFromHex = (
   api: ApiPromise,
   extrinsicHex: string,
 ): SubmittableExtrinsic<'promise'> => {
   try {
-    return api.createType(
-      'Extrinsic',
-      hexToU8a(extrinsicHex),
-    ) as SubmittableExtrinsic<'promise'>;
+    const decoded = api.createType('Extrinsic', hexToU8a(extrinsicHex));
+    const call = api.createType('Call', decoded.method);
+    return api.tx(call);
   } catch (error) {
-    throw new Error(
-      `Failed to reconstruct extrinsic from hex: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    );
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to reconstruct extrinsic from hex: ${message}`);
   }
 };
 

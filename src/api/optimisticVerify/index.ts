@@ -12,6 +12,7 @@ import {
 import { ApiPromise } from '@polkadot/api';
 import { VerifyOptions } from '../../session/types';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { Extrinsic } from '@polkadot/types/interfaces';
 
 export const optimisticVerify = async (
   connection: AccountConnection | WalletConnection,
@@ -83,7 +84,19 @@ const buildTransaction = (
   }
 
   if ('extrinsic' in input && input.extrinsic) {
-    return input.extrinsic;
+    const extrinsic = input.extrinsic as
+      | SubmittableExtrinsic<'promise'>
+      | Extrinsic;
+
+    if (
+      typeof (extrinsic as SubmittableExtrinsic<'promise'>).signAsync !==
+      'function'
+    ) {
+      const call = api.createType('Call', extrinsic.method);
+      return api.tx(call);
+    }
+
+    return extrinsic as SubmittableExtrinsic<'promise'>;
   }
 
   throw new Error(

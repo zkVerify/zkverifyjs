@@ -195,16 +195,38 @@ describe('extrinsic utilities', () => {
   describe('createExtrinsicFromHex', () => {
     it('should recreate an extrinsic from a hex string', () => {
       const hexString = '0x1234';
-      const mockExtrinsic = {} as SubmittableExtrinsic<'promise'>;
 
-      (mockApi.createType as jest.Mock).mockReturnValue(mockExtrinsic);
-      const recreatedExtrinsic = createExtrinsicFromHex(mockApi, hexString);
+      const mockExtrinsic = {
+        toHex: jest.fn().mockReturnValue('0xdeadbeef'),
+        signAsync: jest.fn(),
+      } as unknown as SubmittableExtrinsic<'promise'>;
+
+      const mockApi = {
+        tx: jest.fn().mockReturnValue(mockExtrinsic),
+        createType: jest.fn().mockImplementation((type, value) => {
+          if (type === 'Extrinsic') {
+            return { method: value };
+          }
+          if (type === 'Call') {
+            return value;
+          }
+          return {};
+        }),
+      } as unknown as ApiPromise;
+
+      const recreated = createExtrinsicFromHex(mockApi, hexString);
 
       expect(mockApi.createType).toHaveBeenCalledWith(
         'Extrinsic',
         hexToU8a(hexString),
       );
-      expect(recreatedExtrinsic).toBe(mockExtrinsic);
+      expect(mockApi.createType).toHaveBeenCalledWith(
+        'Call',
+        hexToU8a(hexString),
+      );
+      expect(mockApi.tx).toHaveBeenCalledWith(hexToU8a(hexString));
+
+      expect(recreated).toBe(mockExtrinsic);
     });
 
     it('should throw a formatted error if reconstruction from hex fails', () => {

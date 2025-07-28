@@ -300,7 +300,12 @@ describe('verify', () => {
   });
 
   it('should handle the transaction with WalletConnection when extrinsic is provided', async () => {
-    const mockExtrinsic = {} as SubmittableExtrinsic<'promise'>;
+    const mockExtrinsic = {
+      toHex: jest.fn(),
+      signAsync: jest.fn(),
+      send: jest.fn(),
+    } as unknown as SubmittableExtrinsic<'promise'>;
+
     const input: VerifyInput = { extrinsic: mockExtrinsic };
     (handleTransaction as jest.Mock).mockResolvedValue({ success: true });
 
@@ -324,7 +329,12 @@ describe('verify', () => {
   });
 
   it('should handle the transaction with WalletConnection when extrinsic and domainId are provided', async () => {
-    const mockExtrinsic = {} as SubmittableExtrinsic<'promise'>;
+    const mockExtrinsic = {
+      toHex: jest.fn(),
+      signAsync: jest.fn(),
+      send: jest.fn(),
+    } as unknown as SubmittableExtrinsic<'promise'>;
+
     const input: VerifyInput = {
       extrinsic: mockExtrinsic,
     };
