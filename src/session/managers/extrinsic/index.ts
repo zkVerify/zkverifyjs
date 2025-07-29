@@ -1,7 +1,7 @@
 import {
   createExtrinsicHex,
   createSubmitProofExtrinsic,
-  createExtrinsicFromHex,
+  createSubmittableExtrinsicFromHex,
 } from '../../../api/extrinsic';
 import { estimateCost } from '../../../api/estimate';
 import { checkReadOnly } from '../../../utils/helpers';
@@ -73,7 +73,10 @@ export class ExtrinsicManager {
   async createExtrinsicFromHex(
     extrinsicHex: string,
   ): Promise<SubmittableExtrinsic<'promise'>> {
-    return createExtrinsicFromHex(this.connectionManager.api, extrinsicHex);
+    return createSubmittableExtrinsicFromHex(
+      this.connectionManager.api,
+      extrinsicHex,
+    );
   }
 
   /**

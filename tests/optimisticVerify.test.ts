@@ -1,4 +1,4 @@
-import { CurveType, Library, zkVerifySession } from '../src';
+import { CurveType, Library, ProofType, zkVerifySession } from '../src';
 import { walletPool } from './common/walletPool';
 import path from "path";
 import fs from "fs";
@@ -68,8 +68,16 @@ describe('optimisticVerify functionality', () => {
         const accountAddress = session.getAccount().address;
         const nonce = await session.api.rpc.system.accountNextIndex(accountAddress);
 
+        const formattedProofData = await session.format({proofType: ProofType.groth16, config: { library: Library.snarkjs, curve: CurveType.bls12381 }}, input.proofData.proof, input.proofData.publicSignals, input.proofData.vk)
+
+        const extrinsic = await session.createExtrinsicHex(ProofType.groth16, formattedProofData )
+
+        const submittableExtrinsic = await session.createExtrinsicFromHex(extrinsic);
+
         const builder = session.optimisticVerify(accountAddress).groth16({ library: Library.snarkjs, curve: CurveType.bls12381 }).nonce(nonce.toNumber())
-        const { success, message } = await builder.execute(input);
+        const { success, message } = await builder.execute(
+            { extrinsic: submittableExtrinsic }
+        );
 
         expect(message).toBe("Optimistic Verification Successful!");
         expect(success).toBe(true);

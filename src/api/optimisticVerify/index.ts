@@ -8,6 +8,7 @@ import { VerifyInput } from '../verify/types';
 import {
   getKeyringAccountIfAvailable,
   interpretDryRunResponse,
+  toSubmittableExtrinsic,
 } from '../../utils/helpers';
 import { ApiPromise } from '@polkadot/api';
 import { VerifyOptions } from '../../session/types';
@@ -83,7 +84,7 @@ const buildTransaction = (
   }
 
   if ('extrinsic' in input && input.extrinsic) {
-    return input.extrinsic;
+    return toSubmittableExtrinsic(input.extrinsic, api);
   }
 
   throw new Error(

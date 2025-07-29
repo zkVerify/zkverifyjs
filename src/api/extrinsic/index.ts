@@ -1,6 +1,5 @@
 import { ApiPromise } from '@polkadot/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { hexToU8a } from '@polkadot/util';
 import { ProofType } from '../../config';
 import { getProofPallet } from '../../utils/helpers';
 import { FormattedProofData } from '../format/types';
@@ -65,25 +64,26 @@ export const createExtrinsicHex = (
 };
 
 /**
- * Recreates an extrinsic from its hex-encoded representation.
+ * Reconstructs a signable SubmittableExtrinsic from a hex-encoded string.
  *
- * @param {ApiPromise} api - The Polkadot API instance.
- * @param {string} extrinsicHex - Hex-encoded string of the SubmittableExtrinsic.
- * @returns {SubmittableExtrinsic<'promise'>} The reconstructed SubmittableExtrinsic.
- * @throws {Error} - Throws an error if the reconstruction from hex fails.
+ * Uses `api.tx(hex)` to restore full submittable behavior (e.g., `.signAsync`).
+ * Note: The original signature and metadata are not preserved.
+ *
+ * @param api - Polkadot API instance.
+ * @param extrinsicHex - Hex-encoded extrinsic string.
+ * @returns A SubmittableExtrinsic<'promise'>.
+ * @throws Error if decoding or reconstruction fails.
  */
-export const createExtrinsicFromHex = (
+export const createSubmittableExtrinsicFromHex = (
   api: ApiPromise,
   extrinsicHex: string,
 ): SubmittableExtrinsic<'promise'> => {
   try {
-    return api.createType(
-      'Extrinsic',
-      hexToU8a(extrinsicHex),
-    ) as SubmittableExtrinsic<'promise'>;
+    return api.tx(extrinsicHex);
   } catch (error) {
+    const details = error instanceof Error ? error.message : 'Unknown error';
     throw new Error(
-      `Failed to reconstruct extrinsic from hex: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `Invalid extrinsic: Could not decode or reconstruct from the provided hex string. (${details})`,
     );
   }
 };
