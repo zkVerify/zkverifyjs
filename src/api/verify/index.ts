@@ -10,8 +10,10 @@ import { VerifyInput } from './types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { getKeyringAccountIfAvailable } from '../../utils/helpers';
-import { Extrinsic } from '@polkadot/types/interfaces';
+import {
+  getKeyringAccountIfAvailable,
+  toSubmittableExtrinsic,
+} from '../../utils/helpers';
 
 export const verify = async (
   connection: AccountConnection | WalletConnection,
@@ -48,19 +50,7 @@ export const verify = async (
       }
 
       if ('extrinsic' in input && input.extrinsic) {
-        const extrinsic = input.extrinsic as
-          | SubmittableExtrinsic<'promise'>
-          | Extrinsic;
-
-        if (
-          typeof (extrinsic as SubmittableExtrinsic<'promise'>).signAsync !==
-          'function'
-        ) {
-          const call = api.createType('Call', extrinsic.method);
-          return api.tx(call);
-        }
-
-        return extrinsic as SubmittableExtrinsic<'promise'>;
+        return toSubmittableExtrinsic(input.extrinsic, api);
       }
 
       throw new Error(

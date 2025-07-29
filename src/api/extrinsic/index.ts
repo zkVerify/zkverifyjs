@@ -81,8 +81,10 @@ export const createExtrinsicFromHex = (
   try {
     return api.tx(extrinsicHex);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    throw new Error(`Failed to reconstruct extrinsic from hex: ${message}`);
+    const details = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(
+      `Invalid extrinsic: Could not decode or reconstruct from the provided hex string. (${details})`,
+    );
   }
 };
 

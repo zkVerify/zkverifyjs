@@ -18,12 +18,16 @@ import { createSubmitProofExtrinsic } from '../extrinsic';
 import { KeyringPair } from '@polkadot/keyring/types';
 import * as helpers from '../../utils/helpers';
 
-jest.mock('../../utils/helpers', () => ({
-  getProofPallet: jest.fn(),
-  getProofProcessor: jest.fn(),
-  getSelectedAccount: jest.fn(),
-  getKeyringAccountIfAvailable: jest.fn(),
-}));
+jest.mock('../../utils/helpers', () => {
+  const actual = jest.requireActual('../../utils/helpers');
+  return {
+    ...actual,
+    getProofPallet: jest.fn(),
+    getProofProcessor: jest.fn(),
+    getSelectedAccount: jest.fn(),
+    getKeyringAccountIfAvailable: jest.fn(),
+  };
+});
 jest.mock('../../utils/transactions', () => ({
   handleTransaction: jest.fn(),
 }));

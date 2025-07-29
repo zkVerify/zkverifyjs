@@ -12,13 +12,14 @@ import {
   UltraplonkConfig,
 } from '../../config';
 import { decodeDispatchError } from '../transactions/errors';
-import { DispatchError } from '@polkadot/types/interfaces';
+import { DispatchError, Extrinsic } from '@polkadot/types/interfaces';
 import {
   AccountConnection,
   EstablishedConnection,
   WalletConnection,
 } from '../../api/connection/types';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
 
 /**
  * Waits for the zkVerify node to sync.
@@ -304,3 +305,42 @@ export function isUltraplonkConfig(
 }
 
 // ADD_NEW_PROOF_TYPE if it has a config options object
+
+/**
+ * Type guard to check if an object is a SubmittableExtrinsic<'promise'>.
+ *
+ * A SubmittableExtrinsic is identified by the presence of a `signAsync` method.
+ *
+ * @param obj - The object to evaluate.
+ * @returns True if the object is a SubmittableExtrinsic, otherwise false.
+ */
+function isSubmittableExtrinsic(
+  obj: unknown,
+): obj is SubmittableExtrinsic<'promise'> {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'signAsync' in obj &&
+    typeof (obj as { signAsync: unknown }).signAsync === 'function'
+  );
+}
+
+/**
+ * Ensures the provided extrinsic is a SubmittableExtrinsic.
+ * Converts a raw Extrinsic to Submittable if needed using the given API instance.
+ *
+ * @param extrinsic - A SubmittableExtrinsic or raw Extrinsic.
+ * @param api - An instance of ApiPromise used to convert the extrinsic.
+ * @returns A SubmittableExtrinsic<'promise'> ready to be signed and submitted.
+ */
+export function toSubmittableExtrinsic(
+  extrinsic: SubmittableExtrinsic<'promise'> | Extrinsic,
+  api: ApiPromise,
+): SubmittableExtrinsic<'promise'> {
+  if (isSubmittableExtrinsic(extrinsic)) {
+    return extrinsic;
+  }
+
+  const call = api.createType('Call', extrinsic.method);
+  return api.tx(call);
+}

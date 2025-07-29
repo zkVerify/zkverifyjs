@@ -203,49 +203,35 @@ describe('extrinsic utilities', () => {
 
       const mockApi = {
         tx: jest.fn().mockReturnValue(mockExtrinsic),
-        createType: jest.fn().mockImplementation((type, value) => {
-          if (type === 'Extrinsic') {
-            return { method: value };
-          }
-          if (type === 'Call') {
-            return value;
-          }
-          return {};
-        }),
       } as unknown as ApiPromise;
 
       const recreated = createExtrinsicFromHex(mockApi, hexString);
 
-      expect(mockApi.createType).toHaveBeenCalledWith(
-        'Extrinsic',
-        hexToU8a(hexString),
-      );
-      expect(mockApi.createType).toHaveBeenCalledWith(
-        'Call',
-        hexToU8a(hexString),
-      );
-      expect(mockApi.tx).toHaveBeenCalledWith(hexToU8a(hexString));
-
+      expect(mockApi.tx).toHaveBeenCalledWith(hexString);
       expect(recreated).toBe(mockExtrinsic);
     });
 
     it('should throw a formatted error if reconstruction from hex fails', () => {
-      (mockApi.createType as jest.Mock).mockImplementationOnce(() => {
-        throw new Error('Reconstruction error');
-      });
+      const brokenApi = {
+        tx: jest.fn(() => {
+          throw new Error('Reconstruction error');
+        }),
+      } as unknown as ApiPromise;
 
-      expect(() => createExtrinsicFromHex(mockApi, '0x1234')).toThrow(
-        'Failed to reconstruct extrinsic from hex: Reconstruction error',
+      expect(() => createExtrinsicFromHex(brokenApi, '0x1234')).toThrow(
+        /^Invalid extrinsic: Could not decode or reconstruct from the provided hex string/,
       );
     });
 
     it('should handle non-Error types gracefully in createExtrinsicFromHex', () => {
-      (mockApi.createType as jest.Mock).mockImplementationOnce(() => {
-        throw 'Unknown reconstruction error';
-      });
+      const brokenApi = {
+        tx: jest.fn(() => {
+          throw 'Unknown reconstruction error';
+        }),
+      } as unknown as ApiPromise;
 
-      expect(() => createExtrinsicFromHex(mockApi, '0x1234')).toThrow(
-        'Failed to reconstruct extrinsic from hex: Unknown error',
+      expect(() => createExtrinsicFromHex(brokenApi, '0x1234')).toThrow(
+        /^Invalid extrinsic: Could not decode or reconstruct from the provided hex string/,
       );
     });
   });
