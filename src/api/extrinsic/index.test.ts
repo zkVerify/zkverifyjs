@@ -4,7 +4,7 @@ import { hexToU8a } from '@polkadot/util';
 import {
   createSubmitProofExtrinsic,
   createExtrinsicHex,
-  createExtrinsicFromHex,
+  createSubmittableExtrinsicFromHex,
 } from './index';
 import { ProofType } from '../../config';
 import { FormattedProofData } from '../format/types';
@@ -205,7 +205,7 @@ describe('extrinsic utilities', () => {
         tx: jest.fn().mockReturnValue(mockExtrinsic),
       } as unknown as ApiPromise;
 
-      const recreated = createExtrinsicFromHex(mockApi, hexString);
+      const recreated = createSubmittableExtrinsicFromHex(mockApi, hexString);
 
       expect(mockApi.tx).toHaveBeenCalledWith(hexString);
       expect(recreated).toBe(mockExtrinsic);
@@ -218,7 +218,9 @@ describe('extrinsic utilities', () => {
         }),
       } as unknown as ApiPromise;
 
-      expect(() => createExtrinsicFromHex(brokenApi, '0x1234')).toThrow(
+      expect(() =>
+        createSubmittableExtrinsicFromHex(brokenApi, '0x1234'),
+      ).toThrow(
         /^Invalid extrinsic: Could not decode or reconstruct from the provided hex string/,
       );
     });
@@ -230,7 +232,9 @@ describe('extrinsic utilities', () => {
         }),
       } as unknown as ApiPromise;
 
-      expect(() => createExtrinsicFromHex(brokenApi, '0x1234')).toThrow(
+      expect(() =>
+        createSubmittableExtrinsicFromHex(brokenApi, '0x1234'),
+      ).toThrow(
         /^Invalid extrinsic: Could not decode or reconstruct from the provided hex string/,
       );
     });

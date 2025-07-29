@@ -74,7 +74,7 @@ export const createExtrinsicHex = (
  * @returns A SubmittableExtrinsic<'promise'>.
  * @throws Error if decoding or reconstruction fails.
  */
-export const createExtrinsicFromHex = (
+export const createSubmittableExtrinsicFromHex = (
   api: ApiPromise,
   extrinsicHex: string,
 ): SubmittableExtrinsic<'promise'> => {
