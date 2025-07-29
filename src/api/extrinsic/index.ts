@@ -1,6 +1,5 @@
 import { ApiPromise } from '@polkadot/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { hexToU8a } from '@polkadot/util';
 import { ProofType } from '../../config';
 import { getProofPallet } from '../../utils/helpers';
 import { FormattedProofData } from '../format/types';
@@ -65,24 +64,22 @@ export const createExtrinsicHex = (
 };
 
 /**
- * Reconstructs a SubmittableExtrinsic from a hex-encoded extrinsic string.
- * The method is extracted and wrapped in a new submittable extrinsic.
+ * Reconstructs a signable SubmittableExtrinsic from a hex-encoded string.
  *
- * Note: This does not preserve the original signature.
+ * Uses `api.tx(hex)` to restore full submittable behavior (e.g., `.signAsync`).
+ * Note: The original signature and metadata are not preserved.
  *
- * @param api - The Polkadot API instance.
- * @param extrinsicHex - Hex-encoded string of the extrinsic.
- * @returns A signable SubmittableExtrinsic<'promise'>.
- * @throws {Error} - If the extrinsic cannot be decoded or wrapped.
+ * @param api - Polkadot API instance.
+ * @param extrinsicHex - Hex-encoded extrinsic string.
+ * @returns A SubmittableExtrinsic<'promise'>.
+ * @throws Error if decoding or reconstruction fails.
  */
 export const createExtrinsicFromHex = (
   api: ApiPromise,
   extrinsicHex: string,
 ): SubmittableExtrinsic<'promise'> => {
   try {
-    const decoded = api.createType('Extrinsic', hexToU8a(extrinsicHex));
-    const call = api.createType('Call', decoded.method);
-    return api.tx(call);
+    return api.tx(extrinsicHex);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     throw new Error(`Failed to reconstruct extrinsic from hex: ${message}`);
