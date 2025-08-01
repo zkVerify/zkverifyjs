@@ -57,6 +57,10 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             // No Config
             break;
         }
+        case ProofType.ultrahonk: {
+            // No Config
+            break;
+        }
         // ADD_NEW_PROOF_TYPE
     }
 
