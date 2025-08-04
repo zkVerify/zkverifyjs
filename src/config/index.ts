@@ -10,6 +10,7 @@ import {
   Plonky2Processor,
   Risc0Processor,
   SP1Processor,
+  UltraHonkProcessor,
   UltraPlonkProcessor,
 } from '../proofTypes';
 import { NetworkConfig, ProofProcessor } from '../types';
@@ -39,10 +40,11 @@ export const SupportedNetworkConfig: Record<SupportedNetwork, NetworkConfig> = {
 export enum ProofType {
   fflonk = 'fflonk',
   groth16 = 'groth16',
-  risc0 = 'risc0',
-  ultraplonk = 'ultraplonk',
   plonky2 = 'plonky2',
+  risc0 = 'risc0',
   sp1 = 'sp1',
+  ultrahonk = 'ultrahonk',
+  ultraplonk = 'ultraplonk',
   // ADD_NEW_PROOF_TYPE
 }
 
@@ -75,6 +77,10 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.sp1]: {
     pallet: 'settlementSp1Pallet',
     processor: SP1Processor,
+  },
+  [ProofType.ultrahonk]: {
+    pallet: 'settlementUltrahonkPallet',
+    processor: UltraHonkProcessor,
   },
   // ADD_NEW_PROOF_TYPE - configurations
 };
@@ -219,6 +225,16 @@ export const zkvRpc = {
         {
           name: 'vk',
           type: 'H256',
+        },
+      ],
+      type: 'H256',
+    },
+    ultrahonk: {
+      description: 'Get the hash of an UltraHonk verification key',
+      params: [
+        {
+          name: 'vk',
+          type: 'Bytes',
         },
       ],
       type: 'H256',
