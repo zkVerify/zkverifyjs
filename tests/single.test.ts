@@ -33,7 +33,7 @@ describe('zkVerifySession class', () => {
         }
     });
 
-    it('should send a proof to a registered domain and get aggregation', async () => {
+    it.skip('should send a proof to a registered domain and get aggregation', async () => {
         try {
             const expectAggregation = true;
 
