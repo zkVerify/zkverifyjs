@@ -56,6 +56,15 @@ Currently the following proof verifiers are supported:
         .execute({...})
 ```
 
+* UltraHonk
+
+```typescript
+    const { events, transactionResult } = await session
+        .verify()
+        .ultrahonk()
+        .execute({...})
+```
+
 ## Installation
 
 To install the package, use npm or yarn:

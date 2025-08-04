@@ -11,7 +11,7 @@ class UltraHonkProcessor implements ProofProcessor {
     return formatter.formatVk(vk);
   }
 
-  formatPubs(pubs: UltraHonkPubs['pubs']): string {
+  formatPubs(pubs: UltraHonkPubs['pubs']): string[] {
     return formatter.formatPubs(pubs);
   }
 }

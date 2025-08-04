@@ -44,6 +44,13 @@ Currently the following proof verifiers are supported:
         .sp1()
         .execute({...})
 ```
+- UltraHonk
+```typescript
+    const { events, transactionResult } = await session
+        .verify()
+        .ultrahonk()
+        .execute({...})
+```
 
 # Table of Contents
 

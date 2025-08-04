@@ -8,8 +8,8 @@ export function formatVk(vk: UltraHonkVk['vk']): string {
   return validateHexString(vk);
 }
 
-export function formatPubs(pubs: UltraHonkPubs['pubs']): string {
-  return validateHexString(pubs);
+export function formatPubs(pubs: UltraHonkPubs['pubs']): string[] {
+  return pubs.map(validateHexString);
 }
 
 function validateHexString(input: string): string {

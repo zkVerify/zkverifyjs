@@ -33,12 +33,13 @@ export interface VerifyOptions {
 }
 
 type GenericProofMethodMap<TBuilder> = {
+  fflonk: () => TBuilder;
   groth16: (options: Groth16Config) => TBuilder;
   plonky2: (options: Plonky2Config) => TBuilder;
   risc0: (options: Risc0Config) => TBuilder;
-  ultraplonk: (options: UltraplonkConfig) => TBuilder;
-  fflonk: () => TBuilder;
   sp1: () => TBuilder;
+  ultrahonk: () => TBuilder;
+  ultraplonk: (options: UltraplonkConfig) => TBuilder;
   // ADD_NEW_PROOF_TYPE
 };
 
