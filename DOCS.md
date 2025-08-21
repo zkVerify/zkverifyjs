@@ -973,6 +973,18 @@ await session.addAccounts([seedPhrase1, seedPhrase2, seedPhrase3, seedPhrase4]);
 * Returns: `Promise<string[]>` Account Address array, which is also required as an input for removeAccount().
 * Adds the accounts to the current session
 
+### `zkVerifySession.addDerivedAccounts`
+
+```typescript
+// Add 5 derived child accounts from an existing base account to the zkVerify session:
+const baseAddress = (await session.getAccountInfo())[0].address;
+const derivedAddresses = await session.addDerivedAccounts(baseAddress, 5);
+```
+
+* `baseAddress`: Address of an account that already exists in the current session.
+* `count`: How many derived accounts to add.
+* Returns: `Promise<string[]>` – SS58-encoded addresses that were added.
+
 ### `zkVerifySession.removeAccount`
 
 ```typescript

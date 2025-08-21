@@ -38,6 +38,7 @@ export class zkVerifySession {
   declare close: ConnectionManager['close'];
   declare addAccount: ConnectionManager['addAccount'];
   declare addAccounts: ConnectionManager['addAccounts'];
+  declare addDerivedAccounts: ConnectionManager['addDerivedAccounts'];
   declare removeAccount: ConnectionManager['removeAccount'];
   declare getAccount: ConnectionManager['getAccount'];
   declare getAccountInfo: ConnectionManager['getAccountInfo'];
