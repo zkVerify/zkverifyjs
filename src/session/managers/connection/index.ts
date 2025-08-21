@@ -9,7 +9,11 @@ import {
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { accountInfo } from '../../../api/accountInfo';
-import { setupAccount } from '../../../api/account';
+import {
+  canonicalAddress,
+  deriveChildAt,
+  setupAccount,
+} from '../../../api/account';
 import { checkReadOnly } from '../../../utils/helpers';
 import { AccountInfo, NetworkConfig } from '../../../types';
 import { Mutex } from 'async-mutex';
@@ -241,5 +245,67 @@ export class ConnectionManager {
     | WalletConnection
     | EstablishedConnection {
     return this.connection;
+  }
+
+  /**
+   * Adds `count` derived accounts to the session from an existing base account.
+   * Uses hard derivation paths (`//0`, `//1`, …) and skips any that already exist.
+   *
+   * @param {string} baseAddress - The address of an account already in the session to derive from.
+   * @param {number} count - The number of derived accounts to add (must be a positive integer).
+   * @returns {Promise<string[]>} A promise resolving to the list of SS58-encoded addresses that were added.
+   * @throws Will throw an error if the connection does not support accounts, the base account is not found, or `count` is invalid.
+   */
+  async addDerivedAccounts(
+    baseAddress: string,
+    count: number,
+  ): Promise<string[]> {
+    if (!Number.isInteger(count) || count <= 0) {
+      throw new Error('count must be a positive integer.');
+    }
+
+    return this.accountMutex.runExclusive(async () => {
+      if (!('accounts' in this.connection)) {
+        throw new Error('This connection type does not support accounts.');
+      }
+
+      const sessionAccountsMap = (this.connection as AccountConnection)
+        .accounts;
+
+      const baseAccountPair =
+        sessionAccountsMap.get(baseAddress) ??
+        Array.from(sessionAccountsMap.values()).find(
+          (pair) =>
+            pair.address === baseAddress ||
+            canonicalAddress(pair) === baseAddress,
+        );
+
+      if (!baseAccountPair) {
+        throw new Error(
+          `Base account ${baseAddress} not found in this session.`,
+        );
+      }
+
+      const newlyAddedAddresses: string[] = [];
+
+      for (
+        let childIndex = 0;
+        newlyAddedAddresses.length < count;
+        childIndex++
+      ) {
+        const { pair: derivedChildPair, address: derivedChildAddress } =
+          deriveChildAt(baseAccountPair, childIndex);
+
+        if (sessionAccountsMap.has(derivedChildAddress)) {
+          continue;
+        }
+
+        sessionAccountsMap.set(derivedChildAddress, derivedChildPair);
+        newlyAddedAddresses.push(derivedChildAddress);
+      }
+
+      this.readOnly = false;
+      return newlyAddedAddresses;
+    });
   }
 }
