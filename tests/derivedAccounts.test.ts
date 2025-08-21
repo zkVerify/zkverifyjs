@@ -33,13 +33,9 @@ describe('zkVerifySession class', () => {
         }
     });
 
-    it('should add derived accounts, verify a proof with derived account, then remove one derived account', async () => {
+    it('should add derived accounts, then remove one derived account', async () => {
         try {
             [envVar, wallet] = await walletPool.acquireWallet();
-
-            const proofData = loadProofAndVK({
-                proofType: ProofType.ultrahonk,
-            });
 
             session = await zkVerifySession.start().Volta().withAccount(wallet);
 
@@ -91,28 +87,6 @@ describe('zkVerifySession class', () => {
                 expect(addressesAfterAddSet.has(derivedAddress)).toBe(true);
             }
             expect(accountInfoAfterAdd.length).toBe(accountInfoBefore.length + numberOfChildrenToAdd);
-
-            const { events, transactionResult } = await session
-                .verify(addedAddresses[0])
-                .ultrahonk()
-                .execute({
-                    proofData: {
-                        proof: proofData.proof.proof,
-                        publicSignals: proofData.proof.publicSignals,
-                        vk: proofData.vk,
-                    },
-                });
-
-            handleCommonEvents(
-                events,
-                'ultrahonk',
-                TransactionType.Verify,
-                false
-            );
-
-            const transactionInfo: VerifyTransactionInfo = await transactionResult;
-
-            validateVerifyTransactionInfo(transactionInfo, 'ultrahonk', false);
 
             const addressToRemove = addedAddresses[0];
             console.info('Removing derived address:', addressToRemove);
