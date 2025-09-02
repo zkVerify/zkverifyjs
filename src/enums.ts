@@ -39,6 +39,7 @@ export enum ZkVerifyEvents {
 export enum Risc0Version {
   V2_1 = 'V2_1',
   V2_2 = 'V2_2',
+  V2_3 = 'V2_3',
 }
 
 export enum Plonky2HashFunction {
