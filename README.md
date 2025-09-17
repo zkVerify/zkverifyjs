@@ -115,7 +115,7 @@ Before sending a proof, you need to start a session. A session establishes a con
 1. Read-Only Session with Supported Network:
 ```typescript
 const session = await zkVerifySession.start()
-        .Volta(); // Preconfigured network selection
+        .zkVerify(); // Preconfigured network selection
 // No full account session as .withAccount() or .withAccounts() has not been used.
 ```
 2. Read-Only Session with Custom Network Configuration:
@@ -131,24 +131,24 @@ const session = await zkVerifySession.start()
 ```typescript
 // Use a single account
 const session = await zkVerifySession.start()
-        .Volta() // Preconfigured network selection
+        .zkVerify() // Preconfigured network selection
         .withAccount("my seed phrase"); // Full session with a single active account
 
 // Use many accounts
 const multiAccountSession = await zkVerifySession.start()
-        .Volta() // Preconfigured network selection
+        .zkVerify() // Preconfigured network selection
         .withAccounts(["my seed phrase 1", "my seed phrase 2", "my seed phrase 3"]); // Full session with multiple active accounts
 ```
 4. Full Backend Session (send transactions)  with Custom WebSocket:
 ```typescript
 const session = await zkVerifySession.start()
-        .Volta() // Custom network
+        .zkVerify()
         .withAccount(); // Full session with active account
 ```
 5. Full Frontend Browser Session (send transactions)  with Supported Network:
 ```typescript
 const session = await zkVerifySession.start()
-        .Volta()
+        .zkVerify()
         .withWallet({
           source: selectedWallet,
           accountAddress: selectedAccount,
@@ -172,7 +172,7 @@ Not specifying `withAccount()`, `withAccounts()` or `withWallet()` will start a 
 ```typescript
 import { zkVerifySession } from 'zkverifyjs';
 
-const readOnlySession = await zkVerifySession.start().Volta();
+const readOnlySession = await zkVerifySession.start().zkVerify();
 ```
 
 ## Verifying a Proof
@@ -387,7 +387,7 @@ In order to wait for a published aggregation receipt event `NewAggregationReceip
 // Pre-registered domain
 const domainId = 1;
 // Start session
-const session = await zkVerifySession.start().Volta().withAccount(process.env.seedPhrase);
+const session = await zkVerifySession.start().zkVerify().withAccount(process.env.seedPhrase);
 
 const { events, transactionResult } = await session
         .verify()
@@ -490,7 +490,7 @@ It is possible to define a domain that has some properties and an owner.  The fo
 ```typescript
 session = await zkVerifySession
         .start()
-        .Volta()
+        .zkVerify()
         .withAccount(wallet);
 
 // Register a Domain
@@ -697,7 +697,7 @@ executeVerificationTransaction(proof, publicSignals, vk);
 
 ```typescript
 await zkVerifySession.start()
-        .Volta() // 1. Either preconfigured network selection
+        .zkVerify() // 1. Either preconfigured network selection
         .Custom( {
           websocket: "ws://my-custom-node",
           rpc: "https://my-custom-node"
@@ -710,7 +710,7 @@ await zkVerifySession.start()
         .readOnly() // Optional
 ```
 
-- Network Selection: Preconfigured options such as `.Volta()` or provide your own network config using `.Custom( { websocket: "", rpc: ""})`.
+- Network Selection: Preconfigured options such as `.zkVerify()` & `.Volta()` or provide your own network config using `.Custom( { websocket: "", rpc: ""})`.
 - withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase, cannot be used with `withWallet()`.
 - withWallet : Establish connection to a browser extension based substrate wallet like talisman or subwallet, cannot be used with `withAccount()`;
 - readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
