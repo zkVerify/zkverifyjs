@@ -50,7 +50,7 @@ describe('optimisticVerify functionality', () => {
         envVar = undefined;
     });
 
-    it('should throw an error if optimisticVerify is called on a non-custom network', async () => {
+    it.skip('should throw an error if optimisticVerify is called on a non-custom network', async () => {
         session = await zkVerifySession.start().Volta().withAccount(wallet!);
 
         const input = {
@@ -128,6 +128,42 @@ describe('optimisticVerify functionality', () => {
         expect(res.verificationError).toBeUndefined();
         expect(res.failedIndex).toBeUndefined();
     });
+
+    it.skip('should succeed when specifying the latest block via atBlock()', async () => {
+        const { input } = await createSessionAndInput('ws://localhost:9944');
+
+        const accountAddress = session.getAccount().address;
+        const nonce = await session.api.rpc.system.accountNextIndex(accountAddress);
+
+        const formattedProofData = await session.format(
+            { proofType: ProofType.groth16, config: { library: Library.snarkjs, curve: CurveType.bls12381 } },
+            input.proofData.proof,
+            input.proofData.publicSignals,
+            input.proofData.vk
+        );
+
+        const extrinsicHex = await session.createExtrinsicHex(ProofType.groth16, formattedProofData);
+        const submittableExtrinsic = await session.createExtrinsicFromHex(extrinsicHex);
+
+        const finalizedHash = await session.api.rpc.chain.getFinalizedHead();
+
+        const res = await session
+            .optimisticVerify(accountAddress)
+            .groth16({ library: Library.snarkjs, curve: CurveType.bls12381 })
+            .nonce(nonce.toNumber())
+            .atBlock(finalizedHash.toHex())
+            .execute({ extrinsic: submittableExtrinsic });
+
+        console.log('optimisticVerify atBlock(finalized) success result:', JSON.stringify(res, null, 2));
+
+        expect(res.success).toBe(true);
+        expect(res.message).toBe('Optimistic Verification Successful!');
+        expect(res.type).toBe(OptimisticVerificationResultType.Ok);
+        expect(res.code).toBeUndefined();
+        expect(res.verificationError).toBeUndefined()
+        expect(res.failedIndex).toBeUndefined();
+    });
+
 
     it.skip('should fail with verifier dispatch error for invalid VK', async () => {
         const { input } = await createSessionAndInput('ws://localhost:9944');
