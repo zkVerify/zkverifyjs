@@ -3,6 +3,7 @@ import './shims/globalBuffer';
 export { zkVerifySession } from './session';
 export {
   VerifyOptions,
+  OptimisticVerifyOptions,
   WalletOptions,
   zkVerifySessionOptions,
 } from './session/types';
@@ -47,6 +48,7 @@ export {
   SubscriptionEntry,
   NewAggregationReceiptEvent,
   AggregateStatementPathResult,
+  OptimisticVerificationResultType,
 } from './types';
 export { ExtrinsicCostEstimate } from './api/estimate/types';
 export { FormattedProofData } from './api/format/types';

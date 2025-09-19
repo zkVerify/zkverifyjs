@@ -1,10 +1,17 @@
 import { ApiPromise } from '@polkadot/api';
 import { EventEmitter } from 'events';
-import { Delivery, DomainOptions, ProofProcessor } from '../../types';
+import {
+  Delivery,
+  DomainOptions,
+  OptimisticVerifyResult,
+  ProofProcessor,
+  TransactionValidityError,
+} from '../../types';
 import { Destination } from '../../enums';
 import {
   Groth16Config,
   Plonky2Config,
+  ProofConfig,
   proofConfigurations,
   ProofOptions,
   ProofType,
@@ -68,45 +75,129 @@ export function checkReadOnly(
   }
 }
 
+let cachedVerifierPallets: Set<string> | null = null;
+
+function getVerifierPallets(): Set<string> {
+  if (cachedVerifierPallets) return cachedVerifierPallets;
+  const entries = Object.values(proofConfigurations ?? {}) as ProofConfig[];
+  cachedVerifierPallets = new Set(
+    entries.map((cfg) => cfg.pallet).filter(Boolean),
+  );
+  return cachedVerifierPallets;
+}
+
 /**
  * Interprets a dry run response and returns whether it was successful and any error message.
  * @param api - The Polkadot.js API instance.
  * @param resultHex - The hex-encoded response from a dry run.
+ * @param proofType
  * @returns An object containing `success` (boolean) and `message` (string).
  */
-export const interpretDryRunResponse = async (
+export async function interpretDryRunResponse(
   api: ApiPromise,
   resultHex: string,
-): Promise<{ success: boolean; message: string }> => {
-  try {
-    const responseBytes = Uint8Array.from(
-      Buffer.from(resultHex.replace('0x', ''), 'hex'),
-    );
+  proofType?: ProofType,
+): Promise<OptimisticVerifyResult> {
+  const responseBytes = Uint8Array.from(
+    Buffer.from(resultHex.replace(/^0x/, ''), 'hex'),
+  );
+  if (responseBytes.length === 0) {
+    return {
+      success: false,
+      type: 'unknown_error',
+      message: 'Empty dryRun response',
+      verificationError: false,
+    };
+  }
 
-    if (responseBytes[0] === 0x00 && responseBytes[1] === 0x00) {
-      return { success: true, message: 'Optimistic Verification Successful!' };
+  if (responseBytes[0] === 0x01) {
+    let validityError: TransactionValidityError | null;
+
+    try {
+      validityError = api.registry.createType(
+        'TransactionValidityError',
+        responseBytes.slice(1),
+      ) as unknown as TransactionValidityError;
+    } catch {
+      try {
+        validityError = api.registry.createType(
+          'SpRuntimeTransactionValidityError',
+          responseBytes.slice(1),
+        ) as unknown as TransactionValidityError;
+      } catch {
+        validityError = null;
+      }
     }
 
-    if (responseBytes[0] === 0x00 && responseBytes[1] === 0x01) {
-      const dispatchError = api.registry.createType(
+    if (validityError?.isInvalid) {
+      const code = `InvalidTransaction.${validityError?.asInvalid.type}`;
+      return {
+        success: false,
+        type: 'validity_error',
+        code,
+        message: code,
+        verificationError: false,
+      };
+    }
+    if (validityError?.isUnknown) {
+      const code = `UnknownTransaction.${validityError?.asUnknown.type}`;
+      return {
+        success: false,
+        type: 'validity_error',
+        code,
+        message: code,
+        verificationError: false,
+      };
+    }
+    return {
+      success: false,
+      type: 'validity_error',
+      message: validityError?.toString() ?? 'TransactionValidityError',
+      verificationError: false,
+    };
+  }
+
+  if (responseBytes[0] === 0x00 && responseBytes.length >= 2) {
+    if (responseBytes[1] === 0x00) {
+      return {
+        success: true,
+        type: 'ok',
+        message: 'Optimistic Verification Successful!',
+      };
+    }
+    if (responseBytes[1] === 0x01) {
+      const dispatchErrorCodec = api.registry.createType(
         'DispatchError',
         responseBytes.slice(2),
       ) as DispatchError;
-      const errorMessage = decodeDispatchError(api, dispatchError);
-      return { success: false, message: errorMessage };
-    }
+      const { code, message, section } = decodeDispatchError(
+        api,
+        dispatchErrorCodec,
+      );
+      const expectedPallet = proofType
+        ? proofConfigurations?.[proofType]?.pallet
+        : undefined;
+      const isVerifier =
+        !!section &&
+        (section === expectedPallet || getVerifierPallets().has(section));
 
-    return {
-      success: false,
-      message: `Unexpected response format: ${resultHex}`,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to interpret dry run result: ${error}`,
-    };
+      return {
+        success: false,
+        type: 'dispatch_error',
+        code,
+        message,
+        verificationError: isVerifier,
+      };
+    }
   }
-};
+
+  return {
+    success: false,
+    type: 'unknown_error',
+    message: `Unexpected response format: ${resultHex}`,
+    verificationError: false,
+  };
+}
 
 /**
  * Binds all methods from the source object to the target object,

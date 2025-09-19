@@ -158,3 +158,39 @@ export interface SubscriptionEntry {
   callback?: (data: unknown) => void;
   options?: NewAggregationEventSubscriptionOptions | undefined;
 }
+
+export const OptimisticVerificationResultType = {
+  Ok: 'ok',
+  ValidityError: 'validity_error',
+  DispatchError: 'dispatch_error',
+  UnknownError: 'unknown_error',
+  TransportError: 'transport_error',
+} as const;
+
+export type OptimisticVerificationResultType =
+  (typeof OptimisticVerificationResultType)[keyof typeof OptimisticVerificationResultType];
+
+export type OptimisticVerifyResult = {
+  success: boolean;
+  type: OptimisticVerificationResultType;
+  message: string;
+  code?: string;
+  verificationError?: boolean;
+  failedIndex?: number;
+};
+
+export type TransactionValidityError = {
+  isInvalid: boolean;
+  isUnknown: boolean;
+  asInvalid: { type: string };
+  asUnknown: { type: string };
+  toString: () => string;
+};
+
+export type ExtendedDispatchError = {
+  isTransactional?: boolean;
+  asTransactional?: { type: string };
+  isUnavailable?: boolean;
+  isExhausted?: boolean;
+  isCorruption?: boolean;
+};

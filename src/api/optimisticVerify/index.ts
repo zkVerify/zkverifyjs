@@ -1,7 +1,11 @@
 import { AccountConnection, WalletConnection } from '../connection/types';
 import { createSubmitProofExtrinsic } from '../extrinsic';
 import { format } from '../format';
-import { ProofData } from '../../types';
+import {
+  OptimisticVerificationResultType,
+  OptimisticVerifyResult,
+  ProofData,
+} from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types';
 import { VerifyInput } from '../verify/types';
@@ -11,14 +15,14 @@ import {
   toSubmittableExtrinsic,
 } from '../../utils/helpers';
 import { ApiPromise } from '@polkadot/api';
-import { VerifyOptions } from '../../session/types';
+import { OptimisticVerifyOptions } from '../../session/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 
 export const optimisticVerify = async (
   connection: AccountConnection | WalletConnection,
-  options: VerifyOptions,
+  options: OptimisticVerifyOptions,
   input: VerifyInput,
-): Promise<{ success: boolean; message: string }> => {
+): Promise<OptimisticVerifyResult> => {
   const { api } = connection;
 
   try {
@@ -34,21 +38,31 @@ export const optimisticVerify = async (
     }
 
     const nonce = options.nonce ?? -1;
-    await transaction.signAsync(selectedAccount, { nonce });
+    await transaction.signAsync(selectedAccount, { nonce, era: 0 });
 
-    const submittableExtrinsicHex = transaction.toHex();
-    const dryRunResult = await api.rpc.system.dryRun(submittableExtrinsicHex);
-    const { success, message } = await interpretDryRunResponse(
+    const hex = transaction.toHex();
+    const atHash =
+      options.block !== undefined
+        ? typeof options.block === 'number'
+          ? await api.rpc.chain.getBlockHash(options.block)
+          : options.block
+        : undefined;
+
+    const dryRun = atHash
+      ? await api.rpc.system.dryRun(hex, atHash)
+      : await api.rpc.system.dryRun(hex);
+
+    return interpretDryRunResponse(
       api,
-      dryRunResult.toHex(),
+      dryRun.toHex(),
+      options.proofOptions?.proofType,
     );
-
-    return { success, message };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+  } catch (e) {
     return {
       success: false,
-      message: `Optimistic verification failed: ${errorMessage}`,
+      type: OptimisticVerificationResultType.TransportError,
+      message: `Optimistic verification failed: ${e instanceof Error ? e.message : String(e)}`,
+      verificationError: false,
     };
   }
 };
@@ -63,7 +77,7 @@ export const optimisticVerify = async (
  */
 const buildTransaction = (
   api: ApiPromise,
-  options: VerifyOptions,
+  options: OptimisticVerifyOptions,
   input: VerifyInput,
 ): SubmittableExtrinsic<'promise'> => {
   if ('proofData' in input && input.proofData) {

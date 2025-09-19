@@ -2,8 +2,8 @@ import {
   BatchOptimisticProofMethodMap,
   BatchProofMethodMap,
   OptimisticProofMethodMap,
+  OptimisticVerifyOptions,
   ProofMethodMap,
-  VerifyOptions,
 } from '../../types';
 import { verify } from '../../../api/verify';
 import { optimisticVerify } from '../../../api/optimisticVerify';
@@ -17,6 +17,7 @@ import { VerifyInput } from '../../../api/verify/types';
 import { EventEmitter } from 'events';
 import {
   BatchVerifyTransactionInfo,
+  OptimisticVerifyResult,
   VerifyTransactionInfo,
 } from '../../../types';
 import { checkReadOnly } from '../../../utils/helpers';
@@ -182,11 +183,7 @@ export class VerificationManager {
    * The builder allows for chaining options and executing the verification process.
    *
    * @param {AllProofConfigs} proofOptions - The proof options object containing the proof type and its specific options.
-   *   - Must include a valid `proofType` and associated options depending on the proof type:
-   *     - Groth16: Requires `library` and `curve`.
-   *     - Plonky2: Requires `compressed` (boolean) and `hashFunction`.
-   *     - Risc0: Requires `version`.
-   *     - Ultraplonk: No specific options required.
+   *   - Must include a valid `proofType` and associated options depending on the proof type
    *
    * @param {string} [accountAddress] - The account to use for verification.
    *   - If a `string`, it represents the account address.
@@ -213,11 +210,7 @@ export class VerificationManager {
    * This builder allows for configuring and executing the optimistic verification process.
    *
    * @param {AllProofConfigs} proofOptions - The proof options object containing the proof type and its specific options.
-   *   - Must include a valid `proofType` and associated options depending on the proof type:
-   *     - Groth16: Requires `library` and `curve`.
-   *     - Plonky2: Requires `compressed` (boolean) and `hashFunction`.
-   *     - Risc0: Requires `version`.
-   *     - Ultraplonk: No specific options required.
+   *   - Must include a valid `proofType` and associated options depending on the proof type
    *
    * @param {string} [accountAddress] - Optional account address to sign and submit the transaction.
    * @returns {OptimisticVerificationBuilder} A new instance of `OptimisticVerificationBuilder` configured with the provided proof options.
@@ -286,12 +279,13 @@ export class VerificationManager {
    * Executes the verification process with the provided proof options and proof data or pre-built extrinsic.
    * This method is intended to be called by the `VerificationBuilder`.
    *
-   * @param {VerifyOptions} options - The options for the verification process, including:
+   * @param {OptimisticVerifyOptions} options - The options for the verification process, including:
    *   - `proofOptions` {AllProofOptions}: Contains the proof type and associated options depending on the type.
    *   - `accountAddress` {string} [optional]: The account address to use for the verification.
    *   - `nonce` {number} [optional]: The nonce for the transaction, if applicable.
    *   - `registeredVk` {boolean} [optional]: Whether to use a registered verification key.
    *   - `domainId` {number} [optional]: The domain ID for domain-specific operations.
+   *   - `atBlock` {number | string} [optional]: The block at which to run the optimistic verification.
    *
    * @param {VerifyInput} input - The verification input, which must be one of the following:
    *   - `proofData`: An array of proof parameters (proof, public signals, and verification key).
@@ -307,7 +301,7 @@ export class VerificationManager {
    * @private
    */
   private async executeVerify(
-    options: VerifyOptions,
+    options: OptimisticVerifyOptions,
     input: VerifyInput,
   ): Promise<{
     events: EventEmitter;
@@ -332,18 +326,19 @@ export class VerificationManager {
    * Executes the optimistic verification process using the provided proof options and input.
    * This method is intended to be called by the `OptimisticVerificationBuilder`.
    *
-   * @param {VerifyOptions} options - The options for the verification process, including:
+   * @param {OptimisticVerifyOptions} options - The options for the verification process, including:
    *   - `proofOptions` {AllProofOptions}: Contains the proof type and associated options depending on the type.
    *   - `accountAddress` {string} [optional]: The account address to use for the verification.
    *   - `nonce` {number} [optional]: The nonce for the transaction, if applicable.
    *   - `registeredVk` {boolean} [optional]: Whether to use a registered verification key.
    *   - `domainId` {number} [optional]: The domain ID for domain-specific operations.
+   *   - `atBlock` {number | string} [optional]: The block at which to run the optimistic verification.
    * @param {VerifyInput} input - The verification input, which must be one of the following:
    *   - `proofData`: An array of proof parameters (proof, public signals, and verification key).
    *   - `extrinsic`: A pre-built `SubmittableExtrinsic`.
    *   - Ensure only one of these options is provided within the `VerifyInput`.
    *
-   * @returns {Promise<{ success: boolean; message: string }>}
+   * @returns {Promise<OptimisticVerifyResult>}
    *   A promise that resolves to an object containing:
    *   - `success`: A boolean indicating whether the optimistic verification was successful.
    *   - `message`: A message providing additional details about the verification result.
@@ -353,9 +348,9 @@ export class VerificationManager {
    * @private
    */
   private async executeOptimisticVerify(
-    options: VerifyOptions,
+    options: OptimisticVerifyOptions,
     input: VerifyInput,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<OptimisticVerifyResult> {
     checkReadOnly(this.connectionManager.connectionDetails);
 
     if (!this.connectionManager.customNetwork) {
@@ -377,8 +372,17 @@ export class VerificationManager {
    * Executes a full on-chain batch verification of multiple proofs.
    * Internally constructs a `batchAll` extrinsic and listens for success or error events.
    *
-   * @param {VerifyOptions} options - Options including proof type, vk registration flag, etc.
-   * @param {VerifyInput[]} input - An array of proof inputs (either proofData or prebuilt extrinsic).
+   * @param {OptimisticVerifyOptions} options - The options for the verification process, including:
+   *   - `proofOptions` {AllProofOptions}: Contains the proof type and associated options depending on the type.
+   *   - `accountAddress` {string} [optional]: The account address to use for the verification.
+   *   - `nonce` {number} [optional]: The nonce for the transaction, if applicable.
+   *   - `registeredVk` {boolean} [optional]: Whether to use a registered verification key.
+   *   - `domainId` {number} [optional]: The domain ID for domain-specific operations.
+   *   - `atBlock` {number | string} [optional]: The block at which to run the optimistic verification.
+   * @param {VerifyInput[]} input - An array of verification input, which must be one of the following:
+   *   - `proofData`: An array of proof parameters (proof, public signals, and verification key).
+   *   - `extrinsic`: A pre-built `SubmittableExtrinsic`.
+   *   - Ensure only one of these options is provided within the `VerifyInput`.
    * @returns {Promise<{events: EventEmitter, transactionResult: Promise<BatchVerifyTransactionInfo>}>}
    *   A promise resolving to:
    *   - `events`: An EventEmitter for lifecycle events (broadcast, includedInBlock, finalized, etc).
@@ -387,7 +391,7 @@ export class VerificationManager {
    * @throws {Error} If verification is called while in read-only mode.
    */
   private async executeBatchVerify(
-    options: VerifyOptions,
+    options: OptimisticVerifyOptions,
     input: VerifyInput[],
   ): Promise<{
     events: EventEmitter;
@@ -412,16 +416,25 @@ export class VerificationManager {
    * Executes a dry-run of a batch verification to simulate success or failure without submitting.
    * This method wraps `api.rpc.system.dryRun` around the `batchAll` extrinsic built from the proof list.
    *
-   * @param {VerifyOptions} options - Options including proof type and domain configuration.
-   * @param {VerifyInput[]} input - List of proofs to simulate in the batch.
-   * @returns {Promise<{ success: boolean; message: string }>} A dry-run result summary.
+   * @param {OptimisticVerifyOptions} options - The options for the verification process, including:
+   *   - `proofOptions` {AllProofOptions}: Contains the proof type and associated options depending on the type.
+   *   - `accountAddress` {string} [optional]: The account address to use for the verification.
+   *   - `nonce` {number} [optional]: The nonce for the transaction, if applicable.
+   *   - `registeredVk` {boolean} [optional]: Whether to use a registered verification key.
+   *   - `domainId` {number} [optional]: The domain ID for domain-specific operations.
+   *   - `atBlock` {number | string} [optional]: The block at which to run the optimistic verification.
+   * @param {VerifyInput[]} input - An array of verification input, which must be one of the following:
+   *   - `proofData`: An array of proof parameters (proof, public signals, and verification key).
+   *   - `extrinsic`: A pre-built `SubmittableExtrinsic`.
+   *   - Ensure only one of these options is provided within the `VerifyInput`.
+   * @returns {Promise<OptimisticVerifyResult>} A dry-run result summary.
    *
    * @throws {Error} If not connected to a custom network or called in read-only mode.
    */
   private async executeBatchOptimisticVerify(
-    options: VerifyOptions,
+    options: OptimisticVerifyOptions,
     input: VerifyInput[],
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<OptimisticVerifyResult> {
     checkReadOnly(this.connectionManager.connectionDetails);
 
     if (!this.connectionManager.customNetwork) {
