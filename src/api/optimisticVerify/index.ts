@@ -46,7 +46,7 @@ export const optimisticVerify = async (
     if (options.block !== undefined) {
       if (typeof options.block === 'number') {
         atBlockHash = await api.rpc.chain.getBlockHash(options.block);
-      } else if (options.block === 'string') {
+      } else if (typeof options.block === 'string') {
         atBlockHash = options.block;
       }
     } else {
