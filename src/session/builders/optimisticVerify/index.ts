@@ -1,17 +1,19 @@
 import { VerifyInput } from '../../../api/verify/types';
 import { ProofOptions } from '../../../config';
-import { VerifyOptions } from '../../types';
+import { OptimisticVerifyOptions } from '../../types';
+import { OptimisticVerifyResult } from '../../../types';
 
 export class OptimisticVerificationBuilder {
-  private readonly options: VerifyOptions;
+  private readonly options: OptimisticVerifyOptions;
   private nonceSet = false;
   private registeredVkSet = false;
+  private blockSet = false;
 
   constructor(
     private readonly executeOptimisticVerify: (
-      options: VerifyOptions,
+      options: OptimisticVerifyOptions,
       input: VerifyInput,
-    ) => Promise<{ success: boolean; message: string }>,
+    ) => Promise<OptimisticVerifyResult>,
     proofOptions: ProofOptions,
     accountAddress?: string,
   ) {
@@ -36,9 +38,14 @@ export class OptimisticVerificationBuilder {
     return this;
   }
 
-  async execute(
-    input: VerifyInput,
-  ): Promise<{ success: boolean; message: string }> {
+  atBlock(block: number | string): this {
+    if (this.blockSet) throw new Error('atBlock can only be set once.');
+    this.blockSet = true;
+    this.options.block = block;
+    return this;
+  }
+
+  async execute(input: VerifyInput): Promise<OptimisticVerifyResult> {
     return this.executeOptimisticVerify(this.options, input);
   }
 }

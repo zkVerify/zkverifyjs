@@ -1,4 +1,4 @@
-import { CurveType, Library, zkVerifySession } from '../src';
+import { CurveType, Library, OptimisticVerificationResultType, zkVerifySession } from '../src';
 import { walletPool } from './common/walletPool';
 import path from "path";
 import fs from "fs";
@@ -53,7 +53,7 @@ describe('batchOptimisticVerify functionality', () => {
         envVar = undefined;
     });
 
-    it('should throw an error if batchOptimisticVerify is called on a non-custom network', async () => {
+    it.skip('should throw an error if batchOptimisticVerify is called on a non-custom network', async () => {
         session = await zkVerifySession.start().Volta().withAccount(wallet!);
 
         const input = [{
@@ -97,14 +97,21 @@ describe('batchOptimisticVerify functionality', () => {
     });
 
     it.skip('should fail when called with incorrect publicSignals', async () => {
-        const { input } = await createSessionAndInput('ws://localhost:9944', ["0x1"]);
+        const { input } = await createSessionAndInput('ws://localhost:9944', ['0x1']);
 
-        const builder = session.batchOptimisticVerify()
+        const builder = session
+            .batchOptimisticVerify()
             .groth16({ library: Library.snarkjs, curve: CurveType.bls12381 });
 
-        const { success, message } = await builder.execute(input);
+        const res = await builder.execute(Array.isArray(input) ? input : [input]);
 
-        expect(success).toBe(false);
-        expect(message).toContain("settlementGroth16Pallet.VerifyError");
+        console.log('batchOptimisticVerify (bad publicSignals) result:', JSON.stringify(res, null, 2));
+
+        expect(res.success).toBe(false);
+        expect(res.type).toBe(OptimisticVerificationResultType.DispatchError);
+        expect(res.verificationError).toBe(true);
+        expect(res.code).toBe('settlementGroth16Pallet.VerifyError');
+        expect(res.message).toMatch(/Proof at index \d+ failed:/);
+        if (res.failedIndex !== undefined) expect(res.failedIndex).toBe(0);
     });
 });

@@ -32,6 +32,10 @@ export interface VerifyOptions {
   domainId?: number;
 }
 
+export interface OptimisticVerifyOptions extends VerifyOptions {
+  block?: number | string;
+}
+
 type GenericProofMethodMap<TBuilder> = {
   fflonk: () => TBuilder;
   groth16: (options: Groth16Config) => TBuilder;

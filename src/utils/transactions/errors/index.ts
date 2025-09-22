@@ -1,6 +1,7 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { EventEmitter } from 'events';
 import {
+  ExtendedDispatchError,
   TransactionInfo,
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
@@ -10,23 +11,72 @@ import { DispatchError } from '@polkadot/types/interfaces';
 
 export const decodeDispatchError = (
   api: ApiPromise,
-  dispatchError: DispatchError,
-): string => {
-  if (dispatchError.isModule) {
+  err: DispatchError,
+): { code?: string; message: string; section?: string } => {
+  if (err.isModule) {
     try {
-      const decoded = api.registry.findMetaError(dispatchError.asModule);
-      const { docs, name, section } = decoded;
-      return `${section}.${name}: ${docs.join(' ')}`;
+      const meta = api.registry.findMetaError(err.asModule);
+      const docs = (meta.docs?.join(' ') || '').trim();
+      return {
+        code: `${meta.section}.${meta.name}`,
+        message: docs ? docs : `${meta.section}.${meta.name}`,
+        section: meta.section,
+      };
     } catch {
-      return `Unknown module error: ${dispatchError.toString()}`;
+      const mod = err.asModule;
+      return {
+        code: `Module(${mod.index.toString()}:${mod.error.toString()})`,
+        message: 'Module error',
+      };
     }
-  } else if (dispatchError.isToken) {
-    return `Token error: ${dispatchError.asToken.type}`;
-  } else if (dispatchError.isArithmetic) {
-    return `Arithmetic error: ${dispatchError.asArithmetic.type}`;
-  } else {
-    return dispatchError.toString();
   }
+
+  if (err.isToken) {
+    return {
+      code: `Token.${err.asToken.type}`,
+      message: `Token.${err.asToken.type}`,
+    };
+  }
+
+  if (err.isArithmetic) {
+    return {
+      code: `Arithmetic.${err.asArithmetic.type}`,
+      message: `Arithmetic.${err.asArithmetic.type}`,
+    };
+  }
+
+  if (err.isBadOrigin) {
+    return { code: 'BadOrigin', message: 'BadOrigin' };
+  }
+
+  if (err.isCannotLookup) {
+    return { code: 'CannotLookup', message: 'CannotLookup' };
+  }
+
+  if (err.isOther) {
+    return { code: 'Other', message: 'Other' };
+  }
+
+  const extended = err as unknown as ExtendedDispatchError;
+
+  if (extended.isTransactional) {
+    const kind = extended.asTransactional?.type ?? 'Unknown';
+    return { code: `Transactional.${kind}`, message: `Transactional.${kind}` };
+  }
+
+  if (extended.isUnavailable) {
+    return { code: 'Unavailable', message: 'Unavailable' };
+  }
+
+  if (extended.isExhausted) {
+    return { code: 'Exhausted', message: 'Exhausted' };
+  }
+
+  if (extended.isCorruption) {
+    return { code: 'Corruption', message: 'Corruption' };
+  }
+
+  return { message: err.toString() };
 };
 
 export const handleError = <T extends TransactionInfo>(
@@ -41,9 +91,8 @@ export const handleError = <T extends TransactionInfo>(
 
   const hasProofType = (
     info: TransactionInfo,
-  ): info is VerifyTransactionInfo | VKRegistrationTransactionInfo => {
-    return 'proofType' in info;
-  };
+  ): info is VerifyTransactionInfo | VKRegistrationTransactionInfo =>
+    'proofType' in info;
 
   if (error instanceof Error) {
     try {
@@ -52,8 +101,8 @@ export const handleError = <T extends TransactionInfo>(
         const dispatchError = api.registry.createType(
           'DispatchError',
           parsedError,
-        );
-        decodedError = decodeDispatchError(api, dispatchError as DispatchError);
+        ) as DispatchError;
+        decodedError = decodeDispatchError(api, dispatchError).message;
       } else {
         decodedError = error.message;
       }
@@ -61,7 +110,7 @@ export const handleError = <T extends TransactionInfo>(
       decodedError = error.message;
     }
   } else {
-    decodedError = decodeDispatchError(api, error as DispatchError);
+    decodedError = decodeDispatchError(api, error as DispatchError).message;
   }
 
   if (
@@ -84,7 +133,5 @@ export const handleError = <T extends TransactionInfo>(
     });
   }
 
-  if (shouldThrow) {
-    throw new Error(decodedError);
-  }
+  if (shouldThrow) throw new Error(decodedError);
 };
