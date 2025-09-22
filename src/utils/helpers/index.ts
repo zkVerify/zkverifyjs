@@ -101,6 +101,7 @@ export async function interpretDryRunResponse(
   const responseBytes = Uint8Array.from(
     Buffer.from(resultHex.replace(/^0x/, ''), 'hex'),
   );
+
   if (responseBytes.length === 0) {
     return {
       success: false,
@@ -165,29 +166,44 @@ export async function interpretDryRunResponse(
         message: 'Optimistic Verification Successful!',
       };
     }
-    if (responseBytes[1] === 0x01) {
-      const dispatchErrorCodec = api.registry.createType(
-        'DispatchError',
-        responseBytes.slice(2),
-      ) as DispatchError;
-      const { code, message, section } = decodeDispatchError(
-        api,
-        dispatchErrorCodec,
-      );
-      const expectedPallet = proofType
-        ? proofConfigurations?.[proofType]?.pallet
-        : undefined;
-      const isVerifier =
-        !!section &&
-        (section === expectedPallet || getVerifierPallets().has(section));
 
-      return {
-        success: false,
-        type: 'dispatch_error',
-        code,
-        message,
-        verificationError: isVerifier,
-      };
+    if (responseBytes[1] === 0x01) {
+      try {
+        const dispatchErrorCodec = api.registry.createType(
+          'DispatchError',
+          responseBytes.slice(2),
+        ) as DispatchError;
+
+        const { code, message, section } = decodeDispatchError(
+          api,
+          dispatchErrorCodec,
+        );
+
+        const expectedPallet = proofType
+          ? proofConfigurations?.[proofType]?.pallet
+          : undefined;
+
+        const isVerifier =
+          !!section &&
+          (section === expectedPallet || getVerifierPallets().has(section));
+
+        return {
+          success: false,
+          type: 'dispatch_error',
+          code,
+          message,
+          verificationError: isVerifier,
+        };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+
+        return {
+          success: false,
+          type: 'exception',
+          message,
+          verificationError: false,
+        };
+      }
     }
   }
 

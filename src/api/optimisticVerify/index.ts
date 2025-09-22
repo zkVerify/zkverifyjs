@@ -40,17 +40,22 @@ export const optimisticVerify = async (
     const nonce = options.nonce ?? -1;
     await transaction.signAsync(selectedAccount, { nonce, era: 0 });
 
-    const hex = transaction.toHex();
-    const atHash =
-      options.block !== undefined
-        ? typeof options.block === 'number'
-          ? await api.rpc.chain.getBlockHash(options.block)
-          : options.block
-        : undefined;
+    const txHex = transaction.toHex();
+    let atBlockHash;
 
-    const dryRun = atHash
-      ? await api.rpc.system.dryRun(hex, atHash)
-      : await api.rpc.system.dryRun(hex);
+    if (options.block !== undefined) {
+      if (typeof options.block === 'number') {
+        atBlockHash = await api.rpc.chain.getBlockHash(options.block);
+      } else if (options.block === 'string') {
+        atBlockHash = options.block;
+      }
+    } else {
+      atBlockHash = undefined;
+    }
+
+    const dryRun = atBlockHash
+      ? await api.rpc.system.dryRun(txHex, atBlockHash)
+      : await api.rpc.system.dryRun(txHex);
 
     return interpretDryRunResponse(
       api,

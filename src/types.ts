@@ -165,6 +165,7 @@ export const OptimisticVerificationResultType = {
   DispatchError: 'dispatch_error',
   UnknownError: 'unknown_error',
   TransportError: 'transport_error',
+  Exception: 'exception',
 } as const;
 
 export type OptimisticVerificationResultType =
