@@ -95,6 +95,7 @@ export type NetworkConfig = {
   host: SupportedNetwork;
   websocket: string;
   rpc: string;
+  network?: SupportedNetwork | '';
 };
 
 export type CustomNetworkConfig = Omit<NetworkConfig, 'host'>;

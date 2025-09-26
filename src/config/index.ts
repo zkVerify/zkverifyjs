@@ -15,7 +15,8 @@ import {
 } from '../proofTypes';
 import { NetworkConfig, ProofProcessor } from '../types';
 
-export const CHAIN_SS58_PREFIX = 251; // zkVerify specific address format
+export const VOLTA_CHAIN_SS58_PREFIX = 251; // zkVerify specific address format
+export const ZKVERIFY_CHAIN_SS59_PREFIX = 8741;
 
 export enum SupportedNetwork {
   zkVerify = 'zkVerify',
@@ -28,18 +29,21 @@ export const SupportedNetworkConfig: Record<SupportedNetwork, NetworkConfig> = {
   [SupportedNetwork.zkVerify]: {
     host: SupportedNetwork.zkVerify,
     websocket: 'wss://zkverify-rpc.zkverify.io ',
-    rpc: 'https://zkverify-rpc.zkverify.io ',
+    rpc: 'https://zkverify-rpc.zkverify.io',
+    network: SupportedNetwork.zkVerify,
   },
   [SupportedNetwork.Volta]: {
     host: SupportedNetwork.Volta,
     websocket: 'wss://volta-rpc.zkverify.io',
     rpc: 'https://volta-rpc.zkverify.io',
+    network: SupportedNetwork.Volta,
   },
   // ADD_NEW_SUPPORTED_NETWORK
   [SupportedNetwork.Custom]: {
     host: SupportedNetwork.Custom,
     websocket: '',
     rpc: '',
+    network: '',
   },
 };
 
