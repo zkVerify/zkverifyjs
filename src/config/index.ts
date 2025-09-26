@@ -28,7 +28,7 @@ export enum SupportedNetwork {
 export const SupportedNetworkConfig: Record<SupportedNetwork, NetworkConfig> = {
   [SupportedNetwork.zkVerify]: {
     host: SupportedNetwork.zkVerify,
-    websocket: 'wss://zkverify-rpc.zkverify.io ',
+    websocket: 'wss://zkverify-rpc.zkverify.io',
     rpc: 'https://zkverify-rpc.zkverify.io',
     network: SupportedNetwork.zkVerify,
   },

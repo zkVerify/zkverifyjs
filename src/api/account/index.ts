@@ -15,7 +15,7 @@ import {
  */
 export const setupAccount = (
   secretSeedPhrase: string,
-  isMainnetNetwork: boolean,
+  isMainnetNetwork?: boolean,
 ): KeyringPair => {
   try {
     const ss58Prefix = isMainnetNetwork
@@ -39,7 +39,7 @@ export const setupAccount = (
 /** Canonical SS58 address for a pair/public key (fixed to chain prefix). */
 export const canonicalAddress = (
   pairOrPublicKey: KeyringPair | Uint8Array,
-  isMainnetNetwork: boolean,
+  isMainnetNetwork?: boolean,
 ): string => {
   const pk =
     pairOrPublicKey instanceof Uint8Array
@@ -64,7 +64,7 @@ export const canonicalAddress = (
 export const deriveChildAt = (
   base: KeyringPair,
   index: number,
-  isMainnetNetwork: boolean,
+  isMainnetNetwork?: boolean,
 ): { pair: KeyringPair; address: string; path: string } => {
   const path = `//${index}`;
   const ss58Prefix = isMainnetNetwork
