@@ -7,6 +7,7 @@ import {
   WalletConnection,
 } from '../connection/types';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { SupportedNetwork } from '../../config';
 
 export async function startSession(
   options: zkVerifySessionOptions,
@@ -19,11 +20,12 @@ export async function startSession(
 
   const { networkConfig, seedPhrases } = options;
   const { api, provider } = await establishConnection(networkConfig);
+  const isMainnetNetwork = networkConfig.network === SupportedNetwork.zkVerify;
   if (seedPhrases && seedPhrases.length > 0) {
     const uniqueAccounts = new Map<string, KeyringPair>();
 
     for (const phrase of seedPhrases) {
-      const account = setupAccount(phrase);
+      const account = setupAccount(phrase, isMainnetNetwork);
       if (uniqueAccounts.has(account.address)) {
         console.warn(
           `Skipping adding account ${account.address} to session as it is already active.`,

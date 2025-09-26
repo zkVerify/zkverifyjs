@@ -70,6 +70,72 @@ describe('zkVerifySession - accountInfo', () => {
         }
     });
 
+    describe('setupAccount', () => {
+        it('should format wallets correctly for zkVerify session', async() => {
+            let session: zkVerifySession | undefined;
+    
+            try {
+                [envVar, wallet] = await walletPool.acquireWallet();
+                session = await zkVerifySession.start().zkVerify().readOnly();
+    
+                const address = await addAccountAndVerify(session, wallet);
+                await removeAccountAndVerify(session);
+    
+                expect(address.startsWith('ZK')).toBe(true);
+            } finally {
+                if (session) await session.close();
+            }
+        });
+    
+        it('should format wallets correctly for Volta session', async() => {
+            let session: zkVerifySession | undefined;
+    
+            try {
+                [envVar, wallet] = await walletPool.acquireWallet();
+                session = await zkVerifySession.start().Volta().readOnly();
+    
+                const address = await addAccountAndVerify(session, wallet);
+                await removeAccountAndVerify(session);
+    
+                expect(address.startsWith('xp')).toBe(true);
+            } finally {
+                if (session) await session.close();
+            }
+        });
+    
+        it('should format wallets correctly for custom zkverify session', async() => {
+            let session: zkVerifySession | undefined;
+    
+            try {
+                [envVar, wallet] = await walletPool.acquireWallet();
+                session = await zkVerifySession.start().Custom({rpc:"https://customUrl", websocket: 'wss://zkverify-rpc.zkverify.io', network: "zkVerify"}).readOnly();
+    
+                const address = await addAccountAndVerify(session, wallet);
+                await removeAccountAndVerify(session);
+    
+                expect(address.startsWith('ZK')).toBe(true);
+            } finally {
+                if (session) await session.close();
+            }
+        });
+    
+        it('should format wallets correctly for custom Volta session', async() => {
+            let session: zkVerifySession | undefined;
+    
+            try {
+                [envVar, wallet] = await walletPool.acquireWallet();
+                session = await zkVerifySession.start().Custom({rpc:"https://customUrl", websocket: 'wss://volta-rpc.zkverify.io'}).readOnly();
+    
+                const address = await addAccountAndVerify(session, wallet);
+                await removeAccountAndVerify(session);
+    
+                expect(address.startsWith('xp')).toBe(true);
+            } finally {
+                if (session) await session.close();
+            }
+        });
+    });
+
     async function expectSessionToBeReadOnly(session: zkVerifySession) {
         await expect(session.getAccountInfo()).rejects.toThrow(
             'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'

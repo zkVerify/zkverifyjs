@@ -91,9 +91,10 @@ const session = await zkVerifySession.start()
 
 ```typescript
 const session = await zkVerifySession.start()
-        .Custom( {
+        .Custom({
           websocket: "wss://testnet-rpc.zkverify.io",
-          rpc: "https://testnet-rpc.zkverify.io"
+          rpc: "https://testnet-rpc.zkverify.io",
+          network: "Volta", // Optional
         }); // Custom network
 // No full account session as .withAccount() or withAccounts() has not been used.
 ```
@@ -131,11 +132,11 @@ const session = await zkVerifySession.start()
         }); // Uses browser session context "window"
 ```
 
-6. Full Frontend Browser Session (send transactions)  with Custom WebSocket:
+6. Full Frontend Browser Session (send transactions) with Custom WebSocket:
 
 ```typescript
 const session = await zkVerifySession.start()
-        .Custom( {
+        .Custom({
           websocket: "wss://testnet-rpc.zkverify.io",
           rpc: "https://testnet-rpc.zkverify.io"
         }) // Custom network
@@ -409,7 +410,7 @@ Connect to your custom node that has the unsafe flags set, and send the proof:
 // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
 const session = await zkVerifySession
   .start()
-        .Custom( {
+        .Custom({
           websocket: "wss://my-custom-node",
           rpc: "https://my-custom-node"
         })
@@ -551,7 +552,7 @@ import { zkVerifySession, ZkVerifyEvents, TransactionStatus, VerifyTransactionIn
 async function executeVerificationTransaction(proof: unknown, publicSignals: unknown, vk: unknown) {
   // Start a new zkVerifySession on a Custom network (replace 'your-seed-phrase' and 'my-custom-node' with actual value)
   const session = await zkVerifySession.start()
-          .Custom( {
+          .Custom({
             websocket: "ws://my-custom-node",
             rpc: "https://my-custom-node"
           })
@@ -636,7 +637,7 @@ executeVerificationTransaction(proof, publicSignals, vk);
 
 ```typescript
   const session = await zkVerifySession.start()
-          .Custom( {
+          .Custom({
             websocket: "ws://my-custom-node",
             rpc: "https://my-custom-node"
           })
@@ -675,9 +676,10 @@ executeVerificationTransaction(proof, publicSignals, vk);
 ```typescript
 await zkVerifySession.start()
         .zkVerify() // 1. Either preconfigured network selection
-        .Custom( {
+        .Custom({
           websocket: "ws://my-custom-node",
-          rpc: "https://my-custom-node"
+          rpc: "https://my-custom-node",
+          network: "zkVerify", // Optional
         }) // 2. Or specify a custom network selection
         .withAccount(process.env.SEED_PHRASE!) // Optional
         .withWallet({
@@ -687,9 +689,9 @@ await zkVerifySession.start()
         .readOnly() // Optional
 ```
 
-* Network Selection: Preconfigured options such as `.zkVerify()` & `.Volta()` or provide your own network config using `.Custom( { websocket: "", rpc: ""})`.
-* withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase, cannot be used with `withWallet()`.
-* withWallet : Establish connection to a browser extension based substrate wallet like talisman or subwallet, cannot be used with `withAccount()`;
+* Network Selection: Preconfigured options such as `.zkVerify()` & `.Volta()` or provide your own network config using `.Custom({ websocket: "", rpc: "", network: ""})`. network will default to Volta.
+* withAccount: Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase, cannot be used with `withWallet()`.
+* withWallet: Establish connection to a browser extension based substrate wallet like talisman or subwallet, cannot be used with `withAccount()`;
 * readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
 
 ### `zkVerifySession.close`

@@ -60,6 +60,7 @@ describe('startSession', () => {
         host: SupportedNetwork.Volta,
         websocket: 'ws://custom-url',
         rpc: 'http://custom-rpc-url',
+        network: SupportedNetwork.Volta,
       },
       seedPhrases: ['testSeedPhrase'],
     };
@@ -70,7 +71,10 @@ describe('startSession', () => {
     const result = await startSession(mockOptions);
 
     expect(establishConnection).toHaveBeenCalledWith(mockOptions.networkConfig);
-    expect(setupAccount).toHaveBeenCalledWith(mockOptions.seedPhrases![0]);
+    expect(setupAccount).toHaveBeenCalledWith(
+      mockOptions.seedPhrases![0],
+      false,
+    );
     expect(result).toEqual({
       api: mockApi,
       provider: mockProvider,
