@@ -20,7 +20,7 @@ export async function startSession(
 
   const { networkConfig, seedPhrases } = options;
   const { api, provider } = await establishConnection(networkConfig);
-  const isMainnetNetwork = networkConfig.network === SupportedNetwork.zkVerify;
+  const isMainnetNetwork = networkConfig.network !== SupportedNetwork.Volta;
   if (seedPhrases && seedPhrases.length > 0) {
     const uniqueAccounts = new Map<string, KeyringPair>();
 

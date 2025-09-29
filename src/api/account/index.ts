@@ -3,7 +3,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { encodeAddress } from '@polkadot/util-crypto';
 import {
   VOLTA_CHAIN_SS58_PREFIX,
-  ZKVERIFY_CHAIN_SS59_PREFIX,
+  ZKVERIFY_CHAIN_SS58_PREFIX,
 } from '../../config';
 
 /**
@@ -19,7 +19,7 @@ export const setupAccount = (
 ): KeyringPair => {
   try {
     const ss58Prefix = isMainnetNetwork
-      ? ZKVERIFY_CHAIN_SS59_PREFIX
+      ? ZKVERIFY_CHAIN_SS58_PREFIX
       : VOLTA_CHAIN_SS58_PREFIX;
     const keyring = new Keyring({ type: 'sr25519' });
     keyring.setSS58Format(ss58Prefix);
@@ -46,7 +46,7 @@ export const canonicalAddress = (
       ? pairOrPublicKey
       : pairOrPublicKey.publicKey;
   const ss58Prefix = isMainnetNetwork
-    ? ZKVERIFY_CHAIN_SS59_PREFIX
+    ? ZKVERIFY_CHAIN_SS58_PREFIX
     : VOLTA_CHAIN_SS58_PREFIX;
 
   return encodeAddress(pk, ss58Prefix);
@@ -68,7 +68,7 @@ export const deriveChildAt = (
 ): { pair: KeyringPair; address: string; path: string } => {
   const path = `//${index}`;
   const ss58Prefix = isMainnetNetwork
-    ? ZKVERIFY_CHAIN_SS59_PREFIX
+    ? ZKVERIFY_CHAIN_SS58_PREFIX
     : VOLTA_CHAIN_SS58_PREFIX;
 
   try {

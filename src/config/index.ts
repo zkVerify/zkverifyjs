@@ -16,7 +16,7 @@ import {
 import { NetworkConfig, ProofProcessor } from '../types';
 
 export const VOLTA_CHAIN_SS58_PREFIX = 251; // zkVerify specific address format
-export const ZKVERIFY_CHAIN_SS59_PREFIX = 8741;
+export const ZKVERIFY_CHAIN_SS58_PREFIX = 8741;
 
 export enum SupportedNetwork {
   zkVerify = 'zkVerify',

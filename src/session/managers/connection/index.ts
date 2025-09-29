@@ -34,7 +34,7 @@ export class ConnectionManager {
     config: NetworkConfig,
   ) {
     this.connection = connection;
-    this.isMainnetNetwork = config.network === SupportedNetwork.zkVerify;
+    this.isMainnetNetwork = config.network !== SupportedNetwork.Volta;
     this.customNetwork = config.host === SupportedNetwork.Custom;
     this.readOnly =
       !('accounts' in connection) &&

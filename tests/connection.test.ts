@@ -108,7 +108,7 @@ describe('zkVerifySession - accountInfo', () => {
     
             try {
                 [envVar, wallet] = await walletPool.acquireWallet();
-                session = await zkVerifySession.start().Custom({rpc:"https://customUrl", websocket: 'wss://zkverify-rpc.zkverify.io', network: "zkVerify"}).readOnly();
+                session = await zkVerifySession.start().Custom({rpc:"https://customUrl", websocket: 'wss://zkverify-rpc.zkverify.io'}).readOnly();
     
                 const address = await addAccountAndVerify(session, wallet);
                 await removeAccountAndVerify(session);
@@ -124,7 +124,7 @@ describe('zkVerifySession - accountInfo', () => {
     
             try {
                 [envVar, wallet] = await walletPool.acquireWallet();
-                session = await zkVerifySession.start().Custom({rpc:"https://customUrl", websocket: 'wss://volta-rpc.zkverify.io'}).readOnly();
+                session = await zkVerifySession.start().Custom({rpc:"https://customUrl", websocket: 'wss://volta-rpc.zkverify.io', network: "Volta"}).readOnly();
     
                 const address = await addAccountAndVerify(session, wallet);
                 await removeAccountAndVerify(session);
