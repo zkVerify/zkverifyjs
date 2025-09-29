@@ -1,7 +1,10 @@
 import { Keyring } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { encodeAddress } from '@polkadot/util-crypto';
-import { CHAIN_SS58_PREFIX } from '../../config';
+import {
+  VOLTA_CHAIN_SS58_PREFIX,
+  ZKVERIFY_CHAIN_SS58_PREFIX,
+} from '../../config';
 
 /**
  * Sets up the account using the provided secret seed phrase.
@@ -10,10 +13,16 @@ import { CHAIN_SS58_PREFIX } from '../../config';
  * @returns {KeyringPair} The initialized account.
  * @throws Will throw an error if the seed phrase is invalid.
  */
-export const setupAccount = (secretSeedPhrase: string): KeyringPair => {
+export const setupAccount = (
+  secretSeedPhrase: string,
+  isMainnetNetwork?: boolean,
+): KeyringPair => {
   try {
+    const ss58Prefix = isMainnetNetwork
+      ? ZKVERIFY_CHAIN_SS58_PREFIX
+      : VOLTA_CHAIN_SS58_PREFIX;
     const keyring = new Keyring({ type: 'sr25519' });
-    keyring.setSS58Format(CHAIN_SS58_PREFIX);
+    keyring.setSS58Format(ss58Prefix);
 
     return keyring.addFromUri(secretSeedPhrase);
   } catch (error) {
@@ -30,12 +39,17 @@ export const setupAccount = (secretSeedPhrase: string): KeyringPair => {
 /** Canonical SS58 address for a pair/public key (fixed to chain prefix). */
 export const canonicalAddress = (
   pairOrPublicKey: KeyringPair | Uint8Array,
+  isMainnetNetwork?: boolean,
 ): string => {
   const pk =
     pairOrPublicKey instanceof Uint8Array
       ? pairOrPublicKey
       : pairOrPublicKey.publicKey;
-  return encodeAddress(pk, CHAIN_SS58_PREFIX);
+  const ss58Prefix = isMainnetNetwork
+    ? ZKVERIFY_CHAIN_SS58_PREFIX
+    : VOLTA_CHAIN_SS58_PREFIX;
+
+  return encodeAddress(pk, ss58Prefix);
 };
 
 /**
@@ -50,11 +64,16 @@ export const canonicalAddress = (
 export const deriveChildAt = (
   base: KeyringPair,
   index: number,
+  isMainnetNetwork?: boolean,
 ): { pair: KeyringPair; address: string; path: string } => {
   const path = `//${index}`;
+  const ss58Prefix = isMainnetNetwork
+    ? ZKVERIFY_CHAIN_SS58_PREFIX
+    : VOLTA_CHAIN_SS58_PREFIX;
+
   try {
     const pair = base.derive(path);
-    const address = encodeAddress(pair.publicKey, CHAIN_SS58_PREFIX);
+    const address = encodeAddress(pair.publicKey, ss58Prefix);
     return { pair, address, path };
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'unknown error';

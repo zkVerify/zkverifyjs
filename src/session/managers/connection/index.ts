@@ -25,6 +25,7 @@ export class ConnectionManager {
     | AccountConnection
     | WalletConnection
     | EstablishedConnection;
+  public isMainnetNetwork: boolean;
   public customNetwork: boolean;
   public readOnly: boolean;
 
@@ -33,6 +34,7 @@ export class ConnectionManager {
     config: NetworkConfig,
   ) {
     this.connection = connection;
+    this.isMainnetNetwork = config.network !== SupportedNetwork.Volta;
     this.customNetwork = config.host === SupportedNetwork.Custom;
     this.readOnly =
       !('accounts' in connection) &&
@@ -105,7 +107,7 @@ export class ConnectionManager {
    */
   async addAccount(seedPhrase: string): Promise<string> {
     return this.accountMutex.runExclusive(async () => {
-      const account = setupAccount(seedPhrase);
+      const account = setupAccount(seedPhrase, this.isMainnetNetwork);
 
       if (!('accounts' in this.connection)) {
         this.connection = {
@@ -277,7 +279,7 @@ export class ConnectionManager {
         Array.from(sessionAccountsMap.values()).find(
           (pair) =>
             pair.address === baseAddress ||
-            canonicalAddress(pair) === baseAddress,
+            canonicalAddress(pair, this.isMainnetNetwork) === baseAddress,
         );
 
       if (!baseAccountPair) {
@@ -294,7 +296,7 @@ export class ConnectionManager {
         childIndex++
       ) {
         const { pair: derivedChildPair, address: derivedChildAddress } =
-          deriveChildAt(baseAccountPair, childIndex);
+          deriveChildAt(baseAccountPair, childIndex, this.isMainnetNetwork);
 
         if (sessionAccountsMap.has(derivedChildAddress)) {
           continue;

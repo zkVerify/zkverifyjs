@@ -133,4 +133,66 @@ describe('zkVerifySession class', () => {
             }
         }
     });
+
+    describe('addDerivedAccounts', () => {
+        it('should format derived accounts correctly for zkVerify session', async() => {
+            [envVar, wallet] = await walletPool.acquireWallet();
+
+            session = await zkVerifySession.start().zkVerify().withAccount(wallet);
+            const baseAddress = (await session.getAccountInfo())[0].address;
+
+            const derivedAddresses = await session.addDerivedAccounts(baseAddress, 5);
+
+            expect(derivedAddresses.length).toBe(5);
+            expect(derivedAddresses.every(addr => addr.startsWith('ZK'))).toBe(true);
+        });
+
+        it('should format derived accounts correctly for Volta session', async() => {
+            [envVar, wallet] = await walletPool.acquireWallet();
+
+            session = await zkVerifySession.start().Volta().withAccount(wallet);
+            const baseAddress = (await session.getAccountInfo())[0].address;
+
+            const derivedAddresses = await session.addDerivedAccounts(baseAddress, 5);
+
+            expect(derivedAddresses.length).toBe(5);
+            expect(derivedAddresses.every(addr => addr.startsWith('xp'))).toBe(true);
+        });
+
+        it('should format derived accounts correctly for custom zkVerify session', async() => {
+            [envVar, wallet] = await walletPool.acquireWallet();
+
+            session = await zkVerifySession.start().Custom({rpc:"https://customUrl", websocket: 'wss://zkverify-rpc.zkverify.io'}).withAccount(wallet);
+            const baseAddress = (await session.getAccountInfo())[0].address;
+
+            const derivedAddresses = await session.addDerivedAccounts(baseAddress, 5);
+
+            expect(derivedAddresses.length).toBe(5);
+            expect(derivedAddresses.every(addr => addr.startsWith('ZK'))).toBe(true);
+        });
+
+        it('should format derived accounts correctly for custom Volta session', async() => {
+            [envVar, wallet] = await walletPool.acquireWallet();
+
+            session = await zkVerifySession.start().Custom({rpc:"https://customUrl", websocket: 'wss://volta-rpc.zkverify.io', network: "Volta"}).withAccount(wallet);
+            const baseAddress = (await session.getAccountInfo())[0].address;
+
+            const derivedAddresses = await session.addDerivedAccounts(baseAddress, 5);
+
+            expect(derivedAddresses.length).toBe(5);
+            expect(derivedAddresses.every(addr => addr.startsWith('xp'))).toBe(true);
+        });
+
+        it('should format derived accounts for zkVeiry for any sessions not specified as Volta', async() => {
+            [envVar, wallet] = await walletPool.acquireWallet();
+
+            session = await zkVerifySession.start().Custom({rpc:"https://customUrl", websocket: 'wss://volta-rpc.zkverify.io', network: "wrong-network"}).withAccount(wallet);
+            const baseAddress = (await session.getAccountInfo())[0].address;
+
+            const derivedAddresses = await session.addDerivedAccounts(baseAddress, 5);
+
+            expect(derivedAddresses.length).toBe(5);
+            expect(derivedAddresses.every(addr => addr.startsWith('ZK'))).toBe(true);
+        });
+    });
 });
