@@ -35,7 +35,7 @@ describe('zkVerifySession class', () => {
             const proofData = loadProofAndVK({
                 proofType: ProofType.risc0,
                 config: {
-                    version: Risc0Version.V2_3
+                    version: Risc0Version.V3_0
                 }
             });
 
@@ -44,7 +44,7 @@ describe('zkVerifySession class', () => {
             const { events, transactionResult } = await session
                 .verify()
                 .risc0({
-                    version: Risc0Version.V2_3
+                    version: Risc0Version.V3_0
                 })
                 .execute({
                     proofData: {
