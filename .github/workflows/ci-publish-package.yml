@@ -6,21 +6,26 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: '20'
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
@@ -30,18 +35,12 @@ jobs:
 
       - name: Extract Package Version
         id: extract_version
-        run: echo "package_version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
-
-      - name: Authenticate to npm registry
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+        run: echo "package_version=$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
 
       - name: Generate Release Notes
         id: generate_release_notes
         run: |
           git fetch --tags
-          
           current_tag="v${{ env.package_version }}"
           last_tag=$(git tag --sort=-creatordate | grep -A1 "$current_tag" | tail -n 1)
 
@@ -61,7 +60,7 @@ jobs:
 
       - name: Publish to npm
         id: publish
-        run: npm publish --ignore-scripts
+        run: npm publish --provenance --ignore-scripts
 
       - name: Create GitHub Release
         if: ${{ steps.publish.outcome == 'success' }}
