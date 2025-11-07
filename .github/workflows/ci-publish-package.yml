@@ -19,6 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -40,16 +41,20 @@ jobs:
       - name: Generate Release Notes
         id: generate_release_notes
         run: |
-          git fetch --tags
+          if [ "v${{ env.package_version }}" != "${GITHUB_REF_NAME}" ]; then
+            echo "package.json version and tag mismatch"
+            exit 1
+          fi
+
           current_tag="v${{ env.package_version }}"
-          last_tag=$(git tag --sort=-creatordate | grep -A1 "$current_tag" | tail -n 1)
+          last_tag=$(git describe --tags --abbrev=0 "${current_tag}^" 2>/dev/null || true)
 
           if [ -z "$last_tag" ]; then
             echo "No previous tag found. Generating release notes for all history."
             git log --pretty=format:"* %s" > release_notes.md
           else
             echo "Generating release notes from $last_tag to $current_tag."
-            git log --pretty=format:"* %s" "${last_tag}..HEAD" > release_notes.md
+            git log --pretty=format:"* %s" "${last_tag}..${current_tag}" > release_notes.md
           fi
 
           sed -i 's/ (#\([0-9]*\))/ (PR #\1)/' release_notes.md
