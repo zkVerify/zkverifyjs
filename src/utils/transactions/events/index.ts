@@ -108,7 +108,9 @@ export const handleTransactionEvents = <T extends TransactionType>(
 
     if (
       (transactionType === TransactionType.DomainHold ||
-        transactionType === TransactionType.DomainUnregister) &&
+        transactionType === TransactionType.DomainUnregister ||
+        transactionType === TransactionType.DomainAddSubmitters ||
+        transactionType === TransactionType.DomainRemoveSubmitters) &&
       event.section === 'aggregate' &&
       event.method === 'DomainStateChanged'
     ) {
@@ -165,10 +167,16 @@ export const handleTransactionEvents = <T extends TransactionType>(
 
     case TransactionType.DomainHold:
     case TransactionType.DomainUnregister:
+    case TransactionType.DomainRemoveSubmitters:
       return {
         ...transactionInfo,
         domainId,
         domainState,
+      };
+
+    case TransactionType.DomainAddSubmitters:
+      return {
+        ...transactionInfo,
       };
 
     case TransactionType.Verify:

@@ -49,11 +49,18 @@ export const initializeTransactionInfo = <T extends TransactionType>(
 
     case TransactionType.DomainHold:
     case TransactionType.DomainUnregister:
+    case TransactionType.DomainRemoveSubmitters:
       return {
         ...baseInfo,
         domainId: undefined,
         domainState: '',
       } as TransactionInfoByType[T];
+
+    case TransactionType.DomainAddSubmitters:
+      return {
+        ...baseInfo,
+      } as TransactionInfoByType[T];
+
     case TransactionType.Aggregate:
       return {
         ...baseInfo,

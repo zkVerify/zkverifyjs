@@ -6,6 +6,8 @@ export enum TransactionType {
   DomainUnregister = 5,
   Aggregate = 6,
   BatchVerify = 7,
+  DomainAddSubmitters = 8,
+  DomainRemoveSubmitters = 9,
 }
 
 export enum TransactionStatus {
@@ -66,9 +68,19 @@ export enum AggregateSecurityRules {
   OnlyOwnerUncompleted = 'OnlyOwnerUncompleted',
 }
 
+export enum ProofSecurityRules {
+  Untrusted = 'Untrusted',
+  OnlyOwner = 'OnlyOwner',
+  OnlyAllowlisted = 'OnlyAllowlisted',
+}
+
 export enum Destination {
   None = 'None',
   Hyperbridge = 'Hyperbridge',
+}
+
+export enum RuntimeVersion {
+  V1_3_0 = 1003000,
 }
 
 export const PUBLIC_ZK_VERIFY_EVENTS: ZkVerifyEvents[] = [

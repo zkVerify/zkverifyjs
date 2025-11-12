@@ -1,7 +1,9 @@
 import {
+  addDomainSubmitters,
   aggregate,
   holdDomain,
   registerDomain,
+  removeDomainSubmitters,
   unregisterDomain,
 } from '../../../api/domain';
 
@@ -132,6 +134,66 @@ export class DomainManager {
         | WalletConnection,
       domainId,
       accountAddress,
+    );
+  }
+
+  /**
+   * Adds submitters to the allowlist for a domain.
+   * Only available for domains configured with ProofSecurityRules.OnlyAllowlisted.
+   * Requires runtime version 1.3.0 or later.
+   * @param {number} domainId - The ID of the domain.
+   * @param {string[]} submitters - Array of account addresses to add to the allowlist.
+   * @param {string} [signerAccount] - Optional address of the account signing the transaction.
+   * @returns {{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }}
+   * @throws {Error} If the connection is read-only or runtime version is too old.
+   */
+  addDomainSubmitters(
+    domainId: number,
+    submitters: string[],
+    signerAccount?: string,
+  ): {
+    events: EventEmitter;
+    transactionResult: Promise<DomainTransactionInfo>;
+  } {
+    checkReadOnly(this.connectionManager.connectionDetails);
+
+    return addDomainSubmitters(
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
+      domainId,
+      submitters,
+      signerAccount,
+    );
+  }
+
+  /**
+   * Removes submitters from the allowlist for a domain.
+   * Only available for domains configured with ProofSecurityRules.OnlyAllowlisted.
+   * Requires runtime version 1.3.0 or later.
+   * @param {number} domainId - The ID of the domain.
+   * @param {string[]} submitters - Array of account addresses to remove from the allowlist.
+   * @param {string} [signerAccount] - Optional address of the account signing the transaction.
+   * @returns {{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }}
+   * @throws {Error} If the connection is read-only or runtime version is too old.
+   */
+  removeDomainSubmitters(
+    domainId: number,
+    submitters: string[],
+    signerAccount?: string,
+  ): {
+    events: EventEmitter;
+    transactionResult: Promise<DomainTransactionInfo>;
+  } {
+    checkReadOnly(this.connectionManager.connectionDetails);
+
+    return removeDomainSubmitters(
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
+      domainId,
+      submitters,
+      signerAccount,
     );
   }
 }

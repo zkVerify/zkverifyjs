@@ -6,6 +6,7 @@ import {
   RegisterDomainTransactionInfo,
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
+  TransactionInfo,
 } from '../../types';
 
 export type TransactionInfoByType = {
@@ -14,6 +15,8 @@ export type TransactionInfoByType = {
   [TransactionType.DomainRegistration]: RegisterDomainTransactionInfo;
   [TransactionType.DomainHold]: DomainTransactionInfo;
   [TransactionType.DomainUnregister]: DomainTransactionInfo;
+  [TransactionType.DomainAddSubmitters]: TransactionInfo;
+  [TransactionType.DomainRemoveSubmitters]: DomainTransactionInfo;
   [TransactionType.Aggregate]: AggregateTransactionInfo;
   [TransactionType.BatchVerify]: BatchVerifyTransactionInfo;
 };

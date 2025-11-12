@@ -25,6 +25,9 @@ import {
   EstablishedConnection,
   WalletConnection,
 } from '../../api/connection/types';
+
+export * from '../runtimeVersion';
+export * from '../fetchRuntimeVersion';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 

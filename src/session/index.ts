@@ -46,6 +46,8 @@ export class zkVerifySession {
   declare unregisterDomain: DomainManager['unregisterDomain'];
   declare holdDomain: DomainManager['holdDomain'];
   declare aggregate: DomainManager['aggregate'];
+  declare addDomainSubmitters: DomainManager['addDomainSubmitters'];
+  declare removeDomainSubmitters: DomainManager['removeDomainSubmitters'];
   declare getAggregateStatementPath: RpcManager['getAggregateStatementPath'];
   declare getVkHash: RpcManager['getVkHash'];
 
@@ -121,7 +123,7 @@ export class zkVerifySession {
     | AccountConnection
     | WalletConnection
     | EstablishedConnection {
-    return this.connectionManager;
+    return this.connectionManager.connectionDetails;
   }
 
   /**

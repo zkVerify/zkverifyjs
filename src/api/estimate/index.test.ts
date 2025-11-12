@@ -39,6 +39,10 @@ describe('estimateCost', () => {
       accounts: new Map([
         ['mockAddress', { address: 'mockAddress' } as KeyringPair],
       ]),
+      runtimeVersion: {
+        specVersion: 1003000,
+        specName: 'test-runtime',
+      },
     };
   });
 

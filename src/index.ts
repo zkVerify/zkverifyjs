@@ -28,6 +28,8 @@ export {
   Library,
   CurveType,
   Plonky2HashFunction,
+  ProofSecurityRules,
+  RuntimeVersion,
 } from './enums';
 export {
   ProofData,
@@ -50,7 +52,14 @@ export {
   AggregateStatementPathResult,
   OptimisticVerificationResultType,
   OptimisticVerifyResult,
+  LastRuntimeUpgrade,
 } from './types';
 export { ExtrinsicCostEstimate } from './api/estimate/types';
 export { FormattedProofData } from './api/format/types';
 export { NewAggregationEventSubscriptionOptions } from './api/aggregation/types';
+export {
+  isVersionAtLeast,
+  isVersionBetween,
+  isVersionExactly,
+} from './utils/runtimeVersion';
+export { fetchRuntimeVersion } from './utils/fetchRuntimeVersion';
