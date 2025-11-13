@@ -4,6 +4,7 @@ import {
   getKeyringAccountIfAvailable,
   isVersionAtLeast,
   normalizeDeliveryFromOptions,
+  requireVersionAtLeast,
 } from '../../utils/helpers';
 import EventEmitter from 'events';
 import {
@@ -173,11 +174,11 @@ export const addDomainSubmitters = (
 
   const { api, runtimeVersion } = connection;
 
-  if (!isVersionAtLeast(runtimeVersion, RuntimeVersion.V1_3_0)) {
-    throw new Error(
-      `addDomainSubmitters is only available in runtime version 1.3.0 or later`,
-    );
-  }
+  requireVersionAtLeast(
+    runtimeVersion,
+    RuntimeVersion.V1_3_0,
+    'addDomainSubmitters',
+  );
 
   const allowlistExtrinsic = api.tx.aggregate.allowlistProofSubmitters(
     domainId,
@@ -212,11 +213,11 @@ export const removeDomainSubmitters = (
 
   const { api, runtimeVersion } = connection;
 
-  if (!isVersionAtLeast(runtimeVersion, RuntimeVersion.V1_3_0)) {
-    throw new Error(
-      `removeDomainSubmitters is only available in runtime version 1.3.0 or later`,
-    );
-  }
+  requireVersionAtLeast(
+    runtimeVersion,
+    RuntimeVersion.V1_3_0,
+    'removeDomainSubmitters',
+  );
 
   const removeExtrinsic = api.tx.aggregate.removeProofSubmitters(
     domainId,

@@ -25,3 +25,15 @@ export function isVersionExactly(
 ): boolean {
   return runtimeVersion.specVersion === targetVersion;
 }
+
+export function requireVersionAtLeast(
+  runtimeVersion: LastRuntimeUpgrade,
+  targetVersion: RuntimeVersion,
+  featureName: string,
+): void {
+  if (!isVersionAtLeast(runtimeVersion, targetVersion)) {
+    throw new Error(
+      `${featureName} is only available in runtime version 1.3.0 or later`,
+    );
+  }
+}

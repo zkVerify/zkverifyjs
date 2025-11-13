@@ -61,5 +61,6 @@ export {
   isVersionAtLeast,
   isVersionBetween,
   isVersionExactly,
+  requireVersionAtLeast,
 } from './utils/runtimeVersion';
 export { fetchRuntimeVersion } from './utils/fetchRuntimeVersion';

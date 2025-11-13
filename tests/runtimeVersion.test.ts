@@ -16,20 +16,20 @@ describe('Runtime Version Detection', () => {
     
     session = await zkVerifySession.start().Volta().readOnly();
     
-    const runtimeVersion = (session as any).connectionManager.runtimeVersion;
+    const runtimeVersion = session.connection.runtimeVersion;
     
     console.log('Runtime Version Info:');
-    console.log('  - specVersion:', runtimeVersion?.specVersion);
-    console.log('  - specName:', runtimeVersion?.specName);
+    console.log('  - specVersion:', runtimeVersion.specVersion);
+    console.log('  - specName:', runtimeVersion.specName);
     console.log('');
     
-    expect(runtimeVersion).not.toBeNull();
-    expect(runtimeVersion?.specVersion).toBeDefined();
-    expect(typeof runtimeVersion?.specVersion).toBe('number');
-    expect(runtimeVersion?.specVersion).toBeGreaterThan(0);
-    expect(runtimeVersion?.specName).toBeDefined();
-    expect(typeof runtimeVersion?.specName).toBe('string');
-    expect(runtimeVersion?.specName.length).toBeGreaterThan(0);
+    expect(runtimeVersion).toBeDefined();
+    expect(runtimeVersion.specVersion).toBeDefined();
+    expect(typeof runtimeVersion.specVersion).toBe('number');
+    expect(runtimeVersion.specVersion).toBeGreaterThan(0);
+    expect(runtimeVersion.specName).toBeDefined();
+    expect(typeof runtimeVersion.specName).toBe('string');
+    expect(runtimeVersion.specName.length).toBeGreaterThan(0);
     
     console.log('Runtime version successfully fetched and stored!\n');
   });
@@ -39,20 +39,20 @@ describe('Runtime Version Detection', () => {
     
     session = await zkVerifySession.start().zkVerify().readOnly();
     
-    const runtimeVersion = (session as any).connectionManager.runtimeVersion;
+    const runtimeVersion = session.connection.runtimeVersion;
     
     console.log('Runtime Version Info:');
-    console.log('  - specVersion:', runtimeVersion?.specVersion);
-    console.log('  - specName:', runtimeVersion?.specName);
+    console.log('  - specVersion:', runtimeVersion.specVersion);
+    console.log('  - specName:', runtimeVersion.specName);
     console.log('');
     
-    expect(runtimeVersion).not.toBeNull();
-    expect(runtimeVersion?.specVersion).toBeDefined();
-    expect(typeof runtimeVersion?.specVersion).toBe('number');
-    expect(runtimeVersion?.specVersion).toBeGreaterThan(0);
-    expect(runtimeVersion?.specName).toBeDefined();
-    expect(typeof runtimeVersion?.specName).toBe('string');
-    expect(runtimeVersion?.specName.length).toBeGreaterThan(0);
+    expect(runtimeVersion).toBeDefined();
+    expect(runtimeVersion.specVersion).toBeDefined();
+    expect(typeof runtimeVersion.specVersion).toBe('number');
+    expect(runtimeVersion.specVersion).toBeGreaterThan(0);
+    expect(runtimeVersion.specName).toBeDefined();
+    expect(typeof runtimeVersion.specName).toBe('string');
+    expect(runtimeVersion.specName.length).toBeGreaterThan(0);
     
     console.log('Runtime version successfully fetched and stored!\n');
   });
@@ -63,28 +63,28 @@ describe('Runtime Version Detection', () => {
     const voltaSession = await zkVerifySession.start().Volta().readOnly();
     const zkVerifySession2 = await zkVerifySession.start().zkVerify().readOnly();
     
-    const voltaRuntime = (voltaSession as any).connectionManager.runtimeVersion;
-    const zkVerifyRuntime = (zkVerifySession2 as any).connectionManager.runtimeVersion;
+    const voltaRuntime = voltaSession.connection.runtimeVersion;
+    const zkVerifyRuntime = zkVerifySession2.connection.runtimeVersion;
     
     console.log('Volta Runtime:');
-    console.log('  - specVersion:', voltaRuntime?.specVersion);
-    console.log('  - specName:', voltaRuntime?.specName);
+    console.log('  - specVersion:', voltaRuntime.specVersion);
+    console.log('  - specName:', voltaRuntime.specName);
     console.log('');
     
     console.log('zkVerify Runtime:');
-    console.log('  - specVersion:', zkVerifyRuntime?.specVersion);
-    console.log('  - specName:', zkVerifyRuntime?.specName);
+    console.log('  - specVersion:', zkVerifyRuntime.specVersion);
+    console.log('  - specName:', zkVerifyRuntime.specName);
     console.log('');
     
-    expect(voltaRuntime).not.toBeNull();
-    expect(zkVerifyRuntime).not.toBeNull();
+    expect(voltaRuntime).toBeDefined();
+    expect(zkVerifyRuntime).toBeDefined();
     
-    if (voltaRuntime?.specVersion !== zkVerifyRuntime?.specVersion) {
+    if (voltaRuntime.specVersion !== zkVerifyRuntime.specVersion) {
       console.log('Networks have DIFFERENT runtime versions');
-      console.log(`   Volta: ${voltaRuntime?.specVersion}, zkVerify: ${zkVerifyRuntime?.specVersion}\n`);
+      console.log(`   Volta: ${voltaRuntime.specVersion}, zkVerify: ${zkVerifyRuntime.specVersion}\n`);
     } else {
       console.log('Networks currently have the SAME runtime version');
-      console.log(`   Both: ${voltaRuntime?.specVersion}\n`);
+      console.log(`   Both: ${voltaRuntime.specVersion}\n`);
     }
     
     await voltaSession.close();
