@@ -26,8 +26,7 @@ import {
   WalletConnection,
 } from '../../api/connection/types';
 
-export * from '../runtimeVersion';
-export * from '../fetchRuntimeVersion';
+export * from './runtimeVersion';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 
