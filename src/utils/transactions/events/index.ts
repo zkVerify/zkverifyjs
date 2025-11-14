@@ -109,7 +109,6 @@ export const handleTransactionEvents = <T extends TransactionType>(
     if (
       (transactionType === TransactionType.DomainHold ||
         transactionType === TransactionType.DomainUnregister ||
-        transactionType === TransactionType.DomainAddSubmitters ||
         transactionType === TransactionType.DomainRemoveSubmitters) &&
       event.section === 'aggregate' &&
       event.method === 'DomainStateChanged'

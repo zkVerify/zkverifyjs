@@ -121,8 +121,7 @@ export const handleFinalized = async <T extends TransactionType>(
     }
 
     case TransactionType.DomainHold:
-    case TransactionType.DomainUnregister:
-    case TransactionType.DomainRemoveSubmitters: {
+    case TransactionType.DomainUnregister: {
       const info =
         transactionInfo as TransactionInfoByType[TransactionType.DomainHold];
       if (info.domainState !== undefined) {
@@ -132,8 +131,24 @@ export const handleFinalized = async <T extends TransactionType>(
         });
         safeEmit(emitter, ZkVerifyEvents.Finalized, info);
       } else {
-        safeEmit(emitter, ZkVerifyEvents.Finalized, info);
+        safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
+          ...info,
+          error: 'Finalized but no domain state returned.',
+        });
       }
+      break;
+    }
+
+    case TransactionType.DomainRemoveSubmitters: {
+      const info =
+        transactionInfo as TransactionInfoByType[TransactionType.DomainRemoveSubmitters];
+      if (info.domainState !== undefined) {
+        safeEmit(emitter, ZkVerifyEvents.DomainStateChanged, {
+          domainId: info.domainId,
+          domainState: info.domainState,
+        });
+      }
+      safeEmit(emitter, ZkVerifyEvents.Finalized, transactionInfo);
       break;
     }
 

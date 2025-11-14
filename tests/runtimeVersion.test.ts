@@ -57,7 +57,7 @@ describe('Runtime Version Detection', () => {
     console.log('Runtime version successfully fetched and stored!\n');
   });
 
-  it('should show different versions between networks', async () => {
+  it('should correctly show versions for each network', async () => {
     console.log('\nComparing Runtime Versions Between Networks...\n');
     
     const voltaSession = await zkVerifySession.start().Volta().readOnly();

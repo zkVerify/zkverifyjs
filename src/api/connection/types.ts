@@ -6,7 +6,7 @@ import { LastRuntimeUpgrade } from '../../types';
 export interface EstablishedConnection {
   api: ApiPromise;
   provider: WsProvider;
-  runtimeVersion: LastRuntimeUpgrade;
+  runtimeVersion: LastRuntimeUpgrade | null;
 }
 
 export interface AccountConnection extends EstablishedConnection {

@@ -45,7 +45,7 @@ describe('Domain API - Runtime Version Checks', () => {
       expect(() => {
         addDomainSubmitters(connection, 1, ['address1']);
       }).toThrow(
-        /addDomainSubmitters is only available in runtime version 1.3.0 or later/,
+        /addDomainSubmitters is only available in runtime version 1003000 or later/,
       );
     });
 
@@ -133,7 +133,7 @@ describe('Domain API - Runtime Version Checks', () => {
       expect(() => {
         removeDomainSubmitters(connection, 1, ['address1']);
       }).toThrow(
-        /removeDomainSubmitters is only available in runtime version 1.3.0 or later/,
+        /removeDomainSubmitters is only available in runtime version 1003000 or later/,
       );
     });
 

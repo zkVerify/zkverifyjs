@@ -15,12 +15,11 @@ interface RuntimeUpgradeInfo {
 /**
  * Fetches the runtime version from the chain.
  * @param api - The ApiPromise instance.
- * @returns The runtime version.
- * @throws Will throw an error if runtime version cannot be fetched.
+ * @returns The runtime version, or null if it cannot be fetched.
  */
 export async function fetchRuntimeVersion(
   api: ApiPromise,
-): Promise<LastRuntimeUpgrade> {
+): Promise<LastRuntimeUpgrade | null> {
   try {
     const lastUpgrade = await api.query.system.lastRuntimeUpgrade();
     const optionUpgrade =
@@ -34,27 +33,30 @@ export async function fetchRuntimeVersion(
       };
     }
 
-    throw new Error('Runtime version is not available on this chain');
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Failed to fetch runtime version: ${error.message}`);
-    }
-    throw new Error('Failed to fetch runtime version due to an unknown error');
+    return null;
+  } catch {
+    return null;
   }
 }
 
 export function isVersionAtLeast(
-  runtimeVersion: LastRuntimeUpgrade,
+  runtimeVersion: LastRuntimeUpgrade | null,
   targetVersion: RuntimeVersion,
 ): boolean {
+  if (!runtimeVersion) {
+    return false;
+  }
   return runtimeVersion.specVersion >= targetVersion;
 }
 
 export function isVersionBetween(
-  runtimeVersion: LastRuntimeUpgrade,
+  runtimeVersion: LastRuntimeUpgrade | null,
   minVersion: RuntimeVersion,
   maxVersion: RuntimeVersion,
 ): boolean {
+  if (!runtimeVersion) {
+    return false;
+  }
   return (
     runtimeVersion.specVersion >= minVersion &&
     runtimeVersion.specVersion <= maxVersion
@@ -62,20 +64,28 @@ export function isVersionBetween(
 }
 
 export function isVersionExactly(
-  runtimeVersion: LastRuntimeUpgrade,
+  runtimeVersion: LastRuntimeUpgrade | null,
   targetVersion: RuntimeVersion,
 ): boolean {
+  if (!runtimeVersion) {
+    return false;
+  }
   return runtimeVersion.specVersion === targetVersion;
 }
 
 export function requireVersionAtLeast(
-  runtimeVersion: LastRuntimeUpgrade,
+  runtimeVersion: LastRuntimeUpgrade | null,
   targetVersion: RuntimeVersion,
   featureName: string,
 ): void {
+  if (!runtimeVersion) {
+    throw new Error(
+      `Runtime version is not available. ${featureName} requires runtime version ${targetVersion} or later.`,
+    );
+  }
   if (!isVersionAtLeast(runtimeVersion, targetVersion)) {
     throw new Error(
-      `${featureName} is only available in runtime version 1.3.0 or later`,
+      `${featureName} is only available in runtime version ${targetVersion} or later`,
     );
   }
 }

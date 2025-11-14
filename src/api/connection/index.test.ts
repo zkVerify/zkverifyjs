@@ -80,8 +80,11 @@ describe('establishConnection', () => {
     expect(result.api).toBeDefined();
     expect(result.provider).toBeDefined();
     expect(result.runtimeVersion).toBeDefined();
-    expect(result.runtimeVersion.specVersion).toBe(1003000);
-    expect(result.runtimeVersion.specName).toBe('test-runtime');
+    expect(result.runtimeVersion).not.toBeNull();
+    if (result.runtimeVersion) {
+      expect(result.runtimeVersion.specVersion).toBe(1003000);
+      expect(result.runtimeVersion.specName).toBe('test-runtime');
+    }
   });
 
   it('should establish a connection successfully on a custom network', async () => {
@@ -145,10 +148,8 @@ describe('establishConnection', () => {
     );
   });
 
-  it('should throw an error if runtime version fetch fails', async () => {
-    mockFetchRuntimeVersion.mockRejectedValueOnce(
-      new Error('Runtime version not available'),
-    );
+  it('should return null for runtime version if fetch fails', async () => {
+    mockFetchRuntimeVersion.mockResolvedValueOnce(null);
 
     const networkConfig: NetworkConfig = {
       host: SupportedNetwork.Volta,
@@ -156,8 +157,9 @@ describe('establishConnection', () => {
       rpc: 'http://volta-rpc.zkverify.io',
     };
 
-    await expect(establishConnection(networkConfig)).rejects.toThrow(
-      'Failed to establish connection to Volta: Runtime version not available',
-    );
+    const result = await establishConnection(networkConfig);
+
+    expect(fetchRuntimeVersion).toHaveBeenCalledWith(result.api);
+    expect(result.runtimeVersion).toBeNull();
   });
 });
