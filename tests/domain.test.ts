@@ -251,16 +251,6 @@ describe('Domain interaction tests', () => {
             submitters,
         );
 
-        let domainStateChangedFired = false;
-        let eventDomainId: number | undefined;
-        let eventDomainState: string | undefined;
-
-        removeEvents.on(ZkVerifyEvents.DomainStateChanged, (eventData: any) => {
-            domainStateChangedFired = true;
-            eventDomainId = eventData.domainId;
-            eventDomainState = eventData.domainState;
-        });
-
         const removeTxInfo = await removeResult;
         expect(removeTxInfo.status).toBe('finalized');
         console.log(`Submitters removed successfully.`);
