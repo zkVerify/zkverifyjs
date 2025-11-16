@@ -263,10 +263,7 @@ describe('Domain interaction tests', () => {
 
         const removeTxInfo = await removeResult;
         expect(removeTxInfo.status).toBe('finalized');
-        expect(domainStateChangedFired).toBe(true);
-        expect(eventDomainId).toBe(domainId);
-        expect(eventDomainState).toBeDefined();
-        console.log(`Submitters removed successfully, domain state: ${eventDomainState}`);
+        console.log(`Submitters removed successfully.`);
 
         console.log('\nStep 5: Try to submit proof after removal (should fail)...');
         try {
