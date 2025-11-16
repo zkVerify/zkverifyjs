@@ -31,7 +31,7 @@ export const establishConnection = async (
 
     await waitForNodeToSync(api);
 
-    const runtimeVersion = await fetchRuntimeVersion(api);
+    const runtimeVersion = fetchRuntimeVersion(api);
 
     return { api, provider, runtimeVersion };
   } catch (error) {

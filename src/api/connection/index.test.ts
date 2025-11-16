@@ -40,7 +40,7 @@ describe('establishConnection', () => {
     } as unknown as ApiPromise);
 
     mockWaitForNodeToSync.mockResolvedValue(undefined);
-    mockFetchRuntimeVersion.mockResolvedValue({
+    mockFetchRuntimeVersion.mockReturnValue({
       specVersion: 1003000,
       specName: 'test-runtime',
     });
@@ -80,11 +80,8 @@ describe('establishConnection', () => {
     expect(result.api).toBeDefined();
     expect(result.provider).toBeDefined();
     expect(result.runtimeVersion).toBeDefined();
-    expect(result.runtimeVersion).not.toBeNull();
-    if (result.runtimeVersion) {
-      expect(result.runtimeVersion.specVersion).toBe(1003000);
-      expect(result.runtimeVersion.specName).toBe('test-runtime');
-    }
+    expect(result.runtimeVersion.specVersion).toBe(1003000);
+    expect(result.runtimeVersion.specName).toBe('test-runtime');
   });
 
   it('should establish a connection successfully on a custom network', async () => {
@@ -146,20 +143,5 @@ describe('establishConnection', () => {
     await expect(establishConnection(networkConfig)).rejects.toThrow(
       'Failed to establish connection due to an unknown error.',
     );
-  });
-
-  it('should return null for runtime version if fetch fails', async () => {
-    mockFetchRuntimeVersion.mockResolvedValueOnce(null);
-
-    const networkConfig: NetworkConfig = {
-      host: SupportedNetwork.Volta,
-      websocket: 'wss://volta-rpc.zkverify.io',
-      rpc: 'http://volta-rpc.zkverify.io',
-    };
-
-    const result = await establishConnection(networkConfig);
-
-    expect(fetchRuntimeVersion).toHaveBeenCalledWith(result.api);
-    expect(result.runtimeVersion).toBeNull();
   });
 });
