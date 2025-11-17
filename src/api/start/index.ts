@@ -19,7 +19,8 @@ export async function startSession(
   }
 
   const { networkConfig, seedPhrases } = options;
-  const { api, provider } = await establishConnection(networkConfig);
+  const { api, provider, runtimeSpec } =
+    await establishConnection(networkConfig);
   const isMainnetNetwork = networkConfig.network !== SupportedNetwork.Volta;
   if (seedPhrases && seedPhrases.length > 0) {
     const uniqueAccounts = new Map<string, KeyringPair>();
@@ -35,9 +36,14 @@ export async function startSession(
       uniqueAccounts.set(account.address, account);
     }
 
-    return { api, provider, accounts: uniqueAccounts } as AccountConnection;
+    return {
+      api,
+      provider,
+      accounts: uniqueAccounts,
+      runtimeSpec,
+    } as AccountConnection;
   } else {
-    return { api, provider } as EstablishedConnection;
+    return { api, provider, runtimeSpec } as EstablishedConnection;
   }
 }
 
@@ -50,7 +56,8 @@ export async function startWalletSession(
     );
   }
   const { networkConfig, wallet } = options;
-  const { api, provider } = await establishConnection(networkConfig);
+  const { api, provider, runtimeSpec } =
+    await establishConnection(networkConfig);
 
   if (!wallet || !wallet.source || !wallet.accountAddress) {
     throw new Error('Wallet source and accountAddress must be provided.');
@@ -89,5 +96,6 @@ export async function startWalletSession(
     provider,
     injector,
     accountAddress: selectedAccount.address,
+    runtimeSpec,
   };
 }

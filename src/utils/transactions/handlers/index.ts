@@ -139,6 +139,24 @@ export const handleFinalized = async <T extends TransactionType>(
       break;
     }
 
+    case TransactionType.DomainRemoveSubmitters: {
+      const info =
+        transactionInfo as TransactionInfoByType[TransactionType.DomainRemoveSubmitters];
+      if (info.domainState !== undefined) {
+        safeEmit(emitter, ZkVerifyEvents.DomainStateChanged, {
+          domainId: info.domainId,
+          domainState: info.domainState,
+        });
+      }
+      safeEmit(emitter, ZkVerifyEvents.Finalized, transactionInfo);
+      break;
+    }
+
+    case TransactionType.DomainAddSubmitters: {
+      safeEmit(emitter, ZkVerifyEvents.Finalized, transactionInfo);
+      break;
+    }
+
     case TransactionType.Aggregate: {
       const info =
         transactionInfo as TransactionInfoByType[TransactionType.Aggregate];

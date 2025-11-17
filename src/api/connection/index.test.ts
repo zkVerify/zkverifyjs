@@ -1,6 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { establishConnection } from './index';
-import { waitForNodeToSync } from '../../utils/helpers';
+import { waitForNodeToSync, fetchRuntimeVersion } from '../../utils/helpers';
 import { zkvTypes, zkvRpc, SupportedNetwork } from '../../config';
 import { NetworkConfig } from '../../types';
 
@@ -19,6 +19,7 @@ describe('establishConnection', () => {
   let mockApiPromiseCreate: jest.MockedFunction<typeof ApiPromise.create>;
   let mockWsProvider: jest.Mocked<WsProvider>;
   let mockWaitForNodeToSync: jest.MockedFunction<typeof waitForNodeToSync>;
+  let mockFetchRuntimeVersion: jest.MockedFunction<typeof fetchRuntimeVersion>;
 
   beforeEach(() => {
     mockApiPromiseCreate = ApiPromise.create as jest.MockedFunction<
@@ -30,12 +31,19 @@ describe('establishConnection', () => {
     mockWaitForNodeToSync = waitForNodeToSync as jest.MockedFunction<
       typeof waitForNodeToSync
     >;
+    mockFetchRuntimeVersion = fetchRuntimeVersion as jest.MockedFunction<
+      typeof fetchRuntimeVersion
+    >;
 
     mockApiPromiseCreate.mockResolvedValue({
       provider: mockWsProvider,
     } as unknown as ApiPromise);
 
     mockWaitForNodeToSync.mockResolvedValue(undefined);
+    mockFetchRuntimeVersion.mockReturnValue({
+      specVersion: 1003000,
+      specName: 'test-runtime',
+    });
   });
 
   afterEach(() => {
@@ -68,8 +76,12 @@ describe('establishConnection', () => {
     expect(WsProvider).toHaveBeenCalledWith(networkConfig.websocket);
     expectApiPromiseCreateToHaveBeenCalledWith();
     expect(waitForNodeToSync).toHaveBeenCalledWith(result.api);
+    expect(fetchRuntimeVersion).toHaveBeenCalledWith(result.api);
     expect(result.api).toBeDefined();
     expect(result.provider).toBeDefined();
+    expect(result.runtimeSpec).toBeDefined();
+    expect(result.runtimeSpec.specVersion).toBe(1003000);
+    expect(result.runtimeSpec.specName).toBe('test-runtime');
   });
 
   it('should establish a connection successfully on a custom network', async () => {
@@ -85,8 +97,10 @@ describe('establishConnection', () => {
     expect(WsProvider).toHaveBeenCalledWith(customUrl);
     expectApiPromiseCreateToHaveBeenCalledWith();
     expect(waitForNodeToSync).toHaveBeenCalledWith(result.api);
+    expect(fetchRuntimeVersion).toHaveBeenCalledWith(result.api);
     expect(result.api).toBeDefined();
     expect(result.provider).toBeDefined();
+    expect(result.runtimeSpec).toBeDefined();
   });
 
   it('should throw an error if custom WebSocket URL is missing when host is custom', async () => {

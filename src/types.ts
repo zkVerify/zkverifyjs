@@ -2,6 +2,7 @@ import { ProofType, SupportedNetwork } from './config';
 import {
   AggregateSecurityRules,
   Destination,
+  ProofSecurityRules,
   TransactionStatus,
   ZkVerifyEvents,
 } from './enums';
@@ -112,12 +113,14 @@ export type DomainOptions =
       destination: Destination.None;
       deliveryOwner?: string;
       aggregateRules: AggregateSecurityRules;
+      proofSecurityRules?: ProofSecurityRules;
     }
   | {
       destination: Destination.Hyperbridge;
       deliveryInput: DeliveryInput;
       deliveryOwner?: string;
       aggregateRules: AggregateSecurityRules;
+      proofSecurityRules?: ProofSecurityRules;
     };
 
 export type Delivery =
@@ -196,3 +199,8 @@ export type ExtendedDispatchError = {
   isExhausted?: boolean;
   isCorruption?: boolean;
 };
+
+export interface RuntimeSpec {
+  specVersion: number;
+  specName: string;
+}

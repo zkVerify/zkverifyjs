@@ -1,6 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { EstablishedConnection } from './types';
-import { waitForNodeToSync } from '../../utils/helpers';
+import { waitForNodeToSync, fetchRuntimeVersion } from '../../utils/helpers';
 import { zkvTypes, zkvRpc } from '../../config';
 import { NetworkConfig } from '../../types';
 
@@ -31,7 +31,9 @@ export const establishConnection = async (
 
     await waitForNodeToSync(api);
 
-    return { api, provider };
+    const runtimeSpec = fetchRuntimeVersion(api);
+
+    return { api, provider, runtimeSpec };
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(

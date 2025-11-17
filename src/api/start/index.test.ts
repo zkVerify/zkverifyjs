@@ -36,6 +36,10 @@ describe('startSession', () => {
     (establishConnection as jest.Mock).mockResolvedValue({
       api: mockApi,
       provider: mockProvider,
+      runtimeSpec: {
+        specVersion: 1003000,
+        specName: 'test-runtime',
+      },
     });
 
     delete (global as any).window;
@@ -79,6 +83,10 @@ describe('startSession', () => {
       api: mockApi,
       provider: mockProvider,
       accounts: mockAccounts,
+      runtimeSpec: {
+        specVersion: 1003000,
+        specName: 'test-runtime',
+      },
     } as AccountConnection);
   });
 
@@ -115,6 +123,10 @@ describe('startSession', () => {
     expect(result).toEqual({
       api: mockApi,
       provider: mockProvider,
+      runtimeSpec: {
+        specVersion: 1003000,
+        specName: 'test-runtime',
+      },
     } as EstablishedConnection);
   });
 });
@@ -139,6 +151,10 @@ describe('startWalletSession', () => {
     (establishConnection as jest.Mock).mockResolvedValue({
       api: mockApi,
       provider: mockProvider,
+      runtimeSpec: {
+        specVersion: 1003000,
+        specName: 'test-runtime',
+      },
     });
 
     delete (global as any).window;
@@ -272,6 +288,10 @@ describe('startWalletSession', () => {
       provider: mockProvider,
       injector: mockInjector,
       accountAddress: 'mockAddress',
+      runtimeSpec: {
+        specVersion: 1003000,
+        specName: 'test-runtime',
+      },
     } as WalletConnection);
   });
 });

@@ -3,67 +3,96 @@
 
 The `zkverifyjs` package is a TypeScript library designed to facilitate sending proofs to zkVerify for verification, listening for transaction events, and waiting for transaction finalization. The package is built with an intuitive API that allows developers to handle real-time transaction events and await final results.
 
-Currently the following proof verifiers are supported:
+### Supported Proof Systems
 
-* FFlonk
-* Groth16 (BN128, BN254, BLS12-381 elliptic curves - snarkjs, arkworks, gnark libraries)
-  * Note - Must include `Library` and `CurveType` e.g.
+The following zero-knowledge proof systems are supported:
 
-```typescript
-  .groth16({
-    library: Library.snarkjs,
-    curve: CurveType.bls12381
-  })
-```
-
-* Plonky2
-  * Must be an uncompressed proof include hashFunction
+### FFlonk
 
 ```typescript
-    const { events, transactionResult } = await session
-        .verify()
-        .plonky2({
-            hashFunction: Plonky2HashFunction.Poseidon
-        })
-        .execute({...})
+session.verify().fflonk().execute({...})
 ```
 
-* Risc0 versions `V2_1`, `V2_2`, `V2_3`, `V3_0`
-  * Note - Version must be included for Risc0 e.g.
+### Groth16
+
+Supports multiple library and curve combinations:
+
+**Supported Elliptic Curves:**
+
+* BN128
+* BN254
+* BLS12-381
+
+**Supported Libraries:**
+
+* snarkjs
+* arkworks
+* gnark
 
 ```typescript
-  .risc0({
-    version: Risc0Version.V2_1
-  })
+session.verify().groth16({
+  library: Library.snarkjs,    // or Library.arkworks, Library.gnark
+  curve: CurveType.bls12381    // or CurveType.bn128, CurveType.bn254
+}).execute({...})
 ```
 
-* Ultraplonk - must include number of public inputs
+### Plonky2
 
-```shell
-    const { events, transactionResult } = await session
-        .verify()
-        .ultraplonk({
-            numberOfPublicInputs: 1
-        })...
-```
-
-* SP1
+Must be an uncompressed proof. Requires hash function specification.
 
 ```typescript
-    const { events, transactionResult } = await session
-        .verify()
-        .sp1()
-        .execute({...})
+session.verify().plonky2({
+  hashFunction: Plonky2HashFunction.Poseidon
+}).execute({...})
 ```
 
-* UltraHonk
+### Risc0
+
+Supports versions: `V2_1`, `V2_2`, `V2_3`, `V3_0`
 
 ```typescript
-    const { events, transactionResult } = await session
-        .verify()
-        .ultrahonk()
-        .execute({...})
+session.verify().risc0({
+  version: Risc0Version.V3_0
+}).execute({...})
 ```
+
+### Ultraplonk
+
+Requires number of public inputs.
+
+```typescript
+session.verify().ultraplonk({
+  numberOfPublicInputs: 1
+}).execute({...})
+```
+
+### SP1
+
+```typescript
+session.verify().sp1().execute({...})
+```
+
+### UltraHonk
+
+```typescript
+session.verify().ultrahonk().execute({...})
+```
+
+### Runtime Versions and Network Compatibility
+
+The zkVerify ecosystem consists of multiple networks that may run different runtime versions:
+
+* **zkVerify Mainnet**: Production network
+* **Volta Testnet**: Testing network with latest features
+* **Custom Networks**: Can run any runtime version
+
+### Version-Dependent Features
+
+Some features are only available on specific runtime versions. The library automatically detects the runtime version when establishing a connection and may:
+
+1. **Require different parameters** for existing functions on certain runtime versions
+2. **Block access to features** not available on older runtimes
+3. **Provide clear error messages** when version requirements aren't met
 
 ## Installation
 
@@ -1072,10 +1101,17 @@ session.registerDomain(aggregationSize, queueSize, domainOptions, accountAddress
 * register a new domain where the owner is the signer that emits a new aggregation every aggregationSize proofs and where there could be at most  queueSize aggregation in waiting for publication state.
 
 - @param `{number}` aggregationSize - The size of the aggregation, integer equal to or less than 128.
-- @param `{number}` queueSize: an optional integer smaller equal than 16. 16 if it’s null.
+- @param `{number}` queueSize: an optional integer smaller equal than 16. 16 if it's null.
 - @param `{DomainOptions}` domainOptions: additional options required to register the domain.
+  * `destination`: Destination type (None or Hyperbridge)
+  * `aggregateRules`: Security rules for aggregation (AggregateSecurityRules)
+  * `proofSecurityRules`: **(v1.3.0+ REQUIRED)** Security rules for proof submission (ProofSecurityRules)
+  * `deliveryOwner`: Optional account address for delivery ownership
+  * `deliveryInput`: Required if destination is Hyperbridge
 - @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
 - Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
+
+**Note for v1.3.0+**: The `proofSecurityRules` parameter is required for network runtimes v1.3.0+.
 
 Note: Need to hold the currency proportional to the size of aggregations and queue. The currency will be returned if the domain is unregistered
 
@@ -1102,6 +1138,37 @@ session.unregisterDomain(domainId, accountAddress?);
 - @param `{number}` domainId - The ID of the domain to unregister.
 - @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
 - Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
+
+### `zkVerifySession.addDomainSubmitters`
+
+**Available in runtime v1.3.0+ only**
+
+```typescript
+session.addDomainSubmitters(domainId, submitters, accountAddress?);
+```
+
+* Adds account addresses to the allowlist for proof submission on a domain configured with `ProofSecurityRules.OnlyAllowlisted`.
+* @param `{number}` domainId - The ID of the domain.
+* @param `{string[]}` submitters - Array of account addresses to add to the allowlist.
+* @param `{string}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
+* Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
+* @throws Will throw an error if called on runtime version < 1.3.0
+
+### `zkVerifySession.removeDomainSubmitters`
+
+**Available in runtime v1.3.0+ only**
+
+```typescript
+session.removeDomainSubmitters(domainId, submitters, accountAddress?);
+```
+
+* Removes account addresses from the allowlist for a domain configured with `ProofSecurityRules.OnlyAllowlisted`.
+* @param `{number}` domainId - The ID of the domain.
+* @param `{string[]}` submitters - Array of account addresses to remove from the allowlist.
+* @param `{string}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
+* Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
+* @throws Will throw an error if called on runtime version < 1.3.0
+* Note: Removing the last submitter from a domain may emit a `DomainStateChanged` event.
 
 ### `zkVerifySession.api`
 

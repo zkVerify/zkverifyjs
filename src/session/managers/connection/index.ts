@@ -114,6 +114,7 @@ export class ConnectionManager {
           api: this.api,
           provider: this.provider,
           accounts: new Map(),
+          runtimeSpec: this.connection.runtimeSpec,
         } as AccountConnection;
       }
 
@@ -181,6 +182,7 @@ export class ConnectionManager {
         this.connection = {
           api: this.api,
           provider: this.provider,
+          runtimeSpec: this.connection.runtimeSpec,
         } as EstablishedConnection;
         this.readOnly = true;
       }

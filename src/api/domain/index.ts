@@ -1,8 +1,10 @@
 import { AccountConnection, WalletConnection } from '../connection/types';
-import { TransactionType, ZkVerifyEvents } from '../../enums';
+import { RuntimeVersion, TransactionType, ZkVerifyEvents } from '../../enums';
 import {
   getKeyringAccountIfAvailable,
+  isVersionAtLeast,
   normalizeDeliveryFromOptions,
+  requireVersionAtLeast,
 } from '../../utils/helpers';
 import EventEmitter from 'events';
 import {
@@ -36,15 +38,32 @@ export const registerDomain = (
     );
 
   const delivery = normalizeDeliveryFromOptions(domainOptions);
-  const { api } = connection;
+  const { api, runtimeSpec } = connection;
 
-  const registerExtrinsic = api.tx.aggregate.registerDomain(
-    aggregationSize,
-    queueSize,
-    domainOptions.aggregateRules,
-    delivery,
-    domainOptions.deliveryOwner,
-  );
+  const isV1_3_0OrLater = isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_3_0);
+
+  if (isV1_3_0OrLater && !domainOptions.proofSecurityRules) {
+    throw new Error(
+      `registerDomain proofSecurityRules is required for runtime version 1.3.0 or later`,
+    );
+  }
+
+  const registerExtrinsic = isV1_3_0OrLater
+    ? api.tx.aggregate.registerDomain(
+        aggregationSize,
+        queueSize,
+        domainOptions.aggregateRules,
+        domainOptions.proofSecurityRules,
+        delivery,
+        domainOptions.deliveryOwner,
+      )
+    : api.tx.aggregate.registerDomain(
+        aggregationSize,
+        queueSize,
+        domainOptions.aggregateRules,
+        delivery,
+        domainOptions.deliveryOwner,
+      );
 
   const emitter = new EventEmitter();
 
@@ -129,6 +148,84 @@ export const aggregate = (
     connection,
     registerExtrinsic,
     TransactionType.Aggregate,
+    emitter,
+    signerAccount,
+  );
+
+  return { events: emitter, transactionResult };
+};
+
+export const addDomainSubmitters = (
+  connection: AccountConnection | WalletConnection,
+  domainId: number,
+  submitters: string[],
+  signerAccount?: string,
+): {
+  events: EventEmitter;
+  transactionResult: Promise<DomainTransactionInfo>;
+} => {
+  if (domainId < 0)
+    throw new Error(`addDomainSubmitters domainId must be greater than 0`);
+  if (!submitters || submitters.length === 0)
+    throw new Error(`addDomainSubmitters submitters must not be empty`);
+
+  const { api, runtimeSpec } = connection;
+
+  requireVersionAtLeast(
+    runtimeSpec,
+    RuntimeVersion.V1_3_0,
+    'addDomainSubmitters',
+  );
+
+  const allowlistExtrinsic = api.tx.aggregate.allowlistProofSubmitters(
+    domainId,
+    submitters,
+  );
+  const emitter = new EventEmitter();
+
+  const transactionResult = performTransaction<DomainTransactionInfo>(
+    connection,
+    allowlistExtrinsic,
+    TransactionType.DomainAddSubmitters,
+    emitter,
+    signerAccount,
+  );
+
+  return { events: emitter, transactionResult };
+};
+
+export const removeDomainSubmitters = (
+  connection: AccountConnection | WalletConnection,
+  domainId: number,
+  submitters: string[],
+  signerAccount?: string,
+): {
+  events: EventEmitter;
+  transactionResult: Promise<DomainTransactionInfo>;
+} => {
+  if (domainId < 0)
+    throw new Error(`removeDomainSubmitters domainId must be greater than 0`);
+  if (!submitters || submitters.length === 0)
+    throw new Error(`removeDomainSubmitters submitters must not be empty`);
+
+  const { api, runtimeSpec } = connection;
+
+  requireVersionAtLeast(
+    runtimeSpec,
+    RuntimeVersion.V1_3_0,
+    'removeDomainSubmitters',
+  );
+
+  const removeExtrinsic = api.tx.aggregate.removeProofSubmitters(
+    domainId,
+    submitters,
+  );
+  const emitter = new EventEmitter();
+
+  const transactionResult = performTransaction<DomainTransactionInfo>(
+    connection,
+    removeExtrinsic,
+    TransactionType.DomainRemoveSubmitters,
     emitter,
     signerAccount,
   );
