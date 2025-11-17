@@ -36,7 +36,7 @@ describe('startSession', () => {
     (establishConnection as jest.Mock).mockResolvedValue({
       api: mockApi,
       provider: mockProvider,
-      runtimeVersion: {
+      runtimeSpec: {
         specVersion: 1003000,
         specName: 'test-runtime',
       },
@@ -83,7 +83,7 @@ describe('startSession', () => {
       api: mockApi,
       provider: mockProvider,
       accounts: mockAccounts,
-      runtimeVersion: {
+      runtimeSpec: {
         specVersion: 1003000,
         specName: 'test-runtime',
       },
@@ -123,7 +123,7 @@ describe('startSession', () => {
     expect(result).toEqual({
       api: mockApi,
       provider: mockProvider,
-      runtimeVersion: {
+      runtimeSpec: {
         specVersion: 1003000,
         specName: 'test-runtime',
       },
@@ -151,7 +151,7 @@ describe('startWalletSession', () => {
     (establishConnection as jest.Mock).mockResolvedValue({
       api: mockApi,
       provider: mockProvider,
-      runtimeVersion: {
+      runtimeSpec: {
         specVersion: 1003000,
         specName: 'test-runtime',
       },
@@ -288,7 +288,7 @@ describe('startWalletSession', () => {
       provider: mockProvider,
       injector: mockInjector,
       accountAddress: 'mockAddress',
-      runtimeVersion: {
+      runtimeSpec: {
         specVersion: 1003000,
         specName: 'test-runtime',
       },

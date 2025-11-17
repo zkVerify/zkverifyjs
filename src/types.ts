@@ -200,9 +200,7 @@ export type ExtendedDispatchError = {
   isCorruption?: boolean;
 };
 
-export interface LastRuntimeUpgrade {
+export interface RuntimeSpec {
   specVersion: number;
   specName: string;
 }
-
-export type RuntimeVersionOrNull = LastRuntimeUpgrade | null;

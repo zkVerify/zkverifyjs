@@ -79,9 +79,9 @@ describe('establishConnection', () => {
     expect(fetchRuntimeVersion).toHaveBeenCalledWith(result.api);
     expect(result.api).toBeDefined();
     expect(result.provider).toBeDefined();
-    expect(result.runtimeVersion).toBeDefined();
-    expect(result.runtimeVersion.specVersion).toBe(1003000);
-    expect(result.runtimeVersion.specName).toBe('test-runtime');
+    expect(result.runtimeSpec).toBeDefined();
+    expect(result.runtimeSpec.specVersion).toBe(1003000);
+    expect(result.runtimeSpec.specName).toBe('test-runtime');
   });
 
   it('should establish a connection successfully on a custom network', async () => {
@@ -100,7 +100,7 @@ describe('establishConnection', () => {
     expect(fetchRuntimeVersion).toHaveBeenCalledWith(result.api);
     expect(result.api).toBeDefined();
     expect(result.provider).toBeDefined();
-    expect(result.runtimeVersion).toBeDefined();
+    expect(result.runtimeSpec).toBeDefined();
   });
 
   it('should throw an error if custom WebSocket URL is missing when host is custom', async () => {

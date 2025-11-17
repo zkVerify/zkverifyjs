@@ -36,7 +36,7 @@ describe('Domain API - Runtime Version Checks', () => {
         api: {} as any,
         provider: {} as any,
         accounts: new Map(),
-        runtimeVersion: {
+        runtimeSpec: {
           specVersion: 1001000,
           specName: 'test-runtime',
         },
@@ -54,7 +54,7 @@ describe('Domain API - Runtime Version Checks', () => {
         api: {} as any,
         provider: {} as any,
         accounts: new Map(),
-        runtimeVersion: {
+        runtimeSpec: {
           specVersion: RuntimeVersion.V1_3_0,
           specName: 'test-runtime',
         },
@@ -70,7 +70,7 @@ describe('Domain API - Runtime Version Checks', () => {
         api: {} as any,
         provider: {} as any,
         accounts: new Map(),
-        runtimeVersion: {
+        runtimeSpec: {
           specVersion: RuntimeVersion.V1_3_0,
           specName: 'test-runtime',
         },
@@ -97,7 +97,7 @@ describe('Domain API - Runtime Version Checks', () => {
         accounts: new Map([
           ['mockAddress', { address: 'mockAddress' } as KeyringPair],
         ]),
-        runtimeVersion: {
+        runtimeSpec: {
           specVersion: RuntimeVersion.V1_3_0,
           specName: 'test-runtime',
         },
@@ -124,7 +124,7 @@ describe('Domain API - Runtime Version Checks', () => {
         api: {} as any,
         provider: {} as any,
         accounts: new Map(),
-        runtimeVersion: {
+        runtimeSpec: {
           specVersion: 1001000,
           specName: 'test-runtime',
         },
@@ -142,7 +142,7 @@ describe('Domain API - Runtime Version Checks', () => {
         api: {} as any,
         provider: {} as any,
         accounts: new Map(),
-        runtimeVersion: {
+        runtimeSpec: {
           specVersion: RuntimeVersion.V1_3_0,
           specName: 'test-runtime',
         },
@@ -158,7 +158,7 @@ describe('Domain API - Runtime Version Checks', () => {
         api: {} as any,
         provider: {} as any,
         accounts: new Map(),
-        runtimeVersion: {
+        runtimeSpec: {
           specVersion: RuntimeVersion.V1_3_0,
           specName: 'test-runtime',
         },
@@ -183,7 +183,7 @@ describe('Domain API - Runtime Version Checks', () => {
         accounts: new Map([
           ['mockAddress', { address: 'mockAddress' } as KeyringPair],
         ]),
-        runtimeVersion: {
+        runtimeSpec: {
           specVersion: RuntimeVersion.V1_3_0,
           specName: 'test-runtime',
         },

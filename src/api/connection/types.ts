@@ -1,12 +1,12 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { InjectedExtension } from '@polkadot/extension-inject/types';
-import { LastRuntimeUpgrade } from '../../types';
+import { RuntimeSpec } from '../../types';
 
 export interface EstablishedConnection {
   api: ApiPromise;
   provider: WsProvider;
-  runtimeVersion: LastRuntimeUpgrade;
+  runtimeSpec: RuntimeSpec;
 }
 
 export interface AccountConnection extends EstablishedConnection {

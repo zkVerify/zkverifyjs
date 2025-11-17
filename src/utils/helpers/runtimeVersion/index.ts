@@ -1,13 +1,13 @@
 import { ApiPromise } from '@polkadot/api';
-import { LastRuntimeUpgrade } from '../../../types';
+import { RuntimeSpec } from '../../../types';
 import { RuntimeVersion } from '../../../enums';
 
 /**
- * Fetches the runtime version from the chain.
+ * Fetches the runtime spec from the chain.
  * @param api - The ApiPromise instance.
- * @returns The runtime version.
+ * @returns The runtime spec.
  */
-export function fetchRuntimeVersion(api: ApiPromise): LastRuntimeUpgrade {
+export function fetchRuntimeVersion(api: ApiPromise): RuntimeSpec {
   const version = api.consts.system.version as unknown as {
     specVersion: { toNumber: () => number };
     specName: { toString: () => string };
@@ -19,36 +19,36 @@ export function fetchRuntimeVersion(api: ApiPromise): LastRuntimeUpgrade {
 }
 
 export function isVersionAtLeast(
-  runtimeVersion: LastRuntimeUpgrade,
+  runtimeSpec: RuntimeSpec,
   targetVersion: RuntimeVersion,
 ): boolean {
-  return runtimeVersion.specVersion >= targetVersion;
+  return runtimeSpec.specVersion >= targetVersion;
 }
 
 export function isVersionBetween(
-  runtimeVersion: LastRuntimeUpgrade,
+  runtimeSpec: RuntimeSpec,
   minVersion: RuntimeVersion,
   maxVersion: RuntimeVersion,
 ): boolean {
   return (
-    runtimeVersion.specVersion >= minVersion &&
-    runtimeVersion.specVersion <= maxVersion
+    runtimeSpec.specVersion >= minVersion &&
+    runtimeSpec.specVersion <= maxVersion
   );
 }
 
 export function isVersionExactly(
-  runtimeVersion: LastRuntimeUpgrade,
+  runtimeSpec: RuntimeSpec,
   targetVersion: RuntimeVersion,
 ): boolean {
-  return runtimeVersion.specVersion === targetVersion;
+  return runtimeSpec.specVersion === targetVersion;
 }
 
 export function requireVersionAtLeast(
-  runtimeVersion: LastRuntimeUpgrade,
+  runtimeSpec: RuntimeSpec,
   targetVersion: RuntimeVersion,
   featureName: string,
 ): void {
-  if (!isVersionAtLeast(runtimeVersion, targetVersion)) {
+  if (!isVersionAtLeast(runtimeSpec, targetVersion)) {
     throw new Error(
       `${featureName} is only available in runtime version ${targetVersion} or later`,
     );

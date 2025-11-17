@@ -38,12 +38,9 @@ export const registerDomain = (
     );
 
   const delivery = normalizeDeliveryFromOptions(domainOptions);
-  const { api, runtimeVersion } = connection;
+  const { api, runtimeSpec } = connection;
 
-  const isV1_3_0OrLater = isVersionAtLeast(
-    runtimeVersion,
-    RuntimeVersion.V1_3_0,
-  );
+  const isV1_3_0OrLater = isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_3_0);
 
   if (isV1_3_0OrLater && !domainOptions.proofSecurityRules) {
     throw new Error(
@@ -172,10 +169,10 @@ export const addDomainSubmitters = (
   if (!submitters || submitters.length === 0)
     throw new Error(`addDomainSubmitters submitters must not be empty`);
 
-  const { api, runtimeVersion } = connection;
+  const { api, runtimeSpec } = connection;
 
   requireVersionAtLeast(
-    runtimeVersion,
+    runtimeSpec,
     RuntimeVersion.V1_3_0,
     'addDomainSubmitters',
   );
@@ -211,10 +208,10 @@ export const removeDomainSubmitters = (
   if (!submitters || submitters.length === 0)
     throw new Error(`removeDomainSubmitters submitters must not be empty`);
 
-  const { api, runtimeVersion } = connection;
+  const { api, runtimeSpec } = connection;
 
   requireVersionAtLeast(
-    runtimeVersion,
+    runtimeSpec,
     RuntimeVersion.V1_3_0,
     'removeDomainSubmitters',
   );

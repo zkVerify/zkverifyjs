@@ -19,7 +19,7 @@ export async function startSession(
   }
 
   const { networkConfig, seedPhrases } = options;
-  const { api, provider, runtimeVersion } =
+  const { api, provider, runtimeSpec } =
     await establishConnection(networkConfig);
   const isMainnetNetwork = networkConfig.network !== SupportedNetwork.Volta;
   if (seedPhrases && seedPhrases.length > 0) {
@@ -40,10 +40,10 @@ export async function startSession(
       api,
       provider,
       accounts: uniqueAccounts,
-      runtimeVersion,
+      runtimeSpec,
     } as AccountConnection;
   } else {
-    return { api, provider, runtimeVersion } as EstablishedConnection;
+    return { api, provider, runtimeSpec } as EstablishedConnection;
   }
 }
 
@@ -56,7 +56,7 @@ export async function startWalletSession(
     );
   }
   const { networkConfig, wallet } = options;
-  const { api, provider, runtimeVersion } =
+  const { api, provider, runtimeSpec } =
     await establishConnection(networkConfig);
 
   if (!wallet || !wallet.source || !wallet.accountAddress) {
@@ -96,6 +96,6 @@ export async function startWalletSession(
     provider,
     injector,
     accountAddress: selectedAccount.address,
-    runtimeVersion,
+    runtimeSpec,
   };
 }
