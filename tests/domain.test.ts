@@ -32,7 +32,7 @@ describe('Domain interaction tests', () => {
         }
     });
 
-    it.skip('should error when attempting to register, unregister or hold a domain in a readOnly session', async () => {
+    it('should error when attempting to register, unregister or hold a domain in a readOnly session', async () => {
         session = await zkVerifySession.start().Volta().readOnly();
 
         try {
@@ -277,6 +277,9 @@ describe('Domain interaction tests', () => {
         await session.waitForAggregationReceipt(submitTxInfo.domainId!, submitTxInfo.aggregationId!);
 
         await aggregateTransactionResult;
+
+        console.log('Holding Domain...')
+        await performHoldDomain(session, domainId, true);
 
         console.log('Unregistering Domain...')
         await performUnregisterDomain(session, domainId);
