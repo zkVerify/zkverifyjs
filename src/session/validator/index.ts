@@ -6,6 +6,7 @@ import {
   isUltraplonkConfig,
   isUltrahonkConfig,
   isVersionAtLeast,
+  requireVersionAtLeast,
 } from '../../utils/helpers';
 import { RuntimeSpec } from '../../types';
 import { RuntimeVersion } from '../../enums';
@@ -68,11 +69,18 @@ export function validateProofTypeOptions(
       }
       break;
     case ProofType.ezkl:
+      requireVersionAtLeast(
+        runtimeSpec,
+        RuntimeVersion.V1_3_0,
+        'EZKL proof type',
+      );
+      break;
     case ProofType.fflonk:
     case ProofType.sp1:
       // No specific options required for these proof types
       break;
-    //ADD_NEW_PROOF_TYPE config validation per proof type
+    // ADD_NEW_PROOF_TYPE config validation per proof type
+    // ADD RUNTIME SPECIFIC RULE IF NEEDED USING requireVersionAtLeast
 
     default:
       void (options as never);
