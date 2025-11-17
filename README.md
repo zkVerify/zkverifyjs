@@ -71,6 +71,8 @@ session.verify().ezkl().execute({...})
 ### UltraHonk
 Supports variants: `Plain`, `ZK`
 
+**Note for v1.3.0+**: The `variant` option is required for runtime version 1.3.0 or later.
+
 ```typescript
 session.verify().ultrahonk({
   variant: UltrahonkVariant.Plain

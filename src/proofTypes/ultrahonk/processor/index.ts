@@ -8,15 +8,14 @@ class UltraHonkProcessor implements ProofProcessor {
   formatProof(
     proof: UltraHonkProof['proof'],
     options: ProofOptions,
-  ): Record<string, string> {
-    if (!isUltrahonkConfig(options)) {
-      throw new Error(
-        'Invalid proof options: expected UltrahonkConfig with variant',
-      );
+  ): Record<string, string> | string {
+    const formattedProof = formatter.formatProof(proof);
+
+    if (isUltrahonkConfig(options)) {
+      return { [options.config.variant]: formattedProof };
     }
 
-    const formattedProof = formatter.formatProof(proof);
-    return { [options.config.variant]: formattedProof };
+    return formattedProof;
   }
 
   formatVk(vk: UltraHonkVk['vk']): string {

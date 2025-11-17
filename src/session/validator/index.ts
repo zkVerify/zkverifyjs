@@ -5,13 +5,21 @@ import {
   isRisc0Config,
   isUltraplonkConfig,
   isUltrahonkConfig,
+  isVersionAtLeast,
 } from '../../utils/helpers';
+import { RuntimeSpec } from '../../types';
+import { RuntimeVersion } from '../../enums';
 
 /**
  * Validates the options provided for a given proof type.
+ * @param options - The proof options to validate.
+ * @param runtimeSpec - Runtime spec for version-dependent validation.
  * @throws {Error} - If the validation fails.
  */
-export function validateProofTypeOptions(options: ProofOptions): void {
+export function validateProofTypeOptions(
+  options: ProofOptions,
+  runtimeSpec: RuntimeSpec,
+): void {
   const { proofType } = options;
 
   if (!proofType) {
@@ -51,10 +59,12 @@ export function validateProofTypeOptions(options: ProofOptions): void {
       }
       break;
     case ProofType.ultrahonk:
-      if (!isUltrahonkConfig(options)) {
-        throw new Error(
-          `Proof type '${proofType}' requires a 'variant' option.`,
-        );
+      if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_3_0)) {
+        if (!isUltrahonkConfig(options)) {
+          throw new Error(
+            `Proof type '${proofType}' requires a 'variant' option for runtime version 1.3.0 or later.`,
+          );
+        }
       }
       break;
     case ProofType.ezkl:
