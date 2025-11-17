@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -39,17 +39,28 @@ jobs:
 
       - name: Extract Package Version
         id: extract_version
-        run: echo "package_version=$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          echo "package_version=$PACKAGE_VERSION" >> "$GITHUB_ENV"
 
       - name: Generate Release Notes
         id: generate_release_notes
+        shell: bash
         run: |
-          if [ "v${{ env.package_version }}" != "${GITHUB_REF_NAME}" ]; then
-            echo "package.json version and tag mismatch"
-            exit 1
+          if [ "${GITHUB_REF_TYPE}" == "tag" ]; then
+            current_tag="${GITHUB_REF_NAME}"
+          else
+            current_tag="v${package_version}"
           fi
-
-          current_tag="v${{ env.package_version }}"
+          
+          if [[ "$current_tag" =~ ^v[0-9] ]]; then
+            if [ "v${package_version}" != "$current_tag" ]; then
+              echo "Error: package.json version (v${package_version}) and tag ($current_tag) mismatch"
+              exit 1
+            fi
+          fi
+          
           last_tag=$(git describe --tags --abbrev=0 "${current_tag}^" 2>/dev/null || true)
 
           if [ -z "$last_tag" ]; then
@@ -62,9 +73,9 @@ jobs:
 
           sed -i 's/ (#\([0-9]*\))/ (PR #\1)/' release_notes.md
 
-          release_notes=$(cat release_notes.md | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
-          echo "release_notes=$release_notes" >> $GITHUB_ENV
-          echo "current_tag=$current_tag" >> $GITHUB_ENV
+          echo "current_tag=$current_tag" >> "$GITHUB_ENV"
+          RELEASE_NOTES=$(sed ':a;N;$!ba;s/\n/\\n/g' release_notes.md | sed 's/"/\\"/g')
+          echo "release_notes=$RELEASE_NOTES" >> "$GITHUB_ENV"
 
       - name: Publish to npm
         id: publish
