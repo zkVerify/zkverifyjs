@@ -35,7 +35,10 @@ export class VerificationKeyRegistrationManager {
               config: proofConfig || {},
             } as ProofOptions;
 
-            validateProofTypeOptions(proofOptions);
+            validateProofTypeOptions(
+              proofOptions,
+              this.connectionManager.connectionDetails.runtimeSpec,
+            );
 
             return this.createRegisterKeyBuilder(proofOptions, accountAddress);
           },

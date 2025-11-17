@@ -3,8 +3,10 @@ import {
   Library,
   Plonky2HashFunction,
   Risc0Version,
+  UltrahonkVariant,
 } from '../enums';
 import {
+  EZKLProcessor,
   FflonkProcessor,
   Groth16Processor,
   Plonky2Processor,
@@ -48,6 +50,7 @@ export const SupportedNetworkConfig: Record<SupportedNetwork, NetworkConfig> = {
 };
 
 export enum ProofType {
+  ezkl = 'ezkl',
   fflonk = 'fflonk',
   groth16 = 'groth16',
   plonky2 = 'plonky2',
@@ -64,6 +67,10 @@ export interface ProofConfig {
 }
 
 export const proofConfigurations: Record<ProofType, ProofConfig> = {
+  [ProofType.ezkl]: {
+    pallet: 'settlementEzklPallet',
+    processor: EZKLProcessor,
+  },
   [ProofType.fflonk]: {
     pallet: 'settlementFFlonkPallet',
     processor: FflonkProcessor,
@@ -97,7 +104,12 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
 
 export interface ProofOptions {
   proofType: ProofType;
-  config?: Groth16Config | Plonky2Config | Risc0Config | UltraplonkConfig; // ADD_NEW_PROOF_TYPE
+  config?:
+    | Groth16Config
+    | Plonky2Config
+    | Risc0Config
+    | UltraplonkConfig
+    | UltrahonkConfig; // ADD_NEW_PROOF_TYPE
 }
 
 export interface Groth16Config {
@@ -117,11 +129,16 @@ export interface UltraplonkConfig {
   numberOfPublicInputs: number;
 }
 
+export interface UltrahonkConfig {
+  variant: UltrahonkVariant;
+}
+
 export type AllProofConfigs =
   | Groth16Config
   | Plonky2Config
   | Risc0Config
   | UltraplonkConfig
+  | UltrahonkConfig
   | undefined;
 // ADD_NEW_PROOF_TYPE - options if needed.
 
@@ -150,6 +167,9 @@ export const zkvTypes = {
   Plonky2Vk: {
     config: 'Plonky2Config',
     bytes: 'Bytes',
+  },
+  EzklVk: {
+    vkBytes: 'Bytes',
   },
 };
 
@@ -245,6 +265,16 @@ export const zkvRpc = {
         {
           name: 'vk',
           type: 'Bytes',
+        },
+      ],
+      type: 'H256',
+    },
+    ezkl: {
+      description: 'Get the hash of an Ezkl verification key artifact',
+      params: [
+        {
+          name: 'vk',
+          type: 'EzklVK',
         },
       ],
       type: 'H256',

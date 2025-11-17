@@ -139,6 +139,21 @@ export const generateTestPromises = (
                 });
                 break;
 
+            case ProofType.ultrahonk:
+                testOptions.ultrahonkVariants
+                    .filter((v) => !excludedVersions.includes(v))
+                    .forEach((variant) => {
+                        promises.push(runTest({
+                            proofType,
+                            config: { variant },
+                        }));
+                    });
+                break;
+
+            case ProofType.ezkl:
+                promises.push(runTest({ proofType }));
+                break;
+
             case ProofType.fflonk:
                 promises.push(runTest({ proofType }));
                 break;

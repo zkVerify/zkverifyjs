@@ -56,7 +56,10 @@ export class VerificationManager {
               config: proofConfig ?? undefined,
             };
 
-            validateProofTypeOptions(proofOptions);
+            validateProofTypeOptions(
+              proofOptions,
+              this.connectionManager.connectionDetails.runtimeSpec,
+            );
 
             return this.createVerifyBuilder(proofOptions, accountAddress);
           },
@@ -89,7 +92,10 @@ export class VerificationManager {
               config: proofConfig ?? undefined,
             };
 
-            validateProofTypeOptions(proofOptions);
+            validateProofTypeOptions(
+              proofOptions,
+              this.connectionManager.connectionDetails.runtimeSpec,
+            );
 
             return this.createOptimisticVerifyBuilder(
               proofOptions,
@@ -126,7 +132,10 @@ export class VerificationManager {
               config: proofConfig ?? undefined,
             };
 
-            validateProofTypeOptions(proofOptions);
+            validateProofTypeOptions(
+              proofOptions,
+              this.connectionManager.connectionDetails.runtimeSpec,
+            );
 
             return this.createBatchVerifyBuilder(proofOptions, accountAddress);
           },
@@ -161,7 +170,10 @@ export class VerificationManager {
               config: proofConfig ?? undefined,
             };
 
-            validateProofTypeOptions(proofOptions);
+            validateProofTypeOptions(
+              proofOptions,
+              this.connectionManager.connectionDetails.runtimeSpec,
+            );
 
             return this.createBatchOptimisticVerifyBuilder(
               proofOptions,

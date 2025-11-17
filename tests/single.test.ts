@@ -1,4 +1,4 @@
-import {ProofType, Risc0Version, TransactionType, VerifyTransactionInfo, zkVerifySession,} from '../src';
+import {ProofType, Risc0Version, TransactionType, VerifyTransactionInfo, zkVerifySession, UltrahonkVariant} from '../src';
 import {walletPool} from './common/walletPool';
 import {loadProofAndVK, validateVerifyTransactionInfo} from './common/utils';
 import {handleCommonEvents} from './common/eventHandlers';
@@ -26,26 +26,21 @@ describe('zkVerifySession class', () => {
         }
     });
 
-    it.skip('should send a proof to a registered domain and get aggregation', async () => {
+    it('should send a proof to a registered domain and get aggregation', async () => {
         try {
             const expectAggregation = true;
 
             [envVar, wallet] = await walletPool.acquireWallet();
 
             const proofData = loadProofAndVK({
-                proofType: ProofType.risc0,
-                config: {
-                    version: Risc0Version.V3_0
-                }
+                proofType: ProofType.ezkl,
             });
 
             session = await zkVerifySession.start().Volta().withAccount(wallet);
 
             const { events, transactionResult } = await session
                 .verify()
-                .risc0({
-                    version: Risc0Version.V3_0
-                })
+                .ezkl()
                 .execute({
                     proofData: {
                         proof: proofData.proof.proof,
@@ -57,14 +52,14 @@ describe('zkVerifySession class', () => {
 
             const results = handleCommonEvents(
                 events,
-                'risc0',
+                'ezkl',
                 TransactionType.Verify,
                 expectAggregation
             );
 
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
-            validateVerifyTransactionInfo(transactionInfo, 'risc0', expectAggregation);
+            validateVerifyTransactionInfo(transactionInfo, 'ezkl', expectAggregation);
         } catch (error: unknown) {
             if (error instanceof Error) {
                 throw new Error(`Test failed with error: ${error.message}\nStack: ${error.stack}`);
