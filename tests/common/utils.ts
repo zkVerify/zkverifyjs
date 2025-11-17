@@ -15,7 +15,7 @@ import {
     zkVerifySession
 } from '../../src';
 import { EventResults, handleCommonEvents } from './eventHandlers';
-import { Groth16Config, Plonky2Config, Risc0Config } from "../../src";
+import { Groth16Config, Plonky2Config, Risc0Config, UltrahonkConfig } from "../../src";
 
 import fs from "fs";
 import { isRisc0Config } from "../../src/utils/helpers";
@@ -58,7 +58,8 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             break;
         }
         case ProofType.ultrahonk: {
-            // No Config
+            const { variant } = config as UltrahonkConfig;
+            components.push(variant.toLowerCase());
             break;
         }
         // ADD_NEW_PROOF_TYPE
@@ -554,6 +555,8 @@ export function dispatchBuilder<T>(
             return methodMap.risc0(proofOptions.config as Risc0Config);
         case ProofType.ultraplonk:
             return methodMap.ultraplonk(proofOptions.config as UltraplonkConfig);
+        case ProofType.ultrahonk:
+            return methodMap.ultrahonk(proofOptions.config as UltrahonkConfig);
         case ProofType.fflonk:
             return methodMap.fflonk();
         case ProofType.sp1:

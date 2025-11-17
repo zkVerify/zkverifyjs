@@ -17,12 +17,14 @@ export {
   Plonky2Config,
   Risc0Config,
   UltraplonkConfig,
+  UltrahonkConfig,
 } from './config';
 export {
   ZkVerifyEvents,
   TransactionStatus,
   TransactionType,
   Risc0Version,
+  UltrahonkVariant,
   AggregateSecurityRules,
   Destination,
   Library,

@@ -4,6 +4,7 @@ import {
   ProofOptions,
   Risc0Config,
   UltraplonkConfig,
+  UltrahonkConfig,
 } from '../config';
 
 import { BatchOptimisticVerificationBuilder } from './builders/batchOptimisticVerify';
@@ -42,7 +43,7 @@ type GenericProofMethodMap<TBuilder> = {
   plonky2: (options: Plonky2Config) => TBuilder;
   risc0: (options: Risc0Config) => TBuilder;
   sp1: () => TBuilder;
-  ultrahonk: () => TBuilder;
+  ultrahonk: (options: UltrahonkConfig) => TBuilder;
   ultraplonk: (options: UltraplonkConfig) => TBuilder;
   // ADD_NEW_PROOF_TYPE
 };

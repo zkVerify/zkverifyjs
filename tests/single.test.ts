@@ -1,4 +1,4 @@
-import {ProofType, Risc0Version, TransactionType, VerifyTransactionInfo, zkVerifySession,} from '../src';
+import {ProofType, Risc0Version, TransactionType, VerifyTransactionInfo, zkVerifySession, UltrahonkVariant} from '../src';
 import {walletPool} from './common/walletPool';
 import {loadProofAndVK, validateVerifyTransactionInfo} from './common/utils';
 import {handleCommonEvents} from './common/eventHandlers';
@@ -26,16 +26,16 @@ describe('zkVerifySession class', () => {
         }
     });
 
-    it.skip('should send a proof to a registered domain and get aggregation', async () => {
+    it('should send a proof to a registered domain and get aggregation', async () => {
         try {
             const expectAggregation = true;
 
             [envVar, wallet] = await walletPool.acquireWallet();
 
             const proofData = loadProofAndVK({
-                proofType: ProofType.risc0,
+                proofType: ProofType.ultrahonk,
                 config: {
-                    version: Risc0Version.V3_0
+                    variant: UltrahonkVariant.ZK
                 }
             });
 
@@ -43,8 +43,8 @@ describe('zkVerifySession class', () => {
 
             const { events, transactionResult } = await session
                 .verify()
-                .risc0({
-                    version: Risc0Version.V3_0
+                .ultrahonk({
+                    variant: UltrahonkVariant.ZK
                 })
                 .execute({
                     proofData: {
@@ -57,14 +57,14 @@ describe('zkVerifySession class', () => {
 
             const results = handleCommonEvents(
                 events,
-                'risc0',
+                'ultrahonk',
                 TransactionType.Verify,
                 expectAggregation
             );
 
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
-            validateVerifyTransactionInfo(transactionInfo, 'risc0', expectAggregation);
+            validateVerifyTransactionInfo(transactionInfo, 'ultrahonk', expectAggregation);
         } catch (error: unknown) {
             if (error instanceof Error) {
                 throw new Error(`Test failed with error: ${error.message}\nStack: ${error.stack}`);

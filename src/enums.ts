@@ -45,6 +45,11 @@ export enum Risc0Version {
   V3_0 = 'V3_0',
 }
 
+export enum UltrahonkVariant {
+  Plain = 'Plain',
+  ZK = 'ZK',
+}
+
 export enum Plonky2HashFunction {
   Keccak = 'Keccak',
   Poseidon = 'Poseidon',

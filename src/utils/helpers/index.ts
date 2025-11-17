@@ -17,6 +17,7 @@ import {
   ProofType,
   Risc0Config,
   UltraplonkConfig,
+  UltrahonkConfig,
 } from '../../config';
 import { decodeDispatchError } from '../transactions/errors';
 import { DispatchError, Extrinsic } from '@polkadot/types/interfaces';
@@ -410,6 +411,19 @@ export function isUltraplonkConfig(
     options.proofType === ProofType.ultraplonk &&
     options.config !== undefined &&
     (options.config as UltraplonkConfig).numberOfPublicInputs !== undefined
+  );
+}
+
+/**
+ * Type guard for Ultrahonk Config
+ */
+export function isUltrahonkConfig(
+  options: ProofOptions,
+): options is ProofOptions & { config: UltrahonkConfig } {
+  return (
+    options.proofType === ProofType.ultrahonk &&
+    options.config !== undefined &&
+    (options.config as UltrahonkConfig).variant !== undefined
   );
 }
 

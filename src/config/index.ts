@@ -3,6 +3,7 @@ import {
   Library,
   Plonky2HashFunction,
   Risc0Version,
+  UltrahonkVariant,
 } from '../enums';
 import {
   FflonkProcessor,
@@ -97,7 +98,12 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
 
 export interface ProofOptions {
   proofType: ProofType;
-  config?: Groth16Config | Plonky2Config | Risc0Config | UltraplonkConfig; // ADD_NEW_PROOF_TYPE
+  config?:
+    | Groth16Config
+    | Plonky2Config
+    | Risc0Config
+    | UltraplonkConfig
+    | UltrahonkConfig; // ADD_NEW_PROOF_TYPE
 }
 
 export interface Groth16Config {
@@ -117,11 +123,16 @@ export interface UltraplonkConfig {
   numberOfPublicInputs: number;
 }
 
+export interface UltrahonkConfig {
+  variant: UltrahonkVariant;
+}
+
 export type AllProofConfigs =
   | Groth16Config
   | Plonky2Config
   | Risc0Config
   | UltraplonkConfig
+  | UltrahonkConfig
   | undefined;
 // ADD_NEW_PROOF_TYPE - options if needed.
 

@@ -4,6 +4,7 @@ import {
   isPlonky2Config,
   isRisc0Config,
   isUltraplonkConfig,
+  isUltrahonkConfig,
 } from '../../utils/helpers';
 
 /**
@@ -49,9 +50,15 @@ export function validateProofTypeOptions(options: ProofOptions): void {
         );
       }
       break;
+    case ProofType.ultrahonk:
+      if (!isUltrahonkConfig(options)) {
+        throw new Error(
+          `Proof type '${proofType}' requires a 'variant' option.`,
+        );
+      }
+      break;
     case ProofType.fflonk:
     case ProofType.sp1:
-    case ProofType.ultrahonk:
       // No specific options required for these proof types
       break;
     //ADD_NEW_PROOF_TYPE config validation per proof type

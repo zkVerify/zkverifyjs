@@ -1,4 +1,4 @@
-import { CurveType, Library, Plonky2HashFunction, ProofType, Risc0Version } from "../../src";
+import { CurveType, Library, Plonky2HashFunction, ProofType, Risc0Version, UltrahonkVariant } from "../../src";
 
 // ADD_NEW_PROOF_TYPE: Exclusion for Risc0 if needed (no data etc)
 export const proofTypeVersionExclusions: Partial<Record<ProofType, string[]>> = {
@@ -22,5 +22,8 @@ export const testOptions = {
         (key) => Plonky2HashFunction[key as keyof typeof Plonky2HashFunction]
     ),
     ultraplonkPublicInputCounts: [1],
+    ultrahonkVariants: Object.keys(UltrahonkVariant).map(
+        (key) => UltrahonkVariant[key as keyof typeof UltrahonkVariant]
+    ),
     // ADD_NEW_PROOF_TYPE Testing: add config options here is required for new proof type
 };

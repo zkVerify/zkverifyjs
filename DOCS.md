@@ -74,8 +74,12 @@ session.verify().sp1().execute({...})
 
 ### UltraHonk
 
+Supports variants: `Plain`, `ZK`
+
 ```typescript
-session.verify().ultrahonk().execute({...})
+session.verify().ultrahonk({
+  variant: UltrahonkVariant.Plain
+}).execute({...})
 ```
 
 ### Runtime Versions and Network Compatibility
