@@ -6,6 +6,7 @@ import {
   UltrahonkVariant,
 } from '../enums';
 import {
+  EZKLProcessor,
   FflonkProcessor,
   Groth16Processor,
   Plonky2Processor,
@@ -49,6 +50,7 @@ export const SupportedNetworkConfig: Record<SupportedNetwork, NetworkConfig> = {
 };
 
 export enum ProofType {
+  ezkl = 'ezkl',
   fflonk = 'fflonk',
   groth16 = 'groth16',
   plonky2 = 'plonky2',
@@ -65,6 +67,10 @@ export interface ProofConfig {
 }
 
 export const proofConfigurations: Record<ProofType, ProofConfig> = {
+  [ProofType.ezkl]: {
+    pallet: 'settlementEzklPallet',
+    processor: EZKLProcessor,
+  },
   [ProofType.fflonk]: {
     pallet: 'settlementFFlonkPallet',
     processor: FflonkProcessor,
@@ -162,6 +168,9 @@ export const zkvTypes = {
     config: 'Plonky2Config',
     bytes: 'Bytes',
   },
+  EzklVk: {
+    vkBytes: 'Bytes',
+  },
 };
 
 export const zkvRpc = {
@@ -256,6 +265,16 @@ export const zkvRpc = {
         {
           name: 'vk',
           type: 'Bytes',
+        },
+      ],
+      type: 'H256',
+    },
+    ezkl: {
+      description: 'Get the hash of an Ezkl verification key artifact',
+      params: [
+        {
+          name: 'vk',
+          type: 'EzklVK',
         },
       ],
       type: 'H256',

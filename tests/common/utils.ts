@@ -62,6 +62,10 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             components.push(variant.toLowerCase());
             break;
         }
+        case ProofType.ezkl: {
+            // No Config
+            break;
+        }
         // ADD_NEW_PROOF_TYPE
     }
 
@@ -557,6 +561,8 @@ export function dispatchBuilder<T>(
             return methodMap.ultraplonk(proofOptions.config as UltraplonkConfig);
         case ProofType.ultrahonk:
             return methodMap.ultrahonk(proofOptions.config as UltrahonkConfig);
+        case ProofType.ezkl:
+            return methodMap.ezkl();
         case ProofType.fflonk:
             return methodMap.fflonk();
         case ProofType.sp1:

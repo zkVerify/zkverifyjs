@@ -33,19 +33,14 @@ describe('zkVerifySession class', () => {
             [envVar, wallet] = await walletPool.acquireWallet();
 
             const proofData = loadProofAndVK({
-                proofType: ProofType.ultrahonk,
-                config: {
-                    variant: UltrahonkVariant.ZK
-                }
+                proofType: ProofType.ezkl,
             });
 
             session = await zkVerifySession.start().Volta().withAccount(wallet);
 
             const { events, transactionResult } = await session
                 .verify()
-                .ultrahonk({
-                    variant: UltrahonkVariant.ZK
-                })
+                .ezkl()
                 .execute({
                     proofData: {
                         proof: proofData.proof.proof,
@@ -57,14 +52,14 @@ describe('zkVerifySession class', () => {
 
             const results = handleCommonEvents(
                 events,
-                'ultrahonk',
+                'ezkl',
                 TransactionType.Verify,
                 expectAggregation
             );
 
             const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
-            validateVerifyTransactionInfo(transactionInfo, 'ultrahonk', expectAggregation);
+            validateVerifyTransactionInfo(transactionInfo, 'ezkl', expectAggregation);
         } catch (error: unknown) {
             if (error instanceof Error) {
                 throw new Error(`Test failed with error: ${error.message}\nStack: ${error.stack}`);

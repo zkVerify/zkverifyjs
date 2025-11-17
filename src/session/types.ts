@@ -38,6 +38,7 @@ export interface OptimisticVerifyOptions extends VerifyOptions {
 }
 
 type GenericProofMethodMap<TBuilder> = {
+  ezkl: () => TBuilder;
   fflonk: () => TBuilder;
   groth16: (options: Groth16Config) => TBuilder;
   plonky2: (options: Plonky2Config) => TBuilder;

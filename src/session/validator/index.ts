@@ -57,6 +57,7 @@ export function validateProofTypeOptions(options: ProofOptions): void {
         );
       }
       break;
+    case ProofType.ezkl:
     case ProofType.fflonk:
     case ProofType.sp1:
       // No specific options required for these proof types

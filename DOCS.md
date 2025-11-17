@@ -72,6 +72,12 @@ session.verify().ultraplonk({
 session.verify().sp1().execute({...})
 ```
 
+### EZKL
+
+```typescript
+session.verify().ezkl().execute({...})
+```
+
 ### UltraHonk
 
 Supports variants: `Plain`, `ZK`

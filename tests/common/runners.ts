@@ -150,6 +150,10 @@ export const generateTestPromises = (
                     });
                 break;
 
+            case ProofType.ezkl:
+                promises.push(runTest({ proofType }));
+                break;
+
             case ProofType.fflonk:
                 promises.push(runTest({ proofType }));
                 break;
