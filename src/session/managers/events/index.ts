@@ -17,6 +17,7 @@ import {
 export class EventManager {
   private readonly connectionManager: ConnectionManager;
   private readonly emitter: EventEmitter;
+  private readonly unsubscribeFunctions: Array<() => void> = [];
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
@@ -86,50 +87,59 @@ export class EventManager {
     eventType: ZkVerifyEvents,
     callback?: (data: unknown) => void,
   ) {
-    api.query.system
-      .events((records: EventRecord[]) => {
-        for (const { event, phase } of records) {
-          const key = `${event.section}::${event.method}`;
+    const unsubscribeFn = api.query.system.events((records: EventRecord[]) => {
+      for (const { event, phase } of records) {
+        const key = `${event.section}::${event.method}`;
 
-          const matchMap: Partial<Record<ZkVerifyEvents, string | RegExp>> = {
-            [ZkVerifyEvents.ProofVerified]: /::ProofVerified/,
-            [ZkVerifyEvents.CannotAggregate]: 'aggregate::CannotAggregate',
-            [ZkVerifyEvents.NewProof]: 'aggregate::NewProof',
-            [ZkVerifyEvents.VkRegistered]: /::VkRegistered/,
-            [ZkVerifyEvents.AggregationComplete]:
-              'aggregate::AggregationComplete',
-            [ZkVerifyEvents.NewDomain]: 'aggregate::NewDomain',
-            [ZkVerifyEvents.DomainStateChanged]:
-              'aggregate::DomainStateChanged',
+        const matchMap: Partial<Record<ZkVerifyEvents, string | RegExp>> = {
+          [ZkVerifyEvents.ProofVerified]: /::ProofVerified/,
+          [ZkVerifyEvents.CannotAggregate]: 'aggregate::CannotAggregate',
+          [ZkVerifyEvents.NewProof]: 'aggregate::NewProof',
+          [ZkVerifyEvents.VkRegistered]: /::VkRegistered/,
+          [ZkVerifyEvents.AggregationComplete]:
+            'aggregate::AggregationComplete',
+          [ZkVerifyEvents.NewDomain]: 'aggregate::NewDomain',
+          [ZkVerifyEvents.DomainStateChanged]: 'aggregate::DomainStateChanged',
+        };
+
+        const expected = matchMap[eventType];
+        if (
+          expected &&
+          ((typeof expected === 'string' && key === expected) ||
+            (expected instanceof RegExp && expected.test(key)))
+        ) {
+          const parsedPhase = phase.toJSON ? phase.toJSON() : phase.toString();
+
+          const eventPayload = {
+            event: eventType,
+            data: event.data.toHuman?.() ?? event.data.toString(),
+            phase: parsedPhase,
           };
 
-          const expected = matchMap[eventType];
-          if (
-            expected &&
-            ((typeof expected === 'string' && key === expected) ||
-              (expected instanceof RegExp && expected.test(key)))
-          ) {
-            const parsedPhase = phase.toJSON
-              ? phase.toJSON()
-              : phase.toString();
+          this.emitter.emit(eventType, eventPayload);
 
-            const eventPayload = {
-              event: eventType,
-              data: event.data.toHuman?.() ?? event.data.toString(),
-              phase: parsedPhase,
-            };
-
-            this.emitter.emit(eventType, eventPayload);
-
-            if (callback) {
-              callback(eventPayload);
-            }
+          if (callback) {
+            callback(eventPayload);
           }
         }
-      })
-      .catch((error) => {
-        this.emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-      });
+      }
+    });
+
+    if (unsubscribeFn) {
+      if (typeof unsubscribeFn === 'function') {
+        this.unsubscribeFunctions.push(unsubscribeFn);
+      } else if (unsubscribeFn && typeof unsubscribeFn.then === 'function') {
+        unsubscribeFn
+          .then((fn) => {
+            if (typeof fn === 'function') {
+              this.unsubscribeFunctions.push(fn);
+            }
+          })
+          .catch((error: unknown) => {
+            this.emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+          });
+      }
+    }
   }
 
   /**
@@ -184,6 +194,15 @@ export class EventManager {
    * Unsubscribes from all active subscriptions.
    */
   unsubscribe(): void {
+    this.unsubscribeFunctions.forEach((unsubscribeFn) => {
+      try {
+        unsubscribeFn();
+      } catch (error) {
+        console.debug('Error during subscription cleanup:', error);
+      }
+    });
+    this.unsubscribeFunctions.length = 0;
+
     unsubscribe(this.emitter);
   }
 }

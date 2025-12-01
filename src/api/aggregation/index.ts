@@ -32,6 +32,47 @@ export async function subscribeToNewAggregationReceipts(
     let domainId: string | undefined = undefined;
     let aggregationId: string | undefined = undefined;
     let timeoutId: NodeJS.Timeout | undefined;
+    let unsubscribeFinalizedHeads: (() => void) | undefined;
+    let isResolved = false;
+    let isRejected = false;
+
+    const cleanup = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = undefined;
+      }
+      if (unsubscribeFinalizedHeads) {
+        try {
+          unsubscribeFinalizedHeads();
+        } catch (err) {
+          console.debug('Error during finalized heads cleanup:', err);
+        }
+        unsubscribeFinalizedHeads = undefined;
+      }
+    };
+
+    const safeResolve = (value: EventEmitter) => {
+      if (!isResolved && !isRejected) {
+        isResolved = true;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = undefined;
+        }
+        resolve(value);
+      }
+    };
+
+    const safeReject = (error: unknown) => {
+      if (!isResolved && !isRejected) {
+        isRejected = true;
+        cleanup();
+        reject(error);
+      }
+    };
+
+    (emitter as EventEmitter & { _cleanup?: () => void })._cleanup = cleanup;
+
+    emitter.once(ZkVerifyEvents.Unsubscribe, cleanup);
 
     if (options) {
       domainId = options.domainId?.toString().trim();
@@ -39,7 +80,7 @@ export async function subscribeToNewAggregationReceipts(
         aggregationId = options.aggregationId?.toString().trim();
 
         if (!domainId) {
-          reject(
+          safeReject(
             new Error(
               'Cannot filter by aggregationId without also providing domainId.',
             ),
@@ -57,7 +98,7 @@ export async function subscribeToNewAggregationReceipts(
 
       timeoutId = setTimeout(() => {
         unsubscribe(emitter);
-        reject(
+        safeReject(
           new Error(
             `Timeout exceeded: No event received within ${timeoutValue} ms`,
           ),
@@ -66,83 +107,114 @@ export async function subscribeToNewAggregationReceipts(
     }
 
     try {
-      api.rpc.chain.subscribeFinalizedHeads(async (header) => {
-        const blockHash = header.hash.toHex();
-        const apiAt = await api.at(blockHash);
-        const events =
-          (await apiAt.query.system.events()) as unknown as Vec<EventRecord>;
+      const subscriptionResult = api.rpc.chain.subscribeFinalizedHeads(
+        async (header) => {
+          const blockHash = header.hash.toHex();
+          const apiAt = await api.at(blockHash);
+          const events =
+            (await apiAt.query.system.events()) as unknown as Vec<EventRecord>;
 
-        events.forEach((record) => {
-          const { event, phase } = record;
+          events.forEach((record) => {
+            const { event, phase } = record;
 
-          if (
-            event.section === 'aggregate' &&
-            event.method === 'NewAggregationReceipt'
-          ) {
-            let currentDomainId: string | undefined;
-            let currentAggregationId: string | undefined;
+            if (
+              event.section === 'aggregate' &&
+              event.method === 'NewAggregationReceipt'
+            ) {
+              let currentDomainId: string | undefined;
+              let currentAggregationId: string | undefined;
 
-            const eventData = event.data.toHuman
-              ? event.data.toHuman()
-              : Array.from(event.data as Iterable<Codec>, (item: Codec) =>
-                  item.toString(),
-                );
+              const eventData = event.data.toHuman
+                ? event.data.toHuman()
+                : Array.from(event.data as Iterable<Codec>, (item: Codec) =>
+                    item.toString(),
+                  );
 
-            const eventObject = {
-              event: ZkVerifyEvents.NewAggregationReceipt,
-              blockHash,
-              data: eventData,
-              phase:
-                phase && typeof phase.toJSON === 'function'
-                  ? phase.toJSON()
-                  : phase?.toString() || '',
-            };
+              const eventObject = {
+                event: ZkVerifyEvents.NewAggregationReceipt,
+                blockHash,
+                data: eventData,
+                phase:
+                  phase && typeof phase.toJSON === 'function'
+                    ? phase.toJSON()
+                    : phase?.toString() || '',
+              };
 
-            try {
-              currentDomainId = event.data[0]?.toString();
-              currentAggregationId = event.data[1]?.toString();
+              try {
+                currentDomainId = event.data[0]?.toString();
+                currentAggregationId = event.data[1]?.toString();
 
-              if (!currentDomainId || !currentAggregationId) {
-                reject(
-                  new Error(
-                    'Event data is missing required fields: domainId or aggregationId.',
-                  ),
-                );
+                if (!currentDomainId || !currentAggregationId) {
+                  emitter.emit(
+                    ZkVerifyEvents.ErrorEvent,
+                    new Error(
+                      'Event data is missing required fields: domainId or aggregationId.',
+                    ),
+                  );
+                  safeReject(
+                    new Error(
+                      'Event data is missing required fields: domainId or aggregationId.',
+                    ),
+                  );
+                  return;
+                }
+              } catch (error) {
+                emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+                safeReject(error);
                 return;
               }
-            } catch (error) {
-              emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-              reject(error);
-              return;
-            }
 
-            if (!options || (!aggregationId && !domainId)) {
-              emitter.emit(ZkVerifyEvents.NewAggregationReceipt, eventObject);
-              callback(eventObject);
-            } else if (
-              domainId &&
-              !aggregationId &&
-              domainId === currentDomainId
-            ) {
-              emitter.emit(ZkVerifyEvents.NewAggregationReceipt, eventObject);
-              callback(eventObject);
-            } else if (
-              domainId === currentDomainId &&
-              currentAggregationId === aggregationId
-            ) {
-              if (timeoutId) clearTimeout(timeoutId);
-              emitter.emit(ZkVerifyEvents.NewAggregationReceipt, eventObject);
-              callback(eventObject);
-              resolve(emitter);
-              return;
+              if (!options || (!aggregationId && !domainId)) {
+                emitter.emit(ZkVerifyEvents.NewAggregationReceipt, eventObject);
+                callback(eventObject);
+              } else if (
+                domainId &&
+                !aggregationId &&
+                domainId === currentDomainId
+              ) {
+                emitter.emit(ZkVerifyEvents.NewAggregationReceipt, eventObject);
+                callback(eventObject);
+              } else if (
+                domainId === currentDomainId &&
+                currentAggregationId === aggregationId
+              ) {
+                emitter.emit(ZkVerifyEvents.NewAggregationReceipt, eventObject);
+                callback(eventObject);
+                cleanup();
+                safeResolve(emitter);
+                return;
+              }
             }
-          }
-        });
-      });
+          });
+        },
+      );
+
+      if (typeof subscriptionResult === 'function') {
+        unsubscribeFinalizedHeads = subscriptionResult;
+      } else if (
+        subscriptionResult &&
+        typeof subscriptionResult.then === 'function'
+      ) {
+        subscriptionResult
+          .then((unsubscribeFn: () => void) => {
+            if (
+              !isResolved &&
+              !isRejected &&
+              typeof unsubscribeFn === 'function'
+            ) {
+              unsubscribeFinalizedHeads = unsubscribeFn;
+            }
+          })
+          .catch((error: unknown) => {
+            if (!isResolved && !isRejected) {
+              emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+              safeReject(error);
+            }
+          });
+      }
     } catch (error) {
-      if (timeoutId) clearTimeout(timeoutId);
       emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-      reject(error);
+      safeReject(error);
     }
 
     return emitter;
@@ -158,6 +230,14 @@ export async function subscribeToNewAggregationReceipts(
  * @param {EventEmitter} emitter - The EventEmitter instance returned by the subscription.
  */
 export function unsubscribe(emitter: EventEmitter): void {
+  const emitterWithCleanup = emitter as EventEmitter & {
+    _cleanup?: () => void;
+  };
+  if (emitterWithCleanup._cleanup) {
+    emitterWithCleanup._cleanup();
+    delete emitterWithCleanup._cleanup;
+  }
+
   emitter.emit(ZkVerifyEvents.Unsubscribe);
   emitter.removeAllListeners();
 }
