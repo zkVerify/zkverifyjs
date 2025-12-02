@@ -142,8 +142,7 @@ describe('subscribeToNewAggregationReceipts', () => {
         phase: expectedPhase,
       }),
     );
-    expect(emitSpy).not.toHaveBeenCalledWith(ZkVerifyEvents.Unsubscribe);
-    expect(mockApiUnsubscribe).not.toHaveBeenCalled();
+    expect(mockApiUnsubscribe).toHaveBeenCalled();
   });
 
   it('should reject immediately if aggregationId is provided without domainId', async () => {

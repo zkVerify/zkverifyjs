@@ -38,7 +38,18 @@ export const handleTransaction = async <T extends TransactionType>(
   );
 
   return new Promise((resolve, reject) => {
+    let unsubscribeFn: (() => void) | undefined;
+
     const cancelTransaction = (error: unknown) => {
+      if (unsubscribeFn) {
+        try {
+          unsubscribeFn();
+        } catch (err) {
+          console.debug('Error during transaction cleanup:', err);
+        }
+        unsubscribeFn = undefined;
+      }
+
       if (transactionInfo.status !== TransactionStatus.Error) {
         transactionInfo.status = TransactionStatus.Error;
 
@@ -66,50 +77,82 @@ export const handleTransaction = async <T extends TransactionType>(
           transactionType,
         );
 
+        if (unsubscribeFn) {
+          try {
+            unsubscribeFn();
+          } catch (err) {
+            console.debug('Error during transaction cleanup:', err);
+          }
+          unsubscribeFn = undefined;
+        }
+
         resolve(transactionInfo);
       } catch (error) {
         cancelTransaction(error);
       }
     };
 
-    performSignAndSend(
-      submitExtrinsic,
-      account,
-      signer ? { signer, nonce: options.nonce } : { nonce: options.nonce },
-      async (result) => {
-        if (transactionInfo.status === TransactionStatus.Error) return;
+    try {
+      const unsubscribeResult = performSignAndSend(
+        submitExtrinsic,
+        account,
+        signer ? { signer, nonce: options.nonce } : { nonce: options.nonce },
+        async (result) => {
+          if (transactionInfo.status === TransactionStatus.Error) return;
 
-        try {
-          if (result.status.isBroadcast) {
-            safeEmit(emitter, ZkVerifyEvents.Broadcast, {
-              txHash: result.txHash.toString(),
-            });
-          }
+          try {
+            if (result.status.isBroadcast) {
+              const txHash = result.txHash.toString();
+              transactionInfo.txHash = txHash;
+              safeEmit(emitter, ZkVerifyEvents.Broadcast, {
+                txHash,
+              });
+            }
 
-          if (result.status.isInBlock) {
-            transactionInfo.txHash = result.txHash.toString();
-            transactionInfo.blockHash = result.status.asInBlock.toString();
-            await handleInBlock(
-              api,
-              result.events,
-              transactionInfo,
-              emitter,
-              transactionType,
-            );
-          }
+            if (result.status.isInBlock) {
+              if (!transactionInfo.txHash) {
+                transactionInfo.txHash = result.txHash.toString();
+              }
+              transactionInfo.blockHash = result.status.asInBlock.toString();
+              await handleInBlock(
+                api,
+                result.events,
+                transactionInfo,
+                emitter,
+                transactionType,
+              );
+            }
 
-          if (result.status.isFinalized) {
-            await finalizeTransaction(result);
-          } else if (result.status.isInvalid) {
-            throw new Error('Transaction is invalid.');
+            if (result.status.isFinalized) {
+              await finalizeTransaction(result);
+            } else if (result.status.isInvalid) {
+              throw new Error('Transaction is invalid.');
+            }
+          } catch (error) {
+            cancelTransaction(error);
           }
-        } catch (error) {
-          cancelTransaction(error);
-        }
-      },
-    ).catch((error) => {
+        },
+      );
+
+      if (typeof unsubscribeResult === 'function') {
+        unsubscribeFn = unsubscribeResult;
+      } else if (
+        unsubscribeResult &&
+        typeof unsubscribeResult.then === 'function'
+      ) {
+        unsubscribeResult
+          .then((fn) => {
+            if (typeof fn === 'function') {
+              unsubscribeFn = fn;
+            }
+          })
+          .catch((error) => {
+            cancelTransaction(error);
+          });
+      }
+    } catch (error) {
       cancelTransaction(error);
-    });
+    }
   });
 };
 
