@@ -54,10 +54,7 @@ export async function subscribeToNewAggregationReceipts(
     const safeResolve = (value: EventEmitter) => {
       if (!isResolved && !isRejected) {
         isResolved = true;
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = undefined;
-        }
+        cleanup();
         resolve(value);
       }
     };
