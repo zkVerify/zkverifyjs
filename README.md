@@ -1132,11 +1132,10 @@ session.registerDomain(aggregationSize, queueSize, domainOptions, accountAddress
 * @param `{number}` aggregationSize - The size of the aggregation, integer equal to or less than 128.
 * @param `{number}` queueSize: an optional integer smaller equal than 16. 16 if it's null.
 * @param `{DomainOptions}` domainOptions: additional options required to register the domain.
-  - `destination`: Destination type (None or Hyperbridge)
+  - `destination`: Destination type (Destination.None)
   - `aggregateRules`: Security rules for aggregation (AggregateSecurityRules)
   - `proofSecurityRules`: **(v1.3.0+ REQUIRED)** Security rules for proof submission (ProofSecurityRules)
   - `deliveryOwner`: Optional account address for delivery ownership
-  - `deliveryInput`: Required if destination is Hyperbridge
 * @param `{number}` accountAddress - Optionally provide an account address attached to the session to send the transaction from.
 * Returns `{ events: EventEmitter; transactionResult: Promise<DomainTransactionInfo> }`
 

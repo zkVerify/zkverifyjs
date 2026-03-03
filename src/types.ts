@@ -101,42 +101,14 @@ export type NetworkConfig = {
 
 export type CustomNetworkConfig = Omit<NetworkConfig, 'host'>;
 
-export type DeliveryInput = {
-  price: number;
-  destinationChain: { Evm: number };
-  destination_module: string;
-  timeout: number;
+export type DomainOptions = {
+  destination: Destination.None;
+  deliveryOwner?: string;
+  aggregateRules: AggregateSecurityRules;
+  proofSecurityRules?: ProofSecurityRules;
 };
 
-export type DomainOptions =
-  | {
-      destination: Destination.None;
-      deliveryOwner?: string;
-      aggregateRules: AggregateSecurityRules;
-      proofSecurityRules?: ProofSecurityRules;
-    }
-  | {
-      destination: Destination.Hyperbridge;
-      deliveryInput: DeliveryInput;
-      deliveryOwner?: string;
-      aggregateRules: AggregateSecurityRules;
-      proofSecurityRules?: ProofSecurityRules;
-    };
-
-export type Delivery =
-  | { None: null }
-  | {
-      destination: {
-        Hyperbridge: {
-          destinationChain: {
-            Evm: number;
-          };
-          destination_module: string;
-          timeout: number;
-        };
-      };
-      price: number;
-    };
+export type Delivery = { None: null };
 
 export interface NewAggregationReceiptEvent {
   event: ZkVerifyEvents;

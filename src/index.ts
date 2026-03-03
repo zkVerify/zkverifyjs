@@ -47,7 +47,6 @@ export {
   NetworkConfig,
   CustomNetworkConfig,
   Delivery,
-  DeliveryInput,
   DomainOptions,
   SubscriptionEntry,
   NewAggregationReceiptEvent,
