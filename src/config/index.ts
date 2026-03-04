@@ -12,6 +12,7 @@ import {
   Plonky2Processor,
   Risc0Processor,
   SP1Processor,
+  TEEProcessor,
   UltraHonkProcessor,
   UltraPlonkProcessor,
 } from '../proofTypes';
@@ -58,6 +59,7 @@ export enum ProofType {
   sp1 = 'sp1',
   ultrahonk = 'ultrahonk',
   ultraplonk = 'ultraplonk',
+  tee = 'tee',
   // ADD_NEW_PROOF_TYPE
 }
 
@@ -98,6 +100,10 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.ultrahonk]: {
     pallet: 'settlementUltrahonkPallet',
     processor: UltraHonkProcessor,
+  },
+  [ProofType.tee]: {
+    pallet: 'settlementTeePallet',
+    processor: TEEProcessor,
   },
   // ADD_NEW_PROOF_TYPE - configurations
 };
@@ -170,6 +176,10 @@ export const zkvTypes = {
   },
   EzklVk: {
     vkBytes: 'Bytes',
+  },
+  TeeVk: {
+    tcbResponse: 'Bytes',
+    certificates: 'Bytes',
   },
 };
 
@@ -275,6 +285,16 @@ export const zkvRpc = {
         {
           name: 'vk',
           type: 'EzklVK',
+        },
+      ],
+      type: 'H256',
+    },
+    tee: {
+      description: 'Get the hash of a TEE verification key',
+      params: [
+        {
+          name: 'vk',
+          type: 'TeeVk',
         },
       ],
       type: 'H256',

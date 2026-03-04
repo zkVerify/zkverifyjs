@@ -79,6 +79,13 @@ export function validateProofTypeOptions(
     case ProofType.sp1:
       // No specific options required for these proof types
       break;
+    case ProofType.tee:
+      requireVersionAtLeast(
+        runtimeSpec,
+        RuntimeVersion.V1_5_0,
+        'TEE proof type',
+      );
+      break;
     // ADD_NEW_PROOF_TYPE config validation per proof type
     // ADD RUNTIME SPECIFIC RULE IF NEEDED USING requireVersionAtLeast
 
