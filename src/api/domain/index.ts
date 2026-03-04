@@ -3,12 +3,12 @@ import { RuntimeVersion, TransactionType, ZkVerifyEvents } from '../../enums';
 import {
   getKeyringAccountIfAvailable,
   isVersionAtLeast,
-  normalizeDeliveryFromOptions,
   requireVersionAtLeast,
 } from '../../utils/helpers';
 import EventEmitter from 'events';
 import {
   AggregateTransactionInfo,
+  Delivery,
   DomainOptions,
   DomainTransactionInfo,
   RegisterDomainTransactionInfo,
@@ -37,7 +37,7 @@ export const registerDomain = (
       `registerDomain deliveryOptions.aggregateRules must be defined`,
     );
 
-  const delivery = normalizeDeliveryFromOptions(domainOptions);
+  const delivery: Delivery = { None: null };
   const { api, runtimeSpec } = connection;
 
   const isV1_3_0OrLater = isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_3_0);

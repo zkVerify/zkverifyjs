@@ -81,7 +81,6 @@ export enum ProofSecurityRules {
 
 export enum Destination {
   None = 'None',
-  Hyperbridge = 'Hyperbridge',
 }
 
 export enum RuntimeVersion {

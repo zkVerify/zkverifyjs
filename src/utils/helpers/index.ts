@@ -1,13 +1,10 @@
 import { ApiPromise } from '@polkadot/api';
 import { EventEmitter } from 'events';
 import {
-  Delivery,
-  DomainOptions,
   OptimisticVerifyResult,
   ProofProcessor,
   TransactionValidityError,
 } from '../../types';
-import { Destination } from '../../enums';
 import {
   Groth16Config,
   Plonky2Config,
@@ -295,33 +292,6 @@ export function getKeyringAccountIfAvailable(
   return 'accounts' in connection
     ? getSelectedAccount(connection, accountAddress)
     : undefined;
-}
-
-/**
- * Converts a `DeliveryInput` into a properly formatted `Delivery` object.
- * Supports either a `None` variant or a `Hyperbridge` delivery configuration.
- *
- * @returns A `Delivery` object formatted for on-chain use.
- * @throws {Error} If required fields for Hyperbridge delivery are missing or invalid.
- * @param options
- */
-export function normalizeDeliveryFromOptions(options: DomainOptions): Delivery {
-  if (options.destination === Destination.None) {
-    return { None: null };
-  }
-
-  const { deliveryInput } = options;
-
-  return {
-    destination: {
-      Hyperbridge: {
-        destinationChain: deliveryInput.destinationChain,
-        destination_module: deliveryInput.destination_module,
-        timeout: deliveryInput.timeout,
-      },
-    },
-    price: deliveryInput.price,
-  };
 }
 
 /**
