@@ -48,12 +48,14 @@
     "pack-and-install": "npm run build && npm pack && rm -rf node_modules/zkverifyjs && npm install ./$(npm pack | tail -n 1) --no-save",
     "bump-version": "npm version $npm_config_level && git add . && git commit -S -m \"chore: bump version to $npm_package_version\" && git push && npm run build",
     "push-tag": "git checkout main && git pull && git tag -s -m $npm_package_version $npm_package_version && git push origin $npm_package_version",
+    "pretest": "node tests/common/scripts/refresh-tee-tcb.mjs",
     "test": "jest",
-    "test:coverage": "jest --coverage",
+    "test:coverage": "npm run refresh-tee-tcb && jest --coverage",
     "test:file:coverage": "node -e 'const path = process.argv[1]; require(\"child_process\").execSync(`jest --coverage --collectCoverageFrom=\"${path}/index.ts\" ${path}/index.test.ts`, { stdio: \"inherit\" });' --",
     "lint": "eslint 'src/**/*.ts' --fix --ignore-pattern '**/*.test.ts'",
     "format": "prettier --write 'src/**/*.ts'",
     "generate-readme-for-docs": "node ci/generateDocsReadme.js",
+    "refresh-tee-tcb": "node tests/common/scripts/refresh-tee-tcb.mjs",
     "prepare": "husky"
   },
   "lint-staged": {
