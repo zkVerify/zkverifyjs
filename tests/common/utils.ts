@@ -66,6 +66,10 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             // No Config
             break;
         }
+        case ProofType.tee: {
+            // No Config
+            break;
+        }
         // ADD_NEW_PROOF_TYPE
     }
 
@@ -567,6 +571,8 @@ export function dispatchBuilder<T>(
             return methodMap.fflonk();
         case ProofType.sp1:
             return methodMap.sp1();
+        case ProofType.tee:
+            return methodMap.tee();
         // ADD_NEW_PROOF_TYPE - used for tests.
         default:
             throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);

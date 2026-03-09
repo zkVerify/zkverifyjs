@@ -46,6 +46,7 @@ type GenericProofMethodMap<TBuilder> = {
   sp1: () => TBuilder;
   ultrahonk: (options?: UltrahonkConfig | null) => TBuilder;
   ultraplonk: (options: UltraplonkConfig) => TBuilder;
+  tee: () => TBuilder;
   // ADD_NEW_PROOF_TYPE
 };
 

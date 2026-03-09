@@ -6,4 +6,5 @@ export { default as UltraPlonkProcessor } from './ultraplonk/processor';
 export { default as Plonky2Processor } from './plonky2/processor';
 export { default as SP1Processor } from './sp1/processor';
 export { default as UltraHonkProcessor } from './ultrahonk/processor';
+export { default as TEEProcessor } from './tee/processor';
 // ADD_NEW_PROOF_TYPE
