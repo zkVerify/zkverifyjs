@@ -18,7 +18,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const TCB_URL =
   'https://api.trustedservices.intel.com/tdx/certification/v4/tcb?fmspc=B0C06F000000&update=standard';
-const TEE_JSON_PATH = resolve(__dirname, '../data/tee.json');
+const TEE_JSON_PATH = resolve(__dirname, '../data/tee_intel.json');
 
 function fetchTcbInfo() {
   return new Promise((resolve, reject) => {
