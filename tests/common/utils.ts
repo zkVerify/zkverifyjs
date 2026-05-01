@@ -15,7 +15,7 @@ import {
     zkVerifySession
 } from '../../src';
 import { EventResults, handleCommonEvents } from './eventHandlers';
-import { Groth16Config, Plonky2Config, Risc0Config, UltrahonkConfig } from "../../src";
+import { Groth16Config, Plonky2Config, Risc0Config, TeeConfig, UltrahonkConfig } from "../../src";
 
 import fs from "fs";
 import { isRisc0Config } from "../../src/utils/helpers";
@@ -58,8 +58,8 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             break;
         }
         case ProofType.ultrahonk: {
-            const { variant } = config as UltrahonkConfig;
-            components.push(variant.toLowerCase());
+            const { version, variant } = config as UltrahonkConfig;
+            components.push(version.toLowerCase(), variant.toLowerCase());
             break;
         }
         case ProofType.ezkl: {
@@ -67,7 +67,8 @@ export function getProofFilenameComponents(proofOptions: ProofOptions): string[]
             break;
         }
         case ProofType.tee: {
-            // No Config
+            const { variant } = config as TeeConfig;
+            components.push(variant.toLowerCase());
             break;
         }
         // ADD_NEW_PROOF_TYPE
@@ -572,7 +573,7 @@ export function dispatchBuilder<T>(
         case ProofType.sp1:
             return methodMap.sp1();
         case ProofType.tee:
-            return methodMap.tee();
+            return methodMap.tee(proofOptions.config as TeeConfig);
         // ADD_NEW_PROOF_TYPE - used for tests.
         default:
             throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);

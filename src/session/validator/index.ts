@@ -3,6 +3,7 @@ import {
   isGroth16Config,
   isPlonky2Config,
   isRisc0Config,
+  isTeeConfig,
   isUltraplonkConfig,
   isUltrahonkConfig,
   isVersionAtLeast,
@@ -63,7 +64,7 @@ export function validateProofTypeOptions(
       if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_3_0)) {
         if (!isUltrahonkConfig(options)) {
           throw new Error(
-            `Proof type '${proofType}' requires a 'variant' option for runtime version 1.3.0 or later.`,
+            `Proof type '${proofType}' requires 'version' and 'variant' options for runtime version 1.3.0 or later.`,
           );
         }
       }
@@ -85,6 +86,11 @@ export function validateProofTypeOptions(
         RuntimeVersion.V1_5_0,
         'TEE proof type',
       );
+      if (!isTeeConfig(options)) {
+        throw new Error(
+          `Proof type '${proofType}' requires a 'variant' option.`,
+        );
+      }
       break;
     // ADD_NEW_PROOF_TYPE config validation per proof type
     // ADD RUNTIME SPECIFIC RULE IF NEEDED USING requireVersionAtLeast

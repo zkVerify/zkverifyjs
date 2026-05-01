@@ -140,13 +140,15 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.ultrahonk:
-                testOptions.ultrahonkVariants
+                testOptions.ultrahonkVersions
                     .filter((v) => !excludedVersions.includes(v))
-                    .forEach((variant) => {
-                        promises.push(runTest({
-                            proofType,
-                            config: { variant },
-                        }));
+                    .forEach((version) => {
+                        testOptions.ultrahonkVariants.forEach((variant) => {
+                            promises.push(runTest({
+                                proofType,
+                                config: { version, variant },
+                            }));
+                        });
                     });
                 break;
 
@@ -163,7 +165,12 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.tee:
-                promises.push(runTest({ proofType }));
+                testOptions.teeVariants.forEach((variant) => {
+                    promises.push(runTest({
+                        proofType,
+                        config: { variant },
+                    }));
+                });
                 break;
 
             // ADD_NEW_PROOF_TYPE - generateTestPromises

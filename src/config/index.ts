@@ -3,6 +3,8 @@ import {
   Library,
   Plonky2HashFunction,
   Risc0Version,
+  TeeVariant,
+  UltrahonkVersion,
   UltrahonkVariant,
 } from '../enums';
 import {
@@ -115,7 +117,8 @@ export interface ProofOptions {
     | Plonky2Config
     | Risc0Config
     | UltraplonkConfig
-    | UltrahonkConfig; // ADD_NEW_PROOF_TYPE
+    | UltrahonkConfig
+    | TeeConfig; // ADD_NEW_PROOF_TYPE
 }
 
 export interface Groth16Config {
@@ -136,7 +139,12 @@ export interface UltraplonkConfig {
 }
 
 export interface UltrahonkConfig {
+  version: UltrahonkVersion;
   variant: UltrahonkVariant;
+}
+
+export interface TeeConfig {
+  variant: TeeVariant;
 }
 
 export type AllProofConfigs =
@@ -145,6 +153,7 @@ export type AllProofConfigs =
   | Risc0Config
   | UltraplonkConfig
   | UltrahonkConfig
+  | TeeConfig
   | undefined;
 // ADD_NEW_PROOF_TYPE - options if needed.
 
@@ -177,9 +186,20 @@ export const zkvTypes = {
   EzklVk: {
     vkBytes: 'Bytes',
   },
-  TeeVk: {
-    tcbResponse: 'Bytes',
+  UltraHonkVk: {
+    _enum: {
+      V0_84: 'Bytes',
+      V3_0: 'Bytes',
+    },
+  },
+  TeeIntelVk: {
+    tcb_response: 'Bytes',
     certificates: 'Bytes',
+  },
+  TeeVk: {
+    _enum: {
+      Intel: 'TeeIntelVk',
+    },
   },
 };
 
@@ -274,7 +294,7 @@ export const zkvRpc = {
       params: [
         {
           name: 'vk',
-          type: 'Bytes',
+          type: 'UltraHonkVk',
         },
       ],
       type: 'H256',

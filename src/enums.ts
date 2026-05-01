@@ -45,9 +45,18 @@ export enum Risc0Version {
   V3_0 = 'V3_0',
 }
 
+export enum UltrahonkVersion {
+  V0_84 = 'V0_84',
+  V3_0 = 'V3_0',
+}
+
 export enum UltrahonkVariant {
   Plain = 'Plain',
   ZK = 'ZK',
+}
+
+export enum TeeVariant {
+  Intel = 'Intel',
 }
 
 export enum Plonky2HashFunction {
