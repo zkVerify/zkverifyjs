@@ -1,16 +1,21 @@
-import { ProofOptions, ProofType } from '../../config';
+import {
+  ProofOptions,
+  ProofType,
+  TeeConfig,
+  UltrahonkConfig,
+} from '../../config';
 import {
   isGroth16Config,
   isPlonky2Config,
   isRisc0Config,
-  isTeeConfig,
   isUltraplonkConfig,
   isUltrahonkConfig,
+  isVersionedUltrahonkConfig,
   isVersionAtLeast,
   requireVersionAtLeast,
 } from '../../utils/helpers';
 import { RuntimeSpec } from '../../types';
-import { RuntimeVersion } from '../../enums';
+import { RuntimeVersion, TeeVariant, UltrahonkVersion } from '../../enums';
 
 /**
  * Validates the options provided for a given proof type.
@@ -61,10 +66,30 @@ export function validateProofTypeOptions(
       }
       break;
     case ProofType.ultrahonk:
-      if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_3_0)) {
+      if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_0)) {
+        defaultUltrahonkVersion(options);
+
+        if (!isVersionedUltrahonkConfig(options)) {
+          throw new Error(
+            `Proof type '${proofType}' requires 'version' and 'variant' options for runtime version 1.6.0 or later.`,
+          );
+        }
+      } else {
+        const config = options.config as UltrahonkConfig | undefined;
+
+        if (config?.version !== undefined) {
+          throw new Error(
+            `Proof type '${proofType}' does not support a 'version' option before runtime version 1.6.0.`,
+          );
+        }
+
+        if (!isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_3_0)) {
+          break;
+        }
+
         if (!isUltrahonkConfig(options)) {
           throw new Error(
-            `Proof type '${proofType}' requires 'version' and 'variant' options for runtime version 1.3.0 or later.`,
+            `Proof type '${proofType}' requires a 'variant' option for runtime version 1.3.0 or later.`,
           );
         }
       }
@@ -86,10 +111,16 @@ export function validateProofTypeOptions(
         RuntimeVersion.V1_5_0,
         'TEE proof type',
       );
-      if (!isTeeConfig(options)) {
-        throw new Error(
-          `Proof type '${proofType}' requires a 'variant' option.`,
-        );
+      if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_0)) {
+        defaultTeeVariant(options);
+      } else if (!isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_0)) {
+        const config = options.config as TeeConfig | undefined;
+
+        if (config?.variant !== undefined) {
+          throw new Error(
+            `Proof type '${proofType}' does not support a 'variant' option before runtime version 1.6.0.`,
+          );
+        }
       }
       break;
     // ADD_NEW_PROOF_TYPE config validation per proof type
@@ -101,4 +132,38 @@ export function validateProofTypeOptions(
         `Unsupported proof type: ${(options as { proofType: string }).proofType}`,
       );
   }
+}
+
+function defaultUltrahonkVersion(options: ProofOptions): void {
+  const config = options.config as UltrahonkConfig | undefined;
+
+  if (config?.variant === undefined || config.version !== undefined) {
+    return;
+  }
+
+  options.config = {
+    ...config,
+    version: UltrahonkVersion.V0_84,
+  };
+
+  console.warn(
+    `zkverifyjs: Proof type '${ProofType.ultrahonk}' now supports versioned proofs on runtime version 1.6.0 or later. Defaulting missing 'version' to '${UltrahonkVersion.V0_84}' for backwards compatibility. Pass 'version' explicitly to silence this warning.`,
+  );
+}
+
+function defaultTeeVariant(options: ProofOptions): void {
+  const config = options.config as TeeConfig | undefined;
+
+  if (config?.variant !== undefined) {
+    return;
+  }
+
+  options.config = {
+    ...config,
+    variant: TeeVariant.Intel,
+  };
+
+  console.warn(
+    `zkverifyjs: Proof type '${ProofType.tee}' now supports variant verification keys on runtime version 1.6.0 or later. Defaulting missing 'variant' to '${TeeVariant.Intel}' for backwards compatibility. Pass 'variant' explicitly to silence this warning.`,
+  );
 }

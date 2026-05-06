@@ -1,7 +1,10 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { EstablishedConnection } from './types';
-import { waitForNodeToSync, fetchRuntimeVersion } from '../../utils/helpers';
-import { zkvTypes, zkvRpc } from '../../config';
+import {
+  waitForNodeToSync,
+  fetchRuntimeVersionFromProvider,
+} from '../../utils/helpers';
+import { getZkvTypes, zkvRpc } from '../../config';
 import { NetworkConfig } from '../../types';
 
 /**
@@ -22,16 +25,15 @@ export const establishConnection = async (
 
   try {
     const provider = new WsProvider(websocket);
+    const runtimeSpec = await fetchRuntimeVersionFromProvider(provider);
 
     const api = await ApiPromise.create({
       provider,
-      types: zkvTypes,
+      types: getZkvTypes(runtimeSpec),
       rpc: zkvRpc,
     });
 
     await waitForNodeToSync(api);
-
-    const runtimeSpec = fetchRuntimeVersion(api);
 
     return { api, provider, runtimeSpec };
   } catch (error) {

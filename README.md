@@ -74,7 +74,7 @@ session.verify().ezkl().execute({...})
 Supports versions: `V0_84`, `V3_0`
 Supports variants: `Plain`, `ZK`
 
-**Note for v2.4.0+**: The `version` and `variant` options are required for runtime version 2.4.0 or later.
+**Note for zkverifyjs v2.4.0+ and runtime v1.6.0+**: The `version` and `variant` options are required. If `version` is omitted, zkverifyjs defaults to `V0_84` for backwards compatibility and logs a warning.
 
 ```typescript
 session.verify().ultrahonk({
@@ -85,6 +85,8 @@ session.verify().ultrahonk({
 
 ### TEE
 Supports variants: `Intel`
+
+**Note for zkverifyjs v2.4.0+ and runtime v1.6.0+**: The `variant` option is required. If omitted, zkverifyjs defaults to `Intel` for backwards compatibility and logs a warning.
 
 ```typescript
 session.verify().tee({

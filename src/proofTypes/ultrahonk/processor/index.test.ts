@@ -25,11 +25,39 @@ describe('UltraHonkProcessor', () => {
     });
   });
 
-  it('requires both version and variant options', () => {
+  it('formats pre-version proofs with variant wrapper', () => {
+    expect(
+      processor.formatProof('0xproof', {
+        proofType: ProofType.ultrahonk,
+        config: { variant: UltrahonkVariant.Plain },
+      }),
+    ).toEqual({
+      Plain: '0xproof',
+    });
+  });
+
+  it('formats pre-version verification keys without wrapper', () => {
+    expect(
+      processor.formatVk('0xvk', {
+        proofType: ProofType.ultrahonk,
+        config: { variant: UltrahonkVariant.Plain },
+      }),
+    ).toEqual('0xvk');
+  });
+
+  it('formats legacy proofs without wrapper', () => {
+    expect(
+      processor.formatProof('0xproof', {
+        proofType: ProofType.ultrahonk,
+      }),
+    ).toEqual('0xproof');
+  });
+
+  it('requires variant when version is provided', () => {
     expect(() =>
       processor.formatProof('0xproof', {
         proofType: ProofType.ultrahonk,
-        config: { variant: UltrahonkVariant.Plain } as never,
+        config: { version: UltrahonkVersion.V3_0 },
       }),
     ).toThrow('expected UltrahonkConfig with version and variant');
   });

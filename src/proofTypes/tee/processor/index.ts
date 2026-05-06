@@ -9,12 +9,12 @@ class TEEProcessor implements ProofProcessor {
     return formatter.formatProof(proof);
   }
 
-  formatVk(vk: TeeVk['vk'], options: ProofOptions): VariantTeeVk {
+  formatVk(vk: TeeVk['vk'], options: ProofOptions): TeeVk['vk'] | VariantTeeVk {
     if (!isTeeConfig(options)) {
-      throw new Error('Invalid proof options: expected TeeConfig with variant');
+      return formatter.formatVk(vk);
     }
 
-    return { [options.config.variant]: formatter.formatVk(vk) };
+    return { [options.config.variant]: formatter.formatIntelVk(vk) };
   }
 
   formatPubs(): string {

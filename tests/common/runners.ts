@@ -140,6 +140,14 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.ultrahonk:
+                // Legacy fallback coverage: SDK defaults missing version to V0_84 on runtime v1.6.0+.
+                // Remove these generated cases when support for pre-versioned Ultrahonk calls is dropped.
+                testOptions.ultrahonkVariants.forEach((variant) => {
+                    promises.push(runTest({
+                        proofType,
+                        config: { variant },
+                    }));
+                });
                 testOptions.ultrahonkVersions
                     .filter((v) => !excludedVersions.includes(v))
                     .forEach((version) => {
@@ -165,6 +173,9 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.tee:
+                // Legacy fallback coverage: SDK defaults missing variant to Intel on runtime v1.6.0+.
+                // Remove this generated case when support for variant-less TEE calls is dropped.
+                promises.push(runTest({ proofType }));
                 testOptions.teeVariants.forEach((variant) => {
                     promises.push(runTest({
                         proofType,

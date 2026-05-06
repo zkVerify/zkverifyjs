@@ -27,8 +27,8 @@ describe('TEEProcessor', () => {
     });
   });
 
-  it('requires a variant option', () => {
-    expect(() =>
+  it('formats verification keys without wrapper for pre-variant runtimes', () => {
+    expect(
       processor.formatVk(
         {
           tcbResponse: '0xtcb',
@@ -38,6 +38,9 @@ describe('TEEProcessor', () => {
           proofType: ProofType.tee,
         },
       ),
-    ).toThrow('expected TeeConfig with variant');
+    ).toEqual({
+      tcbResponse: '0xtcb',
+      certificates: '0xcertificates',
+    });
   });
 });

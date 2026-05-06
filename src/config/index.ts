@@ -2,6 +2,7 @@ import {
   CurveType,
   Library,
   Plonky2HashFunction,
+  RuntimeVersion,
   Risc0Version,
   TeeVariant,
   UltrahonkVersion,
@@ -18,7 +19,8 @@ import {
   UltraHonkProcessor,
   UltraPlonkProcessor,
 } from '../proofTypes';
-import { NetworkConfig, ProofProcessor } from '../types';
+import { NetworkConfig, ProofProcessor, RuntimeSpec } from '../types';
+import { RegistryTypes } from '@polkadot/types/types';
 
 export const VOLTA_CHAIN_SS58_PREFIX = 251; // zkVerify specific address format
 export const ZKVERIFY_CHAIN_SS58_PREFIX = 8741;
@@ -139,12 +141,12 @@ export interface UltraplonkConfig {
 }
 
 export interface UltrahonkConfig {
-  version: UltrahonkVersion;
-  variant: UltrahonkVariant;
+  version?: UltrahonkVersion;
+  variant?: UltrahonkVariant;
 }
 
 export interface TeeConfig {
-  variant: TeeVariant;
+  variant?: TeeVariant;
 }
 
 export type AllProofConfigs =
@@ -157,7 +159,7 @@ export type AllProofConfigs =
   | undefined;
 // ADD_NEW_PROOF_TYPE - options if needed.
 
-export const zkvTypes = {
+const commonZkvTypes = {
   MerkleProof: {
     root: 'H256',
     proof: 'Vec<H256>',
@@ -186,6 +188,21 @@ export const zkvTypes = {
   EzklVk: {
     vkBytes: 'Bytes',
   },
+};
+
+export type ZkvTypes = RegistryTypes;
+
+export const legacyZkvTypes: ZkvTypes = {
+  ...commonZkvTypes,
+  UltraHonkVk: 'Bytes',
+  TeeVk: {
+    tcbResponse: 'Bytes',
+    certificates: 'Bytes',
+  },
+};
+
+export const v1_6ZkvTypes: ZkvTypes = {
+  ...commonZkvTypes,
   UltraHonkVk: {
     _enum: {
       V0_84: 'Bytes',
@@ -202,6 +219,19 @@ export const zkvTypes = {
     },
   },
 };
+
+export const zkvTypes = legacyZkvTypes;
+
+export function getZkvTypes(runtimeSpec?: RuntimeSpec): ZkvTypes {
+  if (
+    runtimeSpec !== undefined &&
+    runtimeSpec.specVersion >= RuntimeVersion.V1_6_0
+  ) {
+    return v1_6ZkvTypes;
+  }
+
+  return legacyZkvTypes;
+}
 
 export const zkvRpc = {
   aggregate: {
