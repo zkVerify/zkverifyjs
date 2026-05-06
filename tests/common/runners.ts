@@ -1,4 +1,5 @@
-import { ProofOptions, ProofType } from "../../src";
+import { ProofOptions, ProofType, RuntimeVersion } from "../../src";
+import { RuntimeSpec } from "../../src/types";
 import {
     loadProofAndVK,
     performVKRegistrationAndVerification,
@@ -91,7 +92,8 @@ export const runVKRegistrationTest = async (
 };
 
 export const generateTestPromises = (
-    runTest: (proofOptions: ProofOptions) => Promise<void>
+    runTest: (proofOptions: ProofOptions) => Promise<void>,
+    runtimeSpec?: RuntimeSpec
 ): Promise<void>[] => {
     const promises: Promise<void>[] = [];
 
@@ -148,6 +150,9 @@ export const generateTestPromises = (
                         config: { variant },
                     }));
                 });
+                if (!supportsV1_6_0(runtimeSpec)) {
+                    break;
+                }
                 testOptions.ultrahonkVersions
                     .filter((v) => !excludedVersions.includes(v))
                     .forEach((version) => {
@@ -176,6 +181,9 @@ export const generateTestPromises = (
                 // Legacy fallback coverage: SDK defaults missing variant to Intel on runtime v1.6.0+.
                 // Remove this generated case when support for variant-less TEE calls is dropped.
                 promises.push(runTest({ proofType }));
+                if (!supportsV1_6_0(runtimeSpec)) {
+                    break;
+                }
                 testOptions.teeVariants.forEach((variant) => {
                     promises.push(runTest({
                         proofType,
@@ -191,6 +199,9 @@ export const generateTestPromises = (
     return promises;
 };
 
+const supportsV1_6_0 = (runtimeSpec?: RuntimeSpec): boolean =>
+    runtimeSpec === undefined || runtimeSpec.specVersion >= RuntimeVersion.V1_6_0;
+
 export const runAllProofTests = async (
     withAggregation: boolean
 ) => {
@@ -199,8 +210,9 @@ export const runAllProofTests = async (
     try {
         session = await zkVerifySession.start().Volta().readOnly();
 
-        const testPromises = generateTestPromises((proofOptions) =>
-            runVerifyTest(session!, proofOptions, withAggregation)
+        const testPromises = generateTestPromises(
+            (proofOptions) => runVerifyTest(session!, proofOptions, withAggregation),
+            session.connection.runtimeSpec
         );
 
         const results = await Promise.allSettled(testPromises);
@@ -223,8 +235,9 @@ export const runAllVKRegistrationTests = async () => {
     const session = await zkVerifySession.start().Volta().readOnly();
 
     try {
-        const testPromises = generateTestPromises((proofOptions) =>
-            runVKRegistrationTest(session, proofOptions)
+        const testPromises = generateTestPromises(
+            (proofOptions) => runVKRegistrationTest(session, proofOptions),
+            session.connection.runtimeSpec
         );
         await Promise.all(testPromises);
     } finally {

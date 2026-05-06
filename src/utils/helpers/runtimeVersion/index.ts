@@ -21,6 +21,8 @@ export function fetchRuntimeVersion(api: ApiPromise): RuntimeSpec {
 export async function fetchRuntimeVersionFromProvider(
   provider: WsProvider,
 ): Promise<RuntimeSpec> {
+  await provider.isReady;
+
   const version = (await provider.send('state_getRuntimeVersion', [])) as {
     specVersion: number | string;
     specName: string;
