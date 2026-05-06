@@ -18,13 +18,16 @@ export {
   Risc0Config,
   UltraplonkConfig,
   UltrahonkConfig,
+  TeeConfig,
 } from './config';
 export {
   ZkVerifyEvents,
   TransactionStatus,
   TransactionType,
   Risc0Version,
+  UltrahonkVersion,
   UltrahonkVariant,
+  TeeVariant,
   AggregateSecurityRules,
   Destination,
   Library,

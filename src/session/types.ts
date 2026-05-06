@@ -3,6 +3,7 @@ import {
   Plonky2Config,
   ProofOptions,
   Risc0Config,
+  TeeConfig,
   UltraplonkConfig,
   UltrahonkConfig,
 } from '../config';
@@ -46,7 +47,7 @@ type GenericProofMethodMap<TBuilder> = {
   sp1: () => TBuilder;
   ultrahonk: (options?: UltrahonkConfig | null) => TBuilder;
   ultraplonk: (options: UltraplonkConfig) => TBuilder;
-  tee: () => TBuilder;
+  tee: (options?: TeeConfig | null) => TBuilder;
   // ADD_NEW_PROOF_TYPE
 };
 

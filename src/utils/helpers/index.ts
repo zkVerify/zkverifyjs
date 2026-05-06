@@ -13,6 +13,7 @@ import {
   ProofOptions,
   ProofType,
   Risc0Config,
+  TeeConfig,
   UltraplonkConfig,
   UltrahonkConfig,
 } from '../../config';
@@ -389,11 +390,40 @@ export function isUltraplonkConfig(
  */
 export function isUltrahonkConfig(
   options: ProofOptions,
-): options is ProofOptions & { config: UltrahonkConfig } {
+): options is ProofOptions & {
+  config: UltrahonkConfig & {
+    variant: NonNullable<UltrahonkConfig['variant']>;
+  };
+} {
   return (
     options.proofType === ProofType.ultrahonk &&
     options.config !== undefined &&
     (options.config as UltrahonkConfig).variant !== undefined
+  );
+}
+
+/**
+ * Type guard for versioned Ultrahonk Config
+ */
+export function isVersionedUltrahonkConfig(
+  options: ProofOptions,
+): options is ProofOptions & { config: Required<UltrahonkConfig> } {
+  return (
+    isUltrahonkConfig(options) &&
+    (options.config as UltrahonkConfig).version !== undefined
+  );
+}
+
+/**
+ * Type guard for TEE Config
+ */
+export function isTeeConfig(options: ProofOptions): options is ProofOptions & {
+  config: TeeConfig & { variant: NonNullable<TeeConfig['variant']> };
+} {
+  return (
+    options.proofType === ProofType.tee &&
+    options.config !== undefined &&
+    (options.config as TeeConfig).variant !== undefined
   );
 }
 

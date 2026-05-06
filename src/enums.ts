@@ -45,9 +45,18 @@ export enum Risc0Version {
   V3_0 = 'V3_0',
 }
 
+export enum UltrahonkVersion {
+  V0_84 = 'V0_84',
+  V3_0 = 'V3_0',
+}
+
 export enum UltrahonkVariant {
   Plain = 'Plain',
   ZK = 'ZK',
+}
+
+export enum TeeVariant {
+  Intel = 'Intel',
 }
 
 export enum Plonky2HashFunction {
@@ -86,6 +95,7 @@ export enum Destination {
 export enum RuntimeVersion {
   V1_3_0 = 1003000,
   V1_5_0 = 1005000,
+  V1_6_0 = 1006000,
 }
 
 export const PUBLIC_ZK_VERIFY_EVENTS: ZkVerifyEvents[] = [

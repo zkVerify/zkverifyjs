@@ -1,13 +1,16 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { establishConnection } from './index';
-import { waitForNodeToSync, fetchRuntimeVersion } from '../../utils/helpers';
-import { zkvTypes, zkvRpc, SupportedNetwork } from '../../config';
+import {
+  waitForNodeToSync,
+  fetchRuntimeVersionFromProvider,
+} from '../../utils/helpers';
+import { getZkvTypes, zkvRpc, SupportedNetwork } from '../../config';
 import { NetworkConfig } from '../../types';
 
 jest.mock('@polkadot/api');
 jest.mock('../../utils/helpers');
 jest.mock('../../config', () => ({
-  zkvTypes: {},
+  getZkvTypes: jest.fn(),
   zkvRpc: {},
   SupportedNetwork: {
     Custom: 'Custom',
@@ -19,7 +22,11 @@ describe('establishConnection', () => {
   let mockApiPromiseCreate: jest.MockedFunction<typeof ApiPromise.create>;
   let mockWsProvider: jest.Mocked<WsProvider>;
   let mockWaitForNodeToSync: jest.MockedFunction<typeof waitForNodeToSync>;
-  let mockFetchRuntimeVersion: jest.MockedFunction<typeof fetchRuntimeVersion>;
+  let mockFetchRuntimeVersionFromProvider: jest.MockedFunction<
+    typeof fetchRuntimeVersionFromProvider
+  >;
+  let mockGetZkvTypes: jest.MockedFunction<typeof getZkvTypes>;
+  let mockApi: ApiPromise;
 
   beforeEach(() => {
     mockApiPromiseCreate = ApiPromise.create as jest.MockedFunction<
@@ -31,19 +38,23 @@ describe('establishConnection', () => {
     mockWaitForNodeToSync = waitForNodeToSync as jest.MockedFunction<
       typeof waitForNodeToSync
     >;
-    mockFetchRuntimeVersion = fetchRuntimeVersion as jest.MockedFunction<
-      typeof fetchRuntimeVersion
-    >;
-
-    mockApiPromiseCreate.mockResolvedValue({
+    mockFetchRuntimeVersionFromProvider =
+      fetchRuntimeVersionFromProvider as jest.MockedFunction<
+        typeof fetchRuntimeVersionFromProvider
+      >;
+    mockGetZkvTypes = getZkvTypes as jest.MockedFunction<typeof getZkvTypes>;
+    mockApi = {
       provider: mockWsProvider,
-    } as unknown as ApiPromise);
+    } as unknown as ApiPromise;
+
+    mockApiPromiseCreate.mockResolvedValue(mockApi);
 
     mockWaitForNodeToSync.mockResolvedValue(undefined);
-    mockFetchRuntimeVersion.mockReturnValue({
+    mockFetchRuntimeVersionFromProvider.mockResolvedValue({
       specVersion: 1003000,
       specName: 'test-runtime',
     });
+    mockGetZkvTypes.mockReturnValue({});
   });
 
   afterEach(() => {
@@ -58,7 +69,7 @@ describe('establishConnection', () => {
           disconnect: expect.any(Function),
           send: expect.any(Function),
         }),
-        types: zkvTypes,
+        types: {},
         rpc: zkvRpc,
       }),
     );
@@ -76,7 +87,10 @@ describe('establishConnection', () => {
     expect(WsProvider).toHaveBeenCalledWith(networkConfig.websocket);
     expectApiPromiseCreateToHaveBeenCalledWith();
     expect(waitForNodeToSync).toHaveBeenCalledWith(result.api);
-    expect(fetchRuntimeVersion).toHaveBeenCalledWith(result.api);
+    expect(fetchRuntimeVersionFromProvider).toHaveBeenCalledWith(
+      result.provider,
+    );
+    expect(getZkvTypes).toHaveBeenCalledWith(result.runtimeSpec);
     expect(result.api).toBeDefined();
     expect(result.provider).toBeDefined();
     expect(result.runtimeSpec).toBeDefined();
@@ -97,10 +111,46 @@ describe('establishConnection', () => {
     expect(WsProvider).toHaveBeenCalledWith(customUrl);
     expectApiPromiseCreateToHaveBeenCalledWith();
     expect(waitForNodeToSync).toHaveBeenCalledWith(result.api);
-    expect(fetchRuntimeVersion).toHaveBeenCalledWith(result.api);
+    expect(fetchRuntimeVersionFromProvider).toHaveBeenCalledWith(
+      result.provider,
+    );
     expect(result.api).toBeDefined();
     expect(result.provider).toBeDefined();
     expect(result.runtimeSpec).toBeDefined();
+  });
+
+  it('should fetch runtime before creating the API with runtime-specific types', async () => {
+    const runtimeSpec = {
+      specVersion: 1006000,
+      specName: 'test-runtime',
+    };
+    const runtimeTypes = { UltraHonkVk: { _enum: { V3_0: 'Bytes' } } };
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Volta,
+      websocket: 'wss://volta-rpc.zkverify.io',
+      rpc: 'http://volta-rpc.zkverify.io',
+    };
+
+    mockFetchRuntimeVersionFromProvider.mockResolvedValue(runtimeSpec);
+    mockGetZkvTypes.mockReturnValue(runtimeTypes);
+
+    const result = await establishConnection(networkConfig);
+
+    expect(fetchRuntimeVersionFromProvider).toHaveBeenCalledWith(
+      result.provider,
+    );
+    expect(getZkvTypes).toHaveBeenCalledWith(runtimeSpec);
+    expect(ApiPromise.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        types: runtimeTypes,
+      }),
+    );
+    expect(
+      mockFetchRuntimeVersionFromProvider.mock.invocationCallOrder[0],
+    ).toBeLessThan(mockGetZkvTypes.mock.invocationCallOrder[0]);
+    expect(mockGetZkvTypes.mock.invocationCallOrder[0]).toBeLessThan(
+      mockApiPromiseCreate.mock.invocationCallOrder[0],
+    );
   });
 
   it('should throw an error if custom WebSocket URL is missing when host is custom', async () => {

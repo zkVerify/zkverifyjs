@@ -6,6 +6,8 @@ The `zkverifyjs` package is a TypeScript library designed to facilitate sending 
 
 The following zero-knowledge proof systems are supported:
 
+Proof configuration enums and interfaces are exported from `zkverifyjs`, including `Risc0Version`, `UltrahonkVersion`, `UltrahonkVariant`, `TeeVariant`, `UltrahonkConfig`, and `TeeConfig`.
+
 ### FFlonk
 ```typescript
 session.verify().fflonk().execute({...})
@@ -69,13 +71,26 @@ session.verify().ezkl().execute({...})
 ```
 
 ### UltraHonk
+Supports versions: `V0_84`, `V3_0`
 Supports variants: `Plain`, `ZK`
 
-**Note for v1.3.0+**: The `variant` option is required for runtime version 1.3.0 or later.
+**Note for zkverifyjs v2.4.0+ and runtime v1.6.0+**: The `version` and `variant` options are required. If `version` is omitted, zkverifyjs defaults to `V0_84` for backwards compatibility and logs a warning.
 
 ```typescript
 session.verify().ultrahonk({
+  version: UltrahonkVersion.V3_0,
   variant: UltrahonkVariant.Plain
+}).execute({...})
+```
+
+### TEE
+Supports variants: `Intel`
+
+**Note for zkverifyjs v2.4.0+ and runtime v1.6.0+**: The `variant` option is required. If omitted, zkverifyjs defaults to `Intel` for backwards compatibility and logs a warning.
+
+```typescript
+session.verify().tee({
+  variant: TeeVariant.Intel
 }).execute({...})
 ```
 
@@ -357,7 +372,7 @@ You can listen for transaction events using the events emitter. Common events in
 - `error`: Triggered if an error occurs during the transaction process.
 
 ```typescript
-import {Risc0Version} from "./enums";
+import { Risc0Version } from 'zkverifyjs';
 
 const {events, transactionResult} = await session
         .verify()

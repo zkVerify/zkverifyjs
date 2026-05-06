@@ -1,4 +1,4 @@
-import { ApiPromise } from '@polkadot/api';
+import { ApiPromise, WsProvider } from '@polkadot/api';
 import { RuntimeSpec } from '../../../types';
 import { RuntimeVersion } from '../../../enums';
 
@@ -15,6 +15,25 @@ export function fetchRuntimeVersion(api: ApiPromise): RuntimeSpec {
   return {
     specVersion: version.specVersion.toNumber(),
     specName: version.specName.toString(),
+  };
+}
+
+export async function fetchRuntimeVersionFromProvider(
+  provider: WsProvider,
+): Promise<RuntimeSpec> {
+  await provider.isReady;
+
+  const version = (await provider.send('state_getRuntimeVersion', [])) as {
+    specVersion: number | string;
+    specName: string;
+  };
+
+  return {
+    specVersion:
+      typeof version.specVersion === 'string'
+        ? Number(version.specVersion)
+        : version.specVersion,
+    specName: version.specName,
   };
 }
 
