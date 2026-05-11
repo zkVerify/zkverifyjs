@@ -39,8 +39,9 @@ export const handleTransaction = async <T extends TransactionType>(
 
   return new Promise((resolve, reject) => {
     let unsubscribeFn: (() => void) | undefined;
+    let isCompleted = false;
 
-    const cancelTransaction = (error: unknown) => {
+    const cleanupTransaction = () => {
       if (unsubscribeFn) {
         try {
           unsubscribeFn();
@@ -49,6 +50,26 @@ export const handleTransaction = async <T extends TransactionType>(
         }
         unsubscribeFn = undefined;
       }
+    };
+
+    const handleUnsubscribeFn = (fn: unknown) => {
+      if (typeof fn !== 'function') return;
+
+      if (isCompleted) {
+        try {
+          fn();
+        } catch (err) {
+          console.debug('Error during late transaction cleanup:', err);
+        }
+        return;
+      }
+
+      unsubscribeFn = fn as () => void;
+    };
+
+    const cancelTransaction = (error: unknown) => {
+      isCompleted = true;
+      cleanupTransaction();
 
       if (transactionInfo.status !== TransactionStatus.Error) {
         transactionInfo.status = TransactionStatus.Error;
@@ -77,14 +98,8 @@ export const handleTransaction = async <T extends TransactionType>(
           transactionType,
         );
 
-        if (unsubscribeFn) {
-          try {
-            unsubscribeFn();
-          } catch (err) {
-            console.debug('Error during transaction cleanup:', err);
-          }
-          unsubscribeFn = undefined;
-        }
+        isCompleted = true;
+        cleanupTransaction();
 
         resolve(transactionInfo);
       } catch (error) {
@@ -135,20 +150,16 @@ export const handleTransaction = async <T extends TransactionType>(
       );
 
       if (typeof unsubscribeResult === 'function') {
-        unsubscribeFn = unsubscribeResult;
+        handleUnsubscribeFn(unsubscribeResult);
       } else if (
         unsubscribeResult &&
         typeof unsubscribeResult.then === 'function'
       ) {
-        unsubscribeResult
-          .then((fn) => {
-            if (typeof fn === 'function') {
-              unsubscribeFn = fn;
-            }
-          })
-          .catch((error) => {
+        unsubscribeResult.then(handleUnsubscribeFn).catch((error) => {
+          if (!isCompleted) {
             cancelTransaction(error);
-          });
+          }
+        });
       }
     } catch (error) {
       cancelTransaction(error);
