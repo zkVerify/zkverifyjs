@@ -6,6 +6,26 @@ import { ZkVerifyEvents } from '../../enums';
 import { NewAggregationEventSubscriptionOptions } from './types';
 import { Codec } from '@polkadot/types/types';
 
+type EmitterWithCleanups = EventEmitter & {
+  _cleanups?: Array<() => void>;
+};
+
+function registerCleanup(
+  emitter: EventEmitter,
+  cleanup: () => void,
+): () => void {
+  const e = emitter as EmitterWithCleanups;
+  if (!e._cleanups) e._cleanups = [];
+  e._cleanups.push(cleanup);
+
+  return () => {
+    const index = e._cleanups?.indexOf(cleanup) ?? -1;
+    if (index >= 0) {
+      e._cleanups?.splice(index, 1);
+    }
+  };
+}
+
 /**
  * Subscribes to `aggregation.NewAggregationReceipt` events and triggers the provided callback.
  *
@@ -35,8 +55,16 @@ export async function subscribeToNewAggregationReceipts(
     let unsubscribeFinalizedHeads: (() => void) | undefined;
     let isResolved = false;
     let isRejected = false;
+    // Set the moment cleanup() runs so a late-resolving subscribe Promise can
+    // invoke its unsubscribe fn instead of orphaning the polkadot subscription.
+    let wasCleanedUp = false;
+    let unregisterCleanup: (() => void) | undefined;
 
     const cleanup = () => {
+      wasCleanedUp = true;
+      unregisterCleanup?.();
+      unregisterCleanup = undefined;
+      emitter.removeListener(ZkVerifyEvents.Unsubscribe, cleanup);
       if (timeoutId) {
         clearTimeout(timeoutId);
         timeoutId = undefined;
@@ -67,8 +95,7 @@ export async function subscribeToNewAggregationReceipts(
       }
     };
 
-    (emitter as EventEmitter & { _cleanup?: () => void })._cleanup = cleanup;
-
+    unregisterCleanup = registerCleanup(emitter, cleanup);
     emitter.once(ZkVerifyEvents.Unsubscribe, cleanup);
 
     if (options) {
@@ -107,9 +134,12 @@ export async function subscribeToNewAggregationReceipts(
       const subscriptionResult = api.rpc.chain.subscribeFinalizedHeads(
         async (header) => {
           const blockHash = header.hash.toHex();
-          const apiAt = await api.at(blockHash);
-          const events =
-            (await apiAt.query.system.events()) as unknown as Vec<EventRecord>;
+          // Query the storage at a specific block hash without materializing a
+          // full ApiDecoration via api.at() — that creates per-block registry
+          // overhead and accumulates polkadot-api caches in long-lived subs.
+          const events = (await api.query.system.events.at(
+            blockHash,
+          )) as unknown as Vec<EventRecord>;
 
           events.forEach((record) => {
             const { event, phase } = record;
@@ -177,7 +207,6 @@ export async function subscribeToNewAggregationReceipts(
               ) {
                 emitter.emit(ZkVerifyEvents.NewAggregationReceipt, eventObject);
                 callback(eventObject);
-                cleanup();
                 safeResolve(emitter);
                 return;
               }
@@ -186,28 +215,34 @@ export async function subscribeToNewAggregationReceipts(
         },
       );
 
+      const handleUnsubscribeFn = (fn: unknown) => {
+        if (typeof fn !== 'function') return;
+        // If cleanup already ran (e.g. user called unsubscribe(emitter) before
+        // the subscribe handshake completed), invoke the unsubscribe fn now to
+        // avoid orphaning the polkadot subscription.
+        if (wasCleanedUp) {
+          try {
+            (fn as () => void)();
+          } catch (err) {
+            console.debug('Error during late finalized heads cleanup:', err);
+          }
+          return;
+        }
+        unsubscribeFinalizedHeads = fn as () => void;
+      };
+
       if (typeof subscriptionResult === 'function') {
-        unsubscribeFinalizedHeads = subscriptionResult;
+        handleUnsubscribeFn(subscriptionResult);
       } else if (
         subscriptionResult &&
         typeof subscriptionResult.then === 'function'
       ) {
-        subscriptionResult
-          .then((unsubscribeFn: () => void) => {
-            if (
-              !isResolved &&
-              !isRejected &&
-              typeof unsubscribeFn === 'function'
-            ) {
-              unsubscribeFinalizedHeads = unsubscribeFn;
-            }
-          })
-          .catch((error: unknown) => {
-            if (!isResolved && !isRejected) {
-              emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-              safeReject(error);
-            }
-          });
+        subscriptionResult.then(handleUnsubscribeFn).catch((error: unknown) => {
+          if (!isResolved && !isRejected) {
+            emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+            safeReject(error);
+          }
+        });
       }
     } catch (error) {
       emitter.emit(ZkVerifyEvents.ErrorEvent, error);
@@ -227,12 +262,19 @@ export async function subscribeToNewAggregationReceipts(
  * @param {EventEmitter} emitter - The EventEmitter instance returned by the subscription.
  */
 export function unsubscribe(emitter: EventEmitter): void {
-  const emitterWithCleanup = emitter as EventEmitter & {
-    _cleanup?: () => void;
-  };
-  if (emitterWithCleanup._cleanup) {
-    emitterWithCleanup._cleanup();
-    delete emitterWithCleanup._cleanup;
+  const e = emitter as EmitterWithCleanups;
+  if (e._cleanups && e._cleanups.length > 0) {
+    // Run all registered cleanups; clear before running so re-entrant emits
+    // (e.g. from inside a cleanup) can't see stale entries.
+    const cleanups = e._cleanups;
+    e._cleanups = [];
+    for (const c of cleanups) {
+      try {
+        c();
+      } catch (err) {
+        console.debug('Error during emitter cleanup:', err);
+      }
+    }
   }
 
   emitter.emit(ZkVerifyEvents.Unsubscribe);

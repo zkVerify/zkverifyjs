@@ -37,9 +37,7 @@ describe('subscribeToNewAggregationReceipts', () => {
     null;
   let mockHeader: any;
   let emitter: EventEmitter;
-  let mockApiAtInstance: {
-    query: { system: { events: jest.Mock<() => Promise<any>> } };
-  };
+  let mockEventsAt: jest.Mock<(blockHash: any) => Promise<any>>;
 
   beforeEach(() => {
     jest.useRealTimers();
@@ -50,15 +48,9 @@ describe('subscribeToNewAggregationReceipts', () => {
       number: { toNumber: () => 123, toBigInt: () => BigInt(123) },
     };
 
-    mockApiAtInstance = {
-      query: {
-        system: {
-          events: jest
-            .fn<() => Promise<any>>()
-            .mockImplementation(async () => Promise.resolve([] as any)),
-        },
-      },
-    };
+    mockEventsAt = jest
+      .fn<(blockHash: any) => Promise<any>>()
+      .mockImplementation(async () => Promise.resolve([] as any));
 
     api = {
       rpc: {
@@ -71,17 +63,16 @@ describe('subscribeToNewAggregationReceipts', () => {
           ) as Mock,
         },
       },
-      at: jest.fn().mockImplementation(async (blockHash: any) => {
-        return Promise.resolve(mockApiAtInstance);
-      }),
+      query: {
+        system: {
+          events: { at: mockEventsAt },
+        },
+      },
     } as unknown as ApiPromise;
 
     callback = jest.fn();
     emitter = new EventEmitter();
     finalizedHeadsCallback = null;
-    mockApiAtInstance.query.system.events.mockImplementation(async () =>
-      Promise.resolve([] as any),
-    );
   });
 
   afterEach(() => {
@@ -102,9 +93,7 @@ describe('subscribeToNewAggregationReceipts', () => {
       [targetDomainId, targetAggregationId, receipt],
     );
 
-    mockApiAtInstance.query.system.events.mockImplementation(async () =>
-      Promise.resolve([mockEvent]),
-    );
+    mockEventsAt.mockImplementation(async () => Promise.resolve([mockEvent]));
     const emitSpy = jest.spyOn(emitter, 'emit');
     const subscriptionPromise = subscribeToNewAggregationReceipts(
       api,
@@ -143,6 +132,8 @@ describe('subscribeToNewAggregationReceipts', () => {
       }),
     );
     expect(mockApiUnsubscribe).toHaveBeenCalled();
+    expect((emitter as any)._cleanups?.length ?? 0).toBe(0);
+    expect(emitter.listenerCount(ZkVerifyEvents.Unsubscribe)).toBe(0);
   });
 
   it('should reject immediately if aggregationId is provided without domainId', async () => {
@@ -162,9 +153,7 @@ describe('subscribeToNewAggregationReceipts', () => {
   it('should reject with timeout error if no matching event received within timeout', async () => {
     jest.useFakeTimers();
     const timeoutDuration = 10;
-    mockApiAtInstance.query.system.events.mockImplementation(async () =>
-      Promise.resolve([]),
-    );
+    mockEventsAt.mockImplementation(async () => Promise.resolve([]));
     const emitSpy = jest.spyOn(emitter, 'emit');
     const subscriptionPromise = subscribeToNewAggregationReceipts(
       api,
@@ -216,14 +205,14 @@ describe('subscribeToNewAggregationReceipts', () => {
     );
     const emitSpy = jest.spyOn(emitter, 'emit');
     subscribeToNewAggregationReceipts(api, callback, undefined, emitter).catch(
-      (err) => {},
+      () => {},
     );
 
     await new Promise((resolve) => setImmediate(resolve));
     expect(finalizedHeadsCallback).toBeInstanceOf(Function);
     if (!finalizedHeadsCallback) throw new Error('Callback not captured');
 
-    mockApiAtInstance.query.system.events.mockImplementation(async () =>
+    mockEventsAt.mockImplementation(async () =>
       Promise.resolve([mockEvent1, mockEvent2]),
     );
     await finalizedHeadsCallback(mockHeader);
@@ -244,9 +233,7 @@ describe('subscribeToNewAggregationReceipts', () => {
       hash: { toHex: () => '0xhash2' },
       number: { toNumber: () => 124, toBigInt: () => BigInt(124) },
     };
-    mockApiAtInstance.query.system.events.mockImplementation(async () =>
-      Promise.resolve([mockEvent3]),
-    );
+    mockEventsAt.mockImplementation(async () => Promise.resolve([mockEvent3]));
     await finalizedHeadsCallback(header2);
     await new Promise((resolve) => setImmediate(resolve));
     expect(callback).toHaveBeenCalledTimes(2);
@@ -295,15 +282,13 @@ describe('subscribeToNewAggregationReceipts', () => {
       callback,
       { domainId: targetDomainId },
       emitter,
-    ).catch((err) => {});
+    ).catch(() => {});
 
     await new Promise((resolve) => setImmediate(resolve));
     expect(finalizedHeadsCallback).toBeInstanceOf(Function);
     if (!finalizedHeadsCallback) throw new Error('Callback not captured');
 
-    mockApiAtInstance.query.system.events.mockImplementation(async () =>
-      Promise.resolve([mockEvent1]),
-    );
+    mockEventsAt.mockImplementation(async () => Promise.resolve([mockEvent1]));
     await finalizedHeadsCallback(mockHeader);
     await new Promise((resolve) => setImmediate(resolve));
     expect(callback).toHaveBeenCalledTimes(1);
@@ -322,7 +307,7 @@ describe('subscribeToNewAggregationReceipts', () => {
       hash: { toHex: () => '0xhash2' },
       number: { toNumber: () => 124, toBigInt: () => BigInt(124) },
     };
-    mockApiAtInstance.query.system.events.mockImplementation(async () =>
+    mockEventsAt.mockImplementation(async () =>
       Promise.resolve([mockEventOtherDomain]),
     );
     await finalizedHeadsCallback(header2);
@@ -335,9 +320,7 @@ describe('subscribeToNewAggregationReceipts', () => {
       hash: { toHex: () => '0xhash3' },
       number: { toNumber: () => 125, toBigInt: () => BigInt(125) },
     };
-    mockApiAtInstance.query.system.events.mockImplementation(async () =>
-      Promise.resolve([mockEvent2]),
-    );
+    mockEventsAt.mockImplementation(async () => Promise.resolve([mockEvent2]));
     await finalizedHeadsCallback(header3);
     await new Promise((resolve) => setImmediate(resolve));
     expect(callback).toHaveBeenCalledTimes(2);
@@ -360,5 +343,134 @@ describe('subscribeToNewAggregationReceipts', () => {
 
     expect(mockApiUnsubscribe).not.toHaveBeenCalled();
     expect(emitSpy).not.toHaveBeenCalledWith(ZkVerifyEvents.Unsubscribe);
+  });
+});
+
+describe('subscribeToNewAggregationReceipts — bug fixes', () => {
+  let api: ApiPromise;
+  let mockApiUnsubscribe: jest.Mock<() => void>;
+  let mockEventsAt: jest.Mock<(blockHash: any) => Promise<any>>;
+  let resolveSubscribe!: (fn: () => void) => void;
+  let rejectSubscribe!: (err: unknown) => void;
+
+  beforeEach(() => {
+    jest.useRealTimers();
+    mockApiUnsubscribe = jest.fn();
+
+    mockEventsAt = jest
+      .fn<(blockHash: any) => Promise<any>>()
+      .mockImplementation(async () => Promise.resolve([] as any));
+
+    api = {
+      rpc: {
+        chain: {
+          subscribeFinalizedHeads: jest.fn(() => {
+            // Hand back a Promise we manually settle from the test, so we can
+            // simulate the unsubscribe-fn arriving after cleanup has run.
+            return new Promise((resolve, reject) => {
+              resolveSubscribe = resolve;
+              rejectSubscribe = reject;
+            });
+          }) as Mock,
+        },
+      },
+      query: {
+        system: {
+          events: { at: mockEventsAt },
+        },
+      },
+    } as unknown as ApiPromise;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.useRealTimers();
+  });
+
+  // Bug 1
+  it('invokes a late-arriving unsubscribe fn when cleanup() ran first', async () => {
+    const emitter = new EventEmitter();
+    const callback = jest.fn();
+
+    subscribeToNewAggregationReceipts(api, callback, undefined, emitter).catch(
+      () => {},
+    );
+
+    // Simulate the user manually unsubscribing before subscribeFinalizedHeads
+    // has finished its handshake with the node.
+    unsubscribe(emitter);
+
+    // Now the polkadot subscribe handshake completes, late.
+    resolveSubscribe(mockApiUnsubscribe);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    // The unsubscribe fn must have been invoked, NOT silently captured into
+    // an orphaned closure.
+    expect(mockApiUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  // Bug 5
+  it('cleans up multiple subscriptions sharing the same emitter', async () => {
+    const emitter = new EventEmitter();
+    const callbackA = jest.fn();
+    const callbackB = jest.fn();
+    const apiUnsubscribeB = jest.fn();
+
+    let resolveA!: (fn: () => void) => void;
+    let resolveB!: (fn: () => void) => void;
+    let call = 0;
+    (
+      api.rpc.chain.subscribeFinalizedHeads as unknown as jest.Mock
+    ).mockImplementation(() => {
+      call += 1;
+      return new Promise((resolve) => {
+        if (call === 1) resolveA = resolve;
+        else resolveB = resolve;
+      });
+    });
+
+    subscribeToNewAggregationReceipts(api, callbackA, undefined, emitter).catch(
+      () => {},
+    );
+    subscribeToNewAggregationReceipts(api, callbackB, undefined, emitter).catch(
+      () => {},
+    );
+
+    resolveA(mockApiUnsubscribe);
+    resolveB(apiUnsubscribeB);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    unsubscribe(emitter);
+
+    expect(mockApiUnsubscribe).toHaveBeenCalledTimes(1);
+    expect(apiUnsubscribeB).toHaveBeenCalledTimes(1);
+  });
+
+  // Bug 6
+  it('queries events via api.query.system.events.at, not api.at(...)', async () => {
+    const emitter = new EventEmitter();
+    const callback = jest.fn();
+    type FinalizedCb = (header: any) => Promise<void> | void;
+    const captured: { cb: FinalizedCb | null } = { cb: null };
+
+    (
+      api.rpc.chain.subscribeFinalizedHeads as unknown as jest.Mock
+    ).mockImplementation(async (...args: unknown[]) => {
+      captured.cb = args[0] as FinalizedCb;
+      return mockApiUnsubscribe;
+    });
+
+    // api.at must NOT be relied on — assert the path directly by leaving it
+    // unset on the mock and asserting events.at was called instead.
+    expect((api as any).at).toBeUndefined();
+
+    subscribeToNewAggregationReceipts(api, callback, undefined, emitter).catch(
+      () => {},
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+    if (!captured.cb) throw new Error('Callback not captured');
+    await captured.cb({ hash: { toHex: () => '0xabc' } });
+
+    expect(mockEventsAt).toHaveBeenCalledWith('0xabc');
   });
 });

@@ -113,11 +113,13 @@ export type Delivery = { None: null };
 export interface NewAggregationReceiptEvent {
   event: ZkVerifyEvents;
   blockHash: string;
-  data: {
-    domainId?: string;
-    aggregationId?: string;
-    receipt?: string;
-  };
+  data:
+    | {
+        domainId?: string | number;
+        aggregationId?: string | number;
+        receipt?: string;
+      }
+    | Array<string | number>;
   phase: string;
 }
 
