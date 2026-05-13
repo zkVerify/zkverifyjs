@@ -128,7 +128,7 @@
   },
   "overrides": {
     "@polkadot/util": "14.0.3",
-    "ajv": "8.18.0",
+    "ajv@^8": "8.18.0",
     "bn.js": "5.2.3",
     "brace-expansion@^1": "1.1.13",
     "brace-expansion@^2": "2.0.3",
