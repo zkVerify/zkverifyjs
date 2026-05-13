@@ -72,7 +72,7 @@ jobs:
           sudo mv circom /usr/local/bin/
 
       - name: Install snarkjs
-        run: npm install -g snarkjs
+        run: npm install -g snarkjs@0.7.6 --ignore-scripts
 
       - name: Run tests & generate test output files
         id: run_tests
