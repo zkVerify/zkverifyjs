@@ -1,6 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { RuntimeSpec } from '../../../types';
-import { RuntimeVersion } from '../../../enums';
+import { RuntimeSpec } from '../../../types.js';
+import { RuntimeVersion } from '../../../enums.js';
 
 /**
  * Fetches the runtime spec from the chain.

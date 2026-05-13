@@ -1,8 +1,8 @@
 import { ApiPromise } from '@polkadot/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { ProofType } from '../../config';
-import { getProofPallet } from '../../utils/helpers';
-import { FormattedProofData } from '../format/types';
+import { ProofType } from '../../config/index.js';
+import { getProofPallet } from '../../utils/helpers/index.js';
+import { FormattedProofData } from '../format/types.js';
 
 /**
  * Creates a SubmittableExtrinsic using formatted proof details to enable submitting a proof.

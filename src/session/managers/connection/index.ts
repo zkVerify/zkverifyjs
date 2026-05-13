@@ -1,23 +1,23 @@
-import { startSession, startWalletSession } from '../../../api/start';
-import { closeSession } from '../../../api/close';
-import { zkVerifySessionOptions } from '../../types';
+import { startSession, startWalletSession } from '../../../api/start/index.js';
+import { closeSession } from '../../../api/close/index.js';
+import { zkVerifySessionOptions } from '../../types.js';
 import {
   AccountConnection,
   EstablishedConnection,
   WalletConnection,
-} from '../../../api/connection/types';
+} from '../../../api/connection/types.js';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { accountInfo } from '../../../api/accountInfo';
+import { accountInfo } from '../../../api/accountInfo/index.js';
 import {
   canonicalAddress,
   deriveChildAt,
   setupAccount,
-} from '../../../api/account';
-import { checkReadOnly } from '../../../utils/helpers';
-import { AccountInfo, NetworkConfig } from '../../../types';
+} from '../../../api/account/index.js';
+import { checkReadOnly } from '../../../utils/helpers/index.js';
+import { AccountInfo, NetworkConfig } from '../../../types.js';
 import { Mutex } from 'async-mutex';
-import { SupportedNetwork } from '../../../config';
+import { SupportedNetwork } from '../../../config/index.js';
 
 export class ConnectionManager {
   private accountMutex = new Mutex();
@@ -107,7 +107,11 @@ export class ConnectionManager {
    */
   async addAccount(seedPhrase: string): Promise<string> {
     return this.accountMutex.runExclusive(async () => {
-      const account = setupAccount(seedPhrase, this.isMainnetNetwork);
+      const account = setupAccount(
+        seedPhrase,
+        this.isMainnetNetwork,
+        this.customNetwork,
+      );
 
       if (!('accounts' in this.connection)) {
         this.connection = {

@@ -1,13 +1,17 @@
-import { RegisterKeyBuilder } from '../../builders/register';
-import { AllProofConfigs, ProofOptions, ProofType } from '../../../config';
-import { RegisterKeyMethodMap, VerifyOptions } from '../../types';
-import { registerVk } from '../../../api/register';
-import { checkReadOnly } from '../../../utils/helpers';
-import { AccountConnection } from '../../../api/connection/types';
-import { VKRegistrationTransactionInfo } from '../../../types';
+import { RegisterKeyBuilder } from '../../builders/register/index.js';
+import {
+  AllProofConfigs,
+  ProofOptions,
+  ProofType,
+} from '../../../config/index.js';
+import { RegisterKeyMethodMap, VerifyOptions } from '../../types.js';
+import { registerVk } from '../../../api/register/index.js';
+import { checkReadOnly } from '../../../utils/helpers/index.js';
+import { AccountConnection } from '../../../api/connection/types.js';
+import { VKRegistrationTransactionInfo } from '../../../types.js';
 import { EventEmitter } from 'events';
-import { ConnectionManager } from '../connection';
-import { validateProofTypeOptions } from '../../validator';
+import { ConnectionManager } from '../connection/index.js';
+import { validateProofTypeOptions } from '../../validator/index.js';
 
 export class VerificationKeyRegistrationManager {
   private readonly connectionManager: ConnectionManager;
@@ -30,17 +34,18 @@ export class VerificationKeyRegistrationManager {
       if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
         Object.defineProperty(builderMethods, proofType, {
           value: (proofConfig?: AllProofConfigs | null) => {
-            const proofOptions: ProofOptions = {
-              proofType: proofType as ProofType,
-              config: proofConfig || {},
-            } as ProofOptions;
-
-            validateProofTypeOptions(
-              proofOptions,
+            const validatedOptions = validateProofTypeOptions(
+              {
+                proofType: proofType as ProofType,
+                config: proofConfig ?? undefined,
+              },
               this.connectionManager.connectionDetails.runtimeSpec,
             );
 
-            return this.createRegisterKeyBuilder(proofOptions, accountAddress);
+            return this.createRegisterKeyBuilder(
+              validatedOptions,
+              accountAddress,
+            );
           },
           writable: false,
           configurable: false,

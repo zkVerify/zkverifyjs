@@ -1,12 +1,12 @@
-import './shims/globalBuffer';
+import './shims/globalBuffer.js';
 
-export { zkVerifySession } from './session';
+export { zkVerifySession } from './session/index.js';
 export {
   VerifyOptions,
   OptimisticVerifyOptions,
   WalletOptions,
   zkVerifySessionOptions,
-} from './session/types';
+} from './session/types.js';
 export {
   ProofType,
   SupportedNetwork,
@@ -19,7 +19,7 @@ export {
   UltraplonkConfig,
   UltrahonkConfig,
   TeeConfig,
-} from './config';
+} from './config/index.js';
 export {
   ZkVerifyEvents,
   TransactionStatus,
@@ -35,7 +35,7 @@ export {
   Plonky2HashFunction,
   ProofSecurityRules,
   RuntimeVersion,
-} from './enums';
+} from './enums.js';
 export {
   ProofData,
   VerifyTransactionInfo,
@@ -49,6 +49,7 @@ export {
   NewAggregationReceipt,
   NetworkConfig,
   CustomNetworkConfig,
+  WsProviderOptions,
   Delivery,
   DomainOptions,
   SubscriptionEntry,
@@ -57,14 +58,14 @@ export {
   OptimisticVerificationResultType,
   OptimisticVerifyResult,
   RuntimeSpec,
-} from './types';
-export { ExtrinsicCostEstimate } from './api/estimate/types';
-export { FormattedProofData } from './api/format/types';
-export { NewAggregationEventSubscriptionOptions } from './api/aggregation/types';
+} from './types.js';
+export { ExtrinsicCostEstimate } from './api/estimate/types.js';
+export { FormattedProofData } from './api/format/types.js';
+export { NewAggregationEventSubscriptionOptions } from './api/aggregation/types.js';
 export {
   isVersionAtLeast,
   isVersionBetween,
   isVersionExactly,
   requireVersionAtLeast,
   fetchRuntimeVersion,
-} from './utils/helpers';
+} from './utils/helpers/index.js';

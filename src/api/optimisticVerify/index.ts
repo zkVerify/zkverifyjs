@@ -1,21 +1,21 @@
-import { AccountConnection, WalletConnection } from '../connection/types';
-import { createSubmitProofExtrinsic } from '../extrinsic';
-import { format } from '../format';
+import { AccountConnection, WalletConnection } from '../connection/types.js';
+import { createSubmitProofExtrinsic } from '../extrinsic/index.js';
+import { format } from '../format/index.js';
 import {
   OptimisticVerificationResultType,
   OptimisticVerifyResult,
   ProofData,
-} from '../../types';
+} from '../../types.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { FormattedProofData } from '../format/types';
-import { VerifyInput } from '../verify/types';
+import { FormattedProofData } from '../format/types.js';
+import { VerifyInput } from '../verify/types.js';
 import {
   getKeyringAccountIfAvailable,
   interpretDryRunResponse,
   toSubmittableExtrinsic,
-} from '../../utils/helpers';
+} from '../../utils/helpers/index.js';
 import { ApiPromise } from '@polkadot/api';
-import { OptimisticVerifyOptions } from '../../session/types';
+import { OptimisticVerifyOptions } from '../../session/types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 
 export const optimisticVerify = async (

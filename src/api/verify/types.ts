@@ -1,5 +1,5 @@
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { ProofData } from '../../types';
+import { ProofData } from '../../types.js';
 
 export type VerifyInput =
   | {

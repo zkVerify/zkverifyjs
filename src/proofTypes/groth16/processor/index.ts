@@ -4,14 +4,14 @@ import {
   Groth16VerificationKeyInput,
   Proof,
   ProofInput,
-} from '../types';
-import { ProofProcessor } from '../../../types';
-import { ProofOptions } from '../../../config';
-import { isGroth16Config } from '../../../utils/helpers';
-import { Library } from '../../../enums';
-import * as arkworksFormatter from '../formatter/arkworks';
-import * as gnarkFormatter from '../formatter/gnark';
-import * as snarkjsFormatter from '../formatter/snarkjs';
+} from '../types.js';
+import { ProofProcessor } from '../../../types.js';
+import { ProofOptions } from '../../../config/index.js';
+import { isGroth16Config } from '../../../utils/helpers/index.js';
+import { Library } from '../../../enums.js';
+import * as arkworksFormatter from '../formatter/arkworks/index.js';
+import * as gnarkFormatter from '../formatter/gnark/index.js';
+import * as snarkjsFormatter from '../formatter/snarkjs/index.js';
 
 const formatterMap: Record<Library, Formatter> = {
   [Library.arkworks]: arkworksFormatter.default,

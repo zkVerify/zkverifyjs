@@ -1,12 +1,20 @@
-import { CurveType } from '../../../enums';
+import { CurveType } from '../../../enums.js';
+
+const DECIMAL_RE = /^[0-9]+$/;
+const HEX_RE = /^0x[0-9a-fA-F]+$/;
 
 /**
  * Recursively converts numeric strings and hexadecimal strings in an object, array, or string
- * to `bigint`. Handles nested arrays and objects.
+ * to `bigint`. Handles nested arrays and objects. Non-string scalars (number, bigint, boolean,
+ * null, undefined) pass through unchanged.
  */
 export const unstringifyBigInts = (o: unknown): unknown => {
-  if (typeof o === 'string' && /^[0-9]+$/.test(o)) return BigInt(o);
-  if (typeof o === 'string' && /^0x[0-9a-fA-F]+$/.test(o)) return BigInt(o);
+  if (typeof o === 'string') {
+    if (o.length > 1 && o[0] === '0' && o[1] === 'x') {
+      return HEX_RE.test(o) ? BigInt(o) : o;
+    }
+    return DECIMAL_RE.test(o) ? BigInt(o) : o;
+  }
   if (Array.isArray(o)) return o.map(unstringifyBigInts);
   if (typeof o === 'object' && o !== null) {
     const result: Record<string, unknown> = {};
@@ -110,7 +118,7 @@ export const formatScalar = (scalar: string): string =>
  * @returns {string[]} - Formatted public signals.
  */
 export const formatPublicSignals = (pubs: string[]): string[] => {
-  if (!Array.isArray(pubs) || pubs.some(() => false)) {
+  if (!Array.isArray(pubs) || pubs.some((p) => typeof p !== 'string')) {
     throw new Error(
       'Invalid public signals format: Expected an array of strings.',
     );

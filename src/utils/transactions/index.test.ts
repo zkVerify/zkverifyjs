@@ -3,10 +3,14 @@ import { EventEmitter } from 'events';
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { ProofType } from '../../config';
-import { TransactionStatus, TransactionType } from '../../enums';
-import { VerifyOptions } from '../../session/types';
-import { handleTransaction } from './index';
+import { ProofType } from '../../config/index.js';
+import {
+  TransactionStatus,
+  TransactionType,
+  ZkVerifyEvents,
+} from '../../enums.js';
+import { VerifyOptions } from '../../session/types.js';
+import { handleTransaction } from './index.js';
 
 const flushMicrotasks = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -131,5 +135,56 @@ describe('handleTransaction', () => {
         (unsubscribe) => unsubscribe.mock.calls.length === 1,
       ),
     ).toBe(true);
+  });
+
+  it('rejects the transaction without leaking a Promise rejection to polkadot when status.isInvalid', async () => {
+    let capturedCallback!: (result: SubmittableResult) => Promise<void>;
+    const submitExtrinsic = {
+      signAndSend: jest.fn(
+        (
+          _account: KeyringPair,
+          _options: unknown,
+          callback: (result: SubmittableResult) => Promise<void>,
+        ) => {
+          capturedCallback = callback;
+          return Promise.resolve(() => {});
+        },
+      ),
+    } as unknown as SubmittableExtrinsic<'promise'>;
+
+    const emitter = new EventEmitter();
+    const errors: unknown[] = [];
+    emitter.on(ZkVerifyEvents.ErrorEvent, (payload) => errors.push(payload));
+
+    const transactionPromise = handleTransaction(
+      {} as ApiPromise,
+      submitExtrinsic,
+      {} as KeyringPair,
+      undefined,
+      emitter,
+      {
+        proofOptions: { proofType: ProofType.groth16 },
+      } as VerifyOptions,
+      TransactionType.Verify,
+    );
+
+    const invalidResult = {
+      status: {
+        isBroadcast: false,
+        isInBlock: false,
+        isFinalized: false,
+        isInvalid: true,
+      },
+      dispatchError: undefined,
+      events: [],
+    } as unknown as SubmittableResult;
+
+    // The callback's own Promise must resolve cleanly — a rejection here
+    // would be silently swallowed by polkadot-api's subscriber.
+    await expect(capturedCallback(invalidResult)).resolves.toBeUndefined();
+
+    // The outer transaction promise still rejects.
+    await expect(transactionPromise).rejects.toThrow('Transaction is invalid.');
+    expect(errors).toHaveLength(1);
   });
 });

@@ -1,12 +1,12 @@
-import { ProofOptions, ProofType } from '../../config';
+import { ProofOptions, ProofType } from '../../config/index.js';
 import {
   RuntimeVersion,
   TeeVariant,
   UltrahonkVariant,
   UltrahonkVersion,
-} from '../../enums';
-import { RuntimeSpec } from '../../types';
-import { validateProofTypeOptions } from './index';
+} from '../../enums.js';
+import { RuntimeSpec } from '../../types.js';
+import { validateProofTypeOptions } from './index.js';
 
 const runtimeSpec = (specVersion: RuntimeVersion): RuntimeSpec => ({
   specName: 'zkverify',
@@ -67,14 +67,16 @@ describe('validateProofTypeOptions', () => {
         config: { variant: UltrahonkVariant.Plain },
       };
 
-      expect(() =>
-        validateProofTypeOptions(options, runtimeSpec(RuntimeVersion.V1_6_0)),
-      ).not.toThrow();
+      const result = validateProofTypeOptions(
+        options,
+        runtimeSpec(RuntimeVersion.V1_6_0),
+      );
 
-      expect(options.config).toEqual({
+      expect(result.config).toEqual({
         version: UltrahonkVersion.V0_84,
         variant: UltrahonkVariant.Plain,
       });
+      expect(options.config).toEqual({ variant: UltrahonkVariant.Plain });
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining("Defaulting missing 'version'"),
       );
@@ -133,11 +135,13 @@ describe('validateProofTypeOptions', () => {
     it('defaults missing variant from runtime version 1.6.0', () => {
       const options: ProofOptions = { proofType: ProofType.tee };
 
-      expect(() =>
-        validateProofTypeOptions(options, runtimeSpec(RuntimeVersion.V1_6_0)),
-      ).not.toThrow();
+      const result = validateProofTypeOptions(
+        options,
+        runtimeSpec(RuntimeVersion.V1_6_0),
+      );
 
-      expect(options.config).toEqual({ variant: TeeVariant.Intel });
+      expect(result.config).toEqual({ variant: TeeVariant.Intel });
+      expect(options.config).toBeUndefined();
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining("Defaulting missing 'variant'"),
       );

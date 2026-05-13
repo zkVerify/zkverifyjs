@@ -1,4 +1,4 @@
-import { ProofProcessor } from '../../../types';
+import { ProofProcessor } from '../../../types.js';
 import {
   UltraHonkVk,
   UltraHonkPubs,
@@ -6,13 +6,13 @@ import {
   VariantUltraHonkProof,
   VersionedUltraHonkProof,
   VersionedUltraHonkVk,
-} from '../types';
-import * as formatter from '../formatter';
-import { ProofOptions, UltrahonkConfig } from '../../../config';
+} from '../types.js';
+import * as formatter from '../formatter/index.js';
+import { ProofOptions, UltrahonkConfig } from '../../../config/index.js';
 import {
   isUltrahonkConfig,
   isVersionedUltrahonkConfig,
-} from '../../../utils/helpers';
+} from '../../../utils/helpers/index.js';
 
 class UltraHonkProcessor implements ProofProcessor {
   formatProof(

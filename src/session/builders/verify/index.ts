@@ -1,8 +1,8 @@
-import { VerifyOptions } from '../../types';
+import { VerifyOptions } from '../../types.js';
 import { EventEmitter } from 'events';
-import { VerifyTransactionInfo } from '../../../types';
-import { VerifyInput } from '../../../api/verify/types';
-import { ProofOptions } from '../../../config';
+import { VerifyTransactionInfo } from '../../../types.js';
+import { VerifyInput } from '../../../api/verify/types.js';
+import { ProofOptions } from '../../../config/index.js';
 
 export class VerificationBuilder {
   private readonly options: VerifyOptions;

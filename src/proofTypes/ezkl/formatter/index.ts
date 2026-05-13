@@ -1,4 +1,5 @@
-import { EZKLProof, EZKLVk, EZKLPubs } from '../types';
+import { EZKLProof, EZKLVk, EZKLPubs } from '../types.js';
+import { validateHexString } from '../../../utils/helpers/index.js';
 
 export function formatProof(proof: EZKLProof['proof']): string {
   return validateHexString(proof);
@@ -18,11 +19,4 @@ export function formatVk(vk: EZKLVk['vk']): { vkBytes: string } {
 
 export function formatPubs(pubs: EZKLPubs['pubs']): string[] {
   return pubs.map(validateHexString);
-}
-
-function validateHexString(input: string): string {
-  if (!input.startsWith('0x')) {
-    throw new Error('Invalid format: string input must be 0x-prefixed.');
-  }
-  return input;
 }

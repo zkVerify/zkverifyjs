@@ -1,4 +1,4 @@
-import { TransactionType } from '../../enums';
+import { TransactionType } from '../../enums.js';
 import {
   AggregateTransactionInfo,
   BatchVerifyTransactionInfo,
@@ -7,7 +7,7 @@ import {
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
   TransactionInfo,
-} from '../../types';
+} from '../../types.js';
 
 export type TransactionInfoByType = {
   [TransactionType.Verify]: VerifyTransactionInfo;

@@ -1,13 +1,13 @@
-import { establishConnection } from '../connection';
-import { setupAccount } from '../account';
-import { startSession, startWalletSession } from './index';
-import { zkVerifySessionOptions } from '../../session/types';
-import { SupportedNetwork } from '../../config';
+import { establishConnection } from '../connection/index.js';
+import { setupAccount } from '../account/index.js';
+import { startSession, startWalletSession } from './index.js';
+import { zkVerifySessionOptions } from '../../session/types.js';
+import { SupportedNetwork } from '../../config/index.js';
 import {
   AccountConnection,
   EstablishedConnection,
   WalletConnection,
-} from '../connection/types';
+} from '../connection/types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { InjectedExtension } from '@polkadot/extension-inject/types';
 
@@ -77,6 +77,7 @@ describe('startSession', () => {
     expect(establishConnection).toHaveBeenCalledWith(mockOptions.networkConfig);
     expect(setupAccount).toHaveBeenCalledWith(
       mockOptions.seedPhrases![0],
+      false,
       false,
     );
     expect(result).toEqual({

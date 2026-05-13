@@ -4,19 +4,61 @@ import { encodeAddress } from '@polkadot/util-crypto';
 import {
   VOLTA_CHAIN_SS58_PREFIX,
   ZKVERIFY_CHAIN_SS58_PREFIX,
-} from '../../config';
+} from '../../config/index.js';
+
+const VALID_MNEMONIC_WORD_COUNTS = new Set([12, 15, 18, 21, 24]);
+const HEX_SEED_RE = /^0x[0-9a-fA-F]{64}$/;
+
+function validateSeedPhrase(seed: string, isCustomNetwork: boolean): void {
+  const trimmed = seed.trim();
+
+  if (trimmed.length === 0) {
+    throw new Error('Seed phrase must not be empty.');
+  }
+
+  if (trimmed.startsWith('//')) {
+    if (!isCustomNetwork) {
+      throw new Error(
+        `Dev account SURI '${trimmed}' is not valid on Volta or zkVerify mainnet. ` +
+          `Use a real BIP39 mnemonic, or connect via .Custom() for local dev testing.`,
+      );
+    }
+    return;
+  }
+
+  const mnemonicPart = trimmed.split(/\/\/?/)[0].trim();
+
+  if (HEX_SEED_RE.test(mnemonicPart)) {
+    return;
+  }
+
+  const wordCount = mnemonicPart.split(/\s+/).filter(Boolean).length;
+  if (!VALID_MNEMONIC_WORD_COUNTS.has(wordCount)) {
+    throw new Error(
+      `Invalid seed phrase: expected a BIP39 mnemonic of 12, 15, 18, 21, or 24 words, got ${wordCount}.`,
+    );
+  }
+}
 
 /**
  * Sets up the account using the provided secret seed phrase.
  *
  * @param {string} secretSeedPhrase - The secret seed phrase used to create the account.
+ *   Must be a BIP39 mnemonic (12/15/18/21/24 words) or a 32-byte 0x-prefixed hex seed.
+ *   Substrate dev-account SURIs (e.g. `//Alice`) are rejected unless `isCustomNetwork` is true.
+ * @param {boolean} [isMainnetNetwork] - True for zkVerify mainnet (affects SS58 encoding).
+ * @param {boolean} [isCustomNetwork] - True when the session targets a Custom network;
+ *   permits substrate dev SURIs that would never be accepted by Volta or zkVerify.
  * @returns {KeyringPair} The initialized account.
  * @throws Will throw an error if the seed phrase is invalid.
  */
 export const setupAccount = (
   secretSeedPhrase: string,
   isMainnetNetwork?: boolean,
+  isCustomNetwork?: boolean,
 ): KeyringPair => {
+  validateSeedPhrase(secretSeedPhrase, !!isCustomNetwork);
+
   try {
     const ss58Prefix = isMainnetNetwork
       ? ZKVERIFY_CHAIN_SS58_PREFIX

@@ -1,19 +1,19 @@
-import { handleTransaction } from '../../utils/transactions';
-import { AccountConnection, WalletConnection } from '../connection/types';
+import { handleTransaction } from '../../utils/transactions/index.js';
+import { AccountConnection, WalletConnection } from '../connection/types.js';
 import { EventEmitter } from 'events';
-import { VerifyTransactionInfo, ProofData } from '../../types';
-import { VerifyOptions } from '../../session/types';
-import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { format } from '../format';
-import { createSubmitProofExtrinsic } from '../extrinsic';
-import { VerifyInput } from './types';
+import { VerifyTransactionInfo, ProofData } from '../../types.js';
+import { VerifyOptions } from '../../session/types.js';
+import { TransactionType, ZkVerifyEvents } from '../../enums.js';
+import { format } from '../format/index.js';
+import { createSubmitProofExtrinsic } from '../extrinsic/index.js';
+import { VerifyInput } from './types.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { FormattedProofData } from '../format/types';
+import { FormattedProofData } from '../format/types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 import {
   getKeyringAccountIfAvailable,
   toSubmittableExtrinsic,
-} from '../../utils/helpers';
+} from '../../utils/helpers/index.js';
 
 export const verify = async (
   connection: AccountConnection | WalletConnection,
@@ -27,9 +27,10 @@ export const verify = async (
     const selectedAccount: KeyringPair | undefined =
       getKeyringAccountIfAvailable(connection, options.accountAddress);
 
-    if (input.domainId != null) {
-      options.domainId = input.domainId;
-    }
+    const effectiveOptions: VerifyOptions =
+      input.domainId != null
+        ? { ...options, domainId: input.domainId }
+        : options;
 
     const transaction: SubmittableExtrinsic<'promise'> = (() => {
       if ('proofData' in input && input.proofData) {
@@ -65,7 +66,7 @@ export const verify = async (
           selectedAccount,
           undefined,
           emitter,
-          options,
+          effectiveOptions,
           TransactionType.Verify,
         )
       : 'injector' in connection
@@ -75,7 +76,7 @@ export const verify = async (
             connection.accountAddress,
             connection.injector.signer,
             emitter,
-            options,
+            effectiveOptions,
             TransactionType.Verify,
           )
         : (() => {

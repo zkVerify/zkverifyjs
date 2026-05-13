@@ -10,18 +10,20 @@ export async function closeSession(provider: WsProvider): Promise<void> {
     disconnectFn: () => Promise<void>,
     isConnectedFn: () => boolean,
   ) => {
-    let retries = 5;
-    while (retries > 0) {
+    const maxAttempts = 5;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         await disconnectFn();
         if (!isConnectedFn()) return;
       } catch (error) {
         console.debug(`Retrying ${name} disconnect due to error:`, error);
       }
-      retries--;
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (attempt < maxAttempts - 1) {
+        const delayMs = Math.min(100 * 2 ** attempt, 1000);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
     }
-    console.warn(`Failed to disconnect ${name} after 5 attempts.`);
+    console.warn(`Failed to disconnect ${name} after ${maxAttempts} attempts.`);
   };
 
   try {

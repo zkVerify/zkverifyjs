@@ -1,22 +1,25 @@
-import { getProofPallet, getProofProcessor } from '../../utils/helpers';
-import { handleTransaction } from '../../utils/transactions';
-import { verify } from './index';
+import {
+  getProofPallet,
+  getProofProcessor,
+} from '../../utils/helpers/index.js';
+import { handleTransaction } from '../../utils/transactions/index.js';
+import { verify } from './index.js';
 import { EventEmitter } from 'events';
-import { AccountConnection, WalletConnection } from '../connection/types';
-import { VerifyOptions } from '../../session/types';
+import { AccountConnection, WalletConnection } from '../connection/types.js';
+import { VerifyOptions } from '../../session/types.js';
 import {
   CurveType,
   Library,
   TransactionType,
   ZkVerifyEvents,
-} from '../../enums';
-import { ProofProcessor } from '../../types';
-import { ProofType } from '../../config';
-import { VerifyInput } from './types';
+} from '../../enums.js';
+import { ProofProcessor } from '../../types.js';
+import { ProofType } from '../../config/index.js';
+import { VerifyInput } from './types.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { createSubmitProofExtrinsic } from '../extrinsic';
+import { createSubmitProofExtrinsic } from '../extrinsic/index.js';
 import { KeyringPair } from '@polkadot/keyring/types';
-import * as helpers from '../../utils/helpers';
+import * as helpers from '../../utils/helpers/index.js';
 
 jest.mock('../../utils/helpers', () => {
   const actual = jest.requireActual('../../utils/helpers');
@@ -274,9 +277,10 @@ describe('verify', () => {
       Array.from(mockAccountConnection.accounts.values())[0],
       undefined,
       emitter,
-      mockOptions,
+      { ...mockOptions, domainId: 42 },
       TransactionType.Verify,
     );
+    expect(mockOptions).not.toHaveProperty('domainId');
   });
 
   it('should throw an error and emit when transaction submission fails', async () => {

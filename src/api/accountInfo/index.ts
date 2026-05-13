@@ -1,7 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { AccountInfo as PolkadotAccountInfo } from '@polkadot/types/interfaces/system';
-import { AccountInfo } from '../../types';
+import { AccountInfo } from '../../types.js';
 
 export async function accountInfo(
   api: ApiPromise,

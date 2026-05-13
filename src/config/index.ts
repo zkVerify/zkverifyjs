@@ -7,7 +7,7 @@ import {
   TeeVariant,
   UltrahonkVersion,
   UltrahonkVariant,
-} from '../enums';
+} from '../enums.js';
 import {
   EZKLProcessor,
   FflonkProcessor,
@@ -18,8 +18,8 @@ import {
   TEEProcessor,
   UltraHonkProcessor,
   UltraPlonkProcessor,
-} from '../proofTypes';
-import { NetworkConfig, ProofProcessor, RuntimeSpec } from '../types';
+} from '../proofTypes/index.js';
+import { NetworkConfig, ProofProcessor, RuntimeSpec } from '../types.js';
 import { RegistryTypes } from '@polkadot/types/types';
 
 export const VOLTA_CHAIN_SS58_PREFIX = 251; // zkVerify specific address format

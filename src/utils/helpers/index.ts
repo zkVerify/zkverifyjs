@@ -4,7 +4,7 @@ import {
   OptimisticVerifyResult,
   ProofProcessor,
   TransactionValidityError,
-} from '../../types';
+} from '../../types.js';
 import {
   Groth16Config,
   Plonky2Config,
@@ -16,34 +16,85 @@ import {
   TeeConfig,
   UltraplonkConfig,
   UltrahonkConfig,
-} from '../../config';
-import { decodeDispatchError } from '../transactions/errors';
+} from '../../config/index.js';
+import { decodeDispatchError } from '../transactions/errors/index.js';
 import { DispatchError, Extrinsic } from '@polkadot/types/interfaces';
 import {
   AccountConnection,
   EstablishedConnection,
   WalletConnection,
-} from '../../api/connection/types';
+} from '../../api/connection/types.js';
 
-export * from './runtimeVersion';
+export * from './runtimeVersion/index.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 
-/**
- * Waits for the zkVerify node to sync.
- * @param api - The ApiPromise instance.
- * @returns A promise that resolves when the node is synced.
- */
-export async function waitForNodeToSync(api: ApiPromise): Promise<void> {
-  let isSyncing = true;
+export interface WaitForNodeToSyncOptions {
+  /**
+   * Maximum total wait time in ms before throwing. Default 300_000 (5 min).
+   */
+  timeoutMs?: number;
+  /**
+   * Delay between health polls in ms. Default 1000.
+   */
+  pollIntervalMs?: number;
+  /**
+   * Optional AbortSignal to cancel the wait early. When aborted the function
+   * rejects with an `AbortError`.
+   */
+  signal?: AbortSignal;
+}
 
-  while (isSyncing) {
-    const health = await api.rpc.system.health();
-    isSyncing = health.isSyncing.isTrue;
-    if (isSyncing) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+/**
+ * Waits for the zkVerify node to finish syncing. Polls `system.health` at a
+ * fixed interval up to a bounded deadline; throws on timeout or abort.
+ *
+ * @param api - The ApiPromise instance.
+ * @param options - Optional timeout, poll interval, and abort signal.
+ * @returns A promise that resolves when the node is synced.
+ * @throws {Error} If the deadline is reached before the node finishes syncing.
+ * @throws {DOMException} `AbortError` if the supplied signal is aborted.
+ */
+export async function waitForNodeToSync(
+  api: ApiPromise,
+  options: WaitForNodeToSyncOptions = {},
+): Promise<void> {
+  const { timeoutMs = 300_000, pollIntervalMs = 1000, signal } = options;
+  const deadline = Date.now() + timeoutMs;
+
+  while (true) {
+    if (signal?.aborted) {
+      throw new DOMException('waitForNodeToSync aborted', 'AbortError');
     }
+    if (Date.now() > deadline) {
+      throw new Error(
+        `waitForNodeToSync timed out after ${timeoutMs}ms; node still reports isSyncing.`,
+      );
+    }
+
+    const health = await api.rpc.system.health();
+    if (!health.isSyncing.isTrue) return;
+
+    await sleep(pollIntervalMs, signal);
   }
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('sleep aborted', 'AbortError'));
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException('sleep aborted', 'AbortError'));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 export function getProofProcessor(proofType: ProofType): ProofProcessor {
@@ -217,37 +268,6 @@ export async function interpretDryRunResponse(
 }
 
 /**
- * Binds all methods from the source object to the target object,
- * preserving the original `this` context.
- *
- * Throws an error if a method with the same name already exists on the target.
- *
- * @param target - The object to bind methods to.
- * @param source - The object containing the methods to bind.
- *
- * @throws {Error} If a method with the same name already exists on the target.
- */
-export function bindMethods<T extends object>(target: T, source: object): void {
-  const propertyNames = Object.getOwnPropertyNames(
-    Object.getPrototypeOf(source),
-  );
-
-  for (const name of propertyNames) {
-    const method = (source as Record<string, unknown>)[name];
-
-    if (typeof method === 'function' && name !== 'constructor') {
-      if (name in target) {
-        throw new Error(
-          `❌ Method collision detected: "${name}". Binding aborted.`,
-        );
-      }
-
-      (target as Record<string, unknown>)[name] = method.bind(source);
-    }
-  }
-}
-
-/**
  * Retrieves the selected account from the connection based on the provided account address.
  * If no account address is provided, it defaults to the first available account.
  *
@@ -311,7 +331,11 @@ export const extractErrorMessage = (err: unknown): string => {
     if (typeof maybeError.error === 'string') {
       return maybeError.error;
     }
-    return JSON.stringify(err);
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return String(err);
+    }
   }
 
   return String(err);
@@ -466,4 +490,18 @@ export function toSubmittableExtrinsic(
 
   const call = api.createType('Call', extrinsic.method);
   return api.tx(call);
+}
+
+/**
+ * Asserts that the given input is a 0x-prefixed hex string.
+ *
+ * @param input - The string to validate.
+ * @returns The input unchanged, for ergonomic inline use.
+ * @throws {Error} If the input does not start with `0x`.
+ */
+export function validateHexString(input: string): string {
+  if (!input.startsWith('0x')) {
+    throw new Error('Invalid format: string input must be 0x-prefixed.');
+  }
+  return input;
 }

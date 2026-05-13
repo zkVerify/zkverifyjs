@@ -4,36 +4,78 @@ import {
   OptimisticProofMethodMap,
   OptimisticVerifyOptions,
   ProofMethodMap,
-} from '../../types';
-import { verify } from '../../../api/verify';
-import { optimisticVerify } from '../../../api/optimisticVerify';
-import { batchVerify } from '../../../api/batchVerify';
-import { batchOptimisticVerify } from '../../../api/batchOptimisticVerify';
-import { AllProofConfigs, ProofOptions, ProofType } from '../../../config';
-import { VerificationBuilder } from '../../builders/verify';
-import { OptimisticVerificationBuilder } from '../../builders/optimisticVerify';
-import { validateProofTypeOptions } from '../../validator';
-import { VerifyInput } from '../../../api/verify/types';
+} from '../../types.js';
+import { verify } from '../../../api/verify/index.js';
+import { optimisticVerify } from '../../../api/optimisticVerify/index.js';
+import { batchVerify } from '../../../api/batchVerify/index.js';
+import { batchOptimisticVerify } from '../../../api/batchOptimisticVerify/index.js';
+import {
+  AllProofConfigs,
+  ProofOptions,
+  ProofType,
+} from '../../../config/index.js';
+import { VerificationBuilder } from '../../builders/verify/index.js';
+import { OptimisticVerificationBuilder } from '../../builders/optimisticVerify/index.js';
+import { validateProofTypeOptions } from '../../validator/index.js';
+import { VerifyInput } from '../../../api/verify/types.js';
 import { EventEmitter } from 'events';
 import {
   BatchVerifyTransactionInfo,
   OptimisticVerifyResult,
   VerifyTransactionInfo,
-} from '../../../types';
-import { checkReadOnly } from '../../../utils/helpers';
-import { ConnectionManager } from '../connection';
+} from '../../../types.js';
+import { checkReadOnly } from '../../../utils/helpers/index.js';
+import { ConnectionManager } from '../connection/index.js';
 import {
   AccountConnection,
   WalletConnection,
-} from '../../../api/connection/types';
-import { BatchVerificationBuilder } from '../../builders/batchVerify';
-import { BatchOptimisticVerificationBuilder } from '../../builders/batchOptimisticVerify';
+} from '../../../api/connection/types.js';
+import { BatchVerificationBuilder } from '../../builders/batchVerify/index.js';
+import { BatchOptimisticVerificationBuilder } from '../../builders/batchOptimisticVerify/index.js';
 
 export class VerificationManager {
   private readonly connectionManager: ConnectionManager;
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
+  }
+
+  /**
+   * Builds a frozen, per-proof-type method map. Used by verify/optimisticVerify/
+   * batchVerify/batchOptimisticVerify — each proof type entry validates options
+   * against the connected runtime, then hands off to the supplied factory.
+   */
+  private buildProofTypeMap<T>(
+    createBuilder: (proofOptions: ProofOptions, accountAddress?: string) => T,
+    accountAddress?: string,
+  ): Record<string, (proofConfig?: AllProofConfigs | null) => T> {
+    const builderMethods: Record<
+      string,
+      (proofConfig?: AllProofConfigs | null) => T
+    > = {};
+
+    for (const proofType in ProofType) {
+      if (!Object.prototype.hasOwnProperty.call(ProofType, proofType)) continue;
+
+      Object.defineProperty(builderMethods, proofType, {
+        value: (proofConfig?: AllProofConfigs | null) => {
+          const validatedOptions = validateProofTypeOptions(
+            {
+              proofType: proofType as ProofType,
+              config: proofConfig ?? undefined,
+            },
+            this.connectionManager.connectionDetails.runtimeSpec,
+          );
+
+          return createBuilder(validatedOptions, accountAddress);
+        },
+        writable: false,
+        configurable: false,
+        enumerable: true,
+      });
+    }
+
+    return builderMethods;
   }
 
   /**
@@ -45,32 +87,10 @@ export class VerificationManager {
    * @returns {ProofMethodMap} A map of proof types to their corresponding builder methods.
    */
   verify(accountAddress?: string): ProofMethodMap {
-    const builderMethods: Partial<ProofMethodMap> = {};
-
-    for (const proofType in ProofType) {
-      if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
-        Object.defineProperty(builderMethods, proofType, {
-          value: (proofConfig?: AllProofConfigs | null) => {
-            const proofOptions: ProofOptions = {
-              proofType: proofType as ProofType,
-              config: proofConfig ?? undefined,
-            };
-
-            validateProofTypeOptions(
-              proofOptions,
-              this.connectionManager.connectionDetails.runtimeSpec,
-            );
-
-            return this.createVerifyBuilder(proofOptions, accountAddress);
-          },
-          writable: false,
-          configurable: false,
-          enumerable: true,
-        });
-      }
-    }
-
-    return builderMethods as ProofMethodMap;
+    return this.buildProofTypeMap<VerificationBuilder>(
+      (opts, addr) => this.createVerifyBuilder(opts, addr),
+      accountAddress,
+    ) as ProofMethodMap;
   }
 
   /**
@@ -81,35 +101,10 @@ export class VerificationManager {
    * @returns {OptimisticProofMethodMap} A map of proof types to their corresponding builder methods.
    */
   optimisticVerify(accountAddress?: string): OptimisticProofMethodMap {
-    const builderMethods: Partial<OptimisticProofMethodMap> = {};
-
-    for (const proofType in ProofType) {
-      if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
-        Object.defineProperty(builderMethods, proofType, {
-          value: (proofConfig?: AllProofConfigs | null) => {
-            const proofOptions: ProofOptions = {
-              proofType: proofType as ProofType,
-              config: proofConfig ?? undefined,
-            };
-
-            validateProofTypeOptions(
-              proofOptions,
-              this.connectionManager.connectionDetails.runtimeSpec,
-            );
-
-            return this.createOptimisticVerifyBuilder(
-              proofOptions,
-              accountAddress,
-            );
-          },
-          writable: false,
-          configurable: false,
-          enumerable: true,
-        });
-      }
-    }
-
-    return builderMethods as OptimisticProofMethodMap;
+    return this.buildProofTypeMap<OptimisticVerificationBuilder>(
+      (opts, addr) => this.createOptimisticVerifyBuilder(opts, addr),
+      accountAddress,
+    ) as OptimisticProofMethodMap;
   }
 
   /**
@@ -121,32 +116,10 @@ export class VerificationManager {
    * @returns {BatchProofMethodMap} A map of proof types to their batch verification builder methods.
    */
   batchVerify(accountAddress?: string): BatchProofMethodMap {
-    const builderMethods: Partial<BatchProofMethodMap> = {};
-
-    for (const proofType in ProofType) {
-      if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
-        Object.defineProperty(builderMethods, proofType, {
-          value: (proofConfig?: AllProofConfigs | null) => {
-            const proofOptions: ProofOptions = {
-              proofType: proofType as ProofType,
-              config: proofConfig ?? undefined,
-            };
-
-            validateProofTypeOptions(
-              proofOptions,
-              this.connectionManager.connectionDetails.runtimeSpec,
-            );
-
-            return this.createBatchVerifyBuilder(proofOptions, accountAddress);
-          },
-          writable: false,
-          configurable: false,
-          enumerable: true,
-        });
-      }
-    }
-
-    return builderMethods as BatchProofMethodMap;
+    return this.buildProofTypeMap<BatchVerificationBuilder>(
+      (opts, addr) => this.createBatchVerifyBuilder(opts, addr),
+      accountAddress,
+    ) as BatchProofMethodMap;
   }
 
   /**
@@ -159,35 +132,10 @@ export class VerificationManager {
   batchOptimisticVerify(
     accountAddress?: string,
   ): BatchOptimisticProofMethodMap {
-    const builderMethods: Partial<BatchOptimisticProofMethodMap> = {};
-
-    for (const proofType in ProofType) {
-      if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
-        Object.defineProperty(builderMethods, proofType, {
-          value: (proofConfig?: AllProofConfigs | null) => {
-            const proofOptions: ProofOptions = {
-              proofType: proofType as ProofType,
-              config: proofConfig ?? undefined,
-            };
-
-            validateProofTypeOptions(
-              proofOptions,
-              this.connectionManager.connectionDetails.runtimeSpec,
-            );
-
-            return this.createBatchOptimisticVerifyBuilder(
-              proofOptions,
-              accountAddress,
-            );
-          },
-          writable: false,
-          configurable: false,
-          enumerable: true,
-        });
-      }
-    }
-
-    return builderMethods as BatchOptimisticProofMethodMap;
+    return this.buildProofTypeMap<BatchOptimisticVerificationBuilder>(
+      (opts, addr) => this.createBatchOptimisticVerifyBuilder(opts, addr),
+      accountAddress,
+    ) as BatchOptimisticProofMethodMap;
   }
 
   /**

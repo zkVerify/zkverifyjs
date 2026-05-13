@@ -4,7 +4,7 @@ import {
   Proof,
   ProofInput,
   SnarkJSProofInput,
-} from '../../types';
+} from '../../types.js';
 import {
   extractCurve,
   formatG1Point,
@@ -12,9 +12,9 @@ import {
   formatPublicSignals,
   getEndianess,
   unstringifyBigInts,
-} from '../utils';
-import { ProofOptions } from '../../../../config';
-import { isGroth16Config } from '../../../../utils/helpers';
+} from '../utils.js';
+import { ProofOptions } from '../../../../config/index.js';
+import { isGroth16Config } from '../../../../utils/helpers/index.js';
 
 /**
  * Formats zk-SNARK proof data for Groth16.

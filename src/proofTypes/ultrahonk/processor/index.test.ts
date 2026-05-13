@@ -1,6 +1,6 @@
-import { ProofType } from '../../../config';
-import { UltrahonkVariant, UltrahonkVersion } from '../../../enums';
-import processor from './index';
+import { ProofType } from '../../../config/index.js';
+import { UltrahonkVariant, UltrahonkVersion } from '../../../enums.js';
+import processor from './index.js';
 
 describe('UltraHonkProcessor', () => {
   const options = {

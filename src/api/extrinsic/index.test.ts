@@ -5,9 +5,9 @@ import {
   createSubmitProofExtrinsic,
   createExtrinsicHex,
   createSubmittableExtrinsicFromHex,
-} from './index';
-import { ProofType } from '../../config';
-import { FormattedProofData } from '../format/types';
+} from './index.js';
+import { ProofType } from '../../config/index.js';
+import { FormattedProofData } from '../format/types.js';
 
 jest.mock('../../utils/helpers', () => ({
   ...jest.requireActual('../../utils/helpers'),

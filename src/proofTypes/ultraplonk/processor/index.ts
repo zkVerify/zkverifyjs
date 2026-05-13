@@ -1,7 +1,7 @@
-import { ProofProcessor } from '../../../types';
-import { UltraPlonkProof, UltraPlonkVk, UltraPlonkPubs } from '../types';
-import * as formatter from '../formatter';
-import { ProofOptions } from '../../../config';
+import { ProofProcessor } from '../../../types.js';
+import { UltraPlonkProof, UltraPlonkVk, UltraPlonkPubs } from '../types.js';
+import * as formatter from '../formatter/index.js';
+import { ProofOptions } from '../../../config/index.js';
 
 class UltraPlonkProcessor implements ProofProcessor {
   formatProof(

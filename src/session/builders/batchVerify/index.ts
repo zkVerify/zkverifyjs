@@ -1,8 +1,8 @@
-import { VerifyOptions } from '../../types';
+import { VerifyOptions } from '../../types.js';
 import { EventEmitter } from 'events';
-import { BatchVerifyTransactionInfo } from '../../../types';
-import { VerifyInput } from '../../../api/verify/types';
-import { ProofOptions } from '../../../config';
+import { BatchVerifyTransactionInfo } from '../../../types.js';
+import { VerifyInput } from '../../../api/verify/types.js';
+import { ProofOptions } from '../../../config/index.js';
 
 export class BatchVerificationBuilder {
   private readonly options: VerifyOptions;

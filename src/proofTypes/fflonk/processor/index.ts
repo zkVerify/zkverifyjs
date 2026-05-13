@@ -1,12 +1,12 @@
-import * as formatter from '../formatter';
+import * as formatter from '../formatter/index.js';
 
 import {
   FflonkProof,
   FflonkPublicSignals,
   FflonkVerificationKey,
-} from '../types';
+} from '../types.js';
 
-import { ProofProcessor } from '../../../types';
+import { ProofProcessor } from '../../../types.js';
 
 class FflonkProcessor implements ProofProcessor {
   formatProof(proof: FflonkProof): string {

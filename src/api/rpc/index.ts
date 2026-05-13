@@ -1,7 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
-import { AggregateStatementPathResult } from '../../types';
-import { ProofOptions } from '../../config';
-import { formatVk } from '../format';
+import { AggregateStatementPathResult } from '../../types.js';
+import { ProofOptions } from '../../config/index.js';
+import { formatVk } from '../format/index.js';
 
 export async function getAggregateStatementPath(
   api: ApiPromise,
@@ -46,19 +46,20 @@ export async function getAggregateStatementPath(
       statement,
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const humanResult = result.toHuman() as Record<string, any>;
+    const jsonResult = result.toJSON() as Record<string, unknown> | null;
 
-    if (!humanResult || typeof humanResult !== 'object') {
+    if (!jsonResult || typeof jsonResult !== 'object') {
       throw new Error('Unexpected result format from RPC call.');
     }
 
-    const { root, proof, number_of_leaves, leaf_index, leaf } = humanResult;
+    const { root, proof, number_of_leaves, leaf_index, leaf } = jsonResult;
 
     if (
       typeof root !== 'string' ||
       !Array.isArray(proof) ||
-      typeof leaf !== 'string'
+      typeof leaf !== 'string' ||
+      typeof number_of_leaves !== 'number' ||
+      typeof leaf_index !== 'number'
     ) {
       throw new Error('Invalid response structure from RPC call.');
     }
@@ -66,8 +67,8 @@ export async function getAggregateStatementPath(
     const formattedResult: AggregateStatementPathResult = {
       root,
       proof: proof.map(String),
-      numberOfLeaves: Number(number_of_leaves),
-      leafIndex: Number(leaf_index),
+      numberOfLeaves: number_of_leaves,
+      leafIndex: leaf_index,
       leaf,
     };
 

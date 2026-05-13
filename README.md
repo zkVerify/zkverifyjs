@@ -548,6 +548,8 @@ Note: if any proof fails, `success` boolean will be false and `message` will be 
 
 It is possible to define a domain that has some properties and an owner.  The following flow shows how to register, hold and unregister a domain:
 
+`registerDomain(aggregationSize, queueSize?, domainOptions, signerAccount?)` — `aggregationSize` must be 1–128 inclusive; `queueSize` must be 1–16 inclusive and defaults to 16 when omitted (passing `0` throws — the default only applies when the argument is not supplied).
+
 ```typescript
 session = await zkVerifySession
         .start()
@@ -776,6 +778,29 @@ await zkVerifySession.start()
 - withAccount: Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase, cannot be used with `withWallet()`.
 - withWallet: Establish connection to a browser extension based substrate wallet like talisman or subwallet, cannot be used with `withAccount()`;
 - readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
+
+### Connection tuning
+
+`.Custom()` accepts two optional fields to control connection behavior. Useful for long-running clients that need explicit timeouts or want to control reconnect cadence.
+
+```typescript
+const session = await zkVerifySession
+  .start()
+  .Custom({
+    websocket: "wss://my-node",
+    rpc: "https://my-node",
+    wsProvider: {
+      autoConnectMs: 10000,  // delay between reconnect attempts (default 2500)
+      timeout: 30000,        // per-request timeout in ms
+    },
+    syncTimeoutMs: 120000,   // give up if the node is still syncing after 120s (default 300000)
+  })
+  .withAccount('your-seed-phrase');
+```
+
+- `wsProvider.autoConnectMs`: ms between reconnect attempts. Pass `false` to disable auto-reconnect entirely, then subscribe to `session.provider.on('disconnected', ...)` to implement your own retry policy with a hard upper bound. This is the recommended pattern when you need to give up after N failed reconnects rather than retrying forever.
+- `wsProvider.timeout`: per-request timeout in ms.
+- `syncTimeoutMs`: max time to wait for the node to finish syncing during session start. Throws if exceeded. Default 5 minutes.
 
 ## `zkVerifySession.close`
 

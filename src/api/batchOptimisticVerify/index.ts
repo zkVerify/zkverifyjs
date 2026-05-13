@@ -1,8 +1,8 @@
-import { AccountConnection, WalletConnection } from '../connection/types';
-import { VerifyInput } from '../verify/types';
-import { OptimisticVerifyOptions } from '../../session/types';
-import { optimisticVerify } from '../optimisticVerify';
-import { OptimisticVerifyResult } from '../../types';
+import { AccountConnection, WalletConnection } from '../connection/types.js';
+import { VerifyInput } from '../verify/types.js';
+import { OptimisticVerifyOptions } from '../../session/types.js';
+import { optimisticVerify } from '../optimisticVerify/index.js';
+import { OptimisticVerifyResult } from '../../types.js';
 
 export const batchOptimisticVerify = async (
   connection: AccountConnection | WalletConnection,

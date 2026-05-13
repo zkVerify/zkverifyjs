@@ -2,14 +2,14 @@ import {
   createExtrinsicHex,
   createSubmitProofExtrinsic,
   createSubmittableExtrinsicFromHex,
-} from '../../../api/extrinsic';
-import { estimateCost } from '../../../api/estimate';
-import { checkReadOnly } from '../../../utils/helpers';
-import { ConnectionManager } from '../connection';
-import { FormattedProofData } from '../../../api/format/types';
+} from '../../../api/extrinsic/index.js';
+import { estimateCost } from '../../../api/estimate/index.js';
+import { checkReadOnly } from '../../../utils/helpers/index.js';
+import { ConnectionManager } from '../connection/index.js';
+import { FormattedProofData } from '../../../api/format/types.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { ProofType } from '../../../config';
-import { ExtrinsicCostEstimate } from '../../../api/estimate/types';
+import { ProofType } from '../../../config/index.js';
+import { ExtrinsicCostEstimate } from '../../../api/estimate/types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 
 export class ExtrinsicManager {

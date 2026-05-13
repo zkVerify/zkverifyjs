@@ -1,12 +1,12 @@
-import { ProofType, SupportedNetwork } from './config';
+import { ProofType, SupportedNetwork } from './config/index.js';
 import {
   AggregateSecurityRules,
   Destination,
   ProofSecurityRules,
   TransactionStatus,
   ZkVerifyEvents,
-} from './enums';
-import { NewAggregationEventSubscriptionOptions } from './api/aggregation/types';
+} from './enums.js';
+import { NewAggregationEventSubscriptionOptions } from './api/aggregation/types.js';
 
 export interface ProofProcessor {
   formatProof(proof: unknown, options?: unknown): unknown;
@@ -92,11 +92,31 @@ export interface MerkleProof {
   leaf: string;
 }
 
+export type WsProviderOptions = {
+  /**
+   * Milliseconds between auto-reconnect attempts. Default is 2500 (Polkadot's
+   * built-in default). Pass `false` to disable auto-reconnect entirely —
+   * callers can then listen on `session.provider.on('disconnected', ...)`
+   * and decide their own retry strategy.
+   */
+  autoConnectMs?: number | false;
+  /**
+   * Per-request timeout in milliseconds.
+   */
+  timeout?: number;
+};
+
 export type NetworkConfig = {
   host: SupportedNetwork;
   websocket: string;
   rpc: string;
   network?: string;
+  wsProvider?: WsProviderOptions;
+  /**
+   * Max ms to wait for node sync during session start. Default 300_000 (5 min).
+   * Throws if the node still reports `isSyncing` after this deadline.
+   */
+  syncTimeoutMs?: number;
 };
 
 export type CustomNetworkConfig = Omit<NetworkConfig, 'host'>;

@@ -5,8 +5,8 @@ import {
   TransactionInfo,
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
-} from '../../../types';
-import { TransactionStatus, ZkVerifyEvents } from '../../../enums';
+} from '../../../types.js';
+import { TransactionStatus, ZkVerifyEvents } from '../../../enums.js';
 import { DispatchError } from '@polkadot/types/interfaces';
 
 export const decodeDispatchError = (
