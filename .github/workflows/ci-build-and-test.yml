@@ -35,6 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:24-bookworm
+    defaults:
+      run:
+        shell: bash
     env:
       SEED_PHRASE_1: ${{ secrets.SEED_PHRASE_1 }}
       SEED_PHRASE_2: ${{ secrets.SEED_PHRASE_2 }}

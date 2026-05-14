@@ -40,6 +40,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:24-bookworm
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout code
