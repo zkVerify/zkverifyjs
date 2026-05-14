@@ -6,8 +6,35 @@ on:
   workflow_dispatch:
 
 jobs:
+  supply-chain-audit:
+    # Host-runner companion to the containerized build-and-test job.
+    # harden-runner does not support container jobs, so this job re-runs the
+    # most network-sensitive step (`npm ci`) on a bare runner with egress
+    # auditing enabled. Build/test/lint correctness is owned by build-and-test;
+    # this job exists only to audit registry traffic.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Install dependencies (audited)
+        run: npm ci --ignore-scripts
+
   build-and-test:
     runs-on: ubuntu-latest
+    container:
+      image: node:24-bookworm
     env:
       SEED_PHRASE_1: ${{ secrets.SEED_PHRASE_1 }}
       SEED_PHRASE_2: ${{ secrets.SEED_PHRASE_2 }}
@@ -31,24 +58,10 @@ jobs:
       SEED_PHRASE_20: ${{ secrets.SEED_PHRASE_20 }}
 
     steps:
-      - name: Harden runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
-        with:
-          egress-policy: audit
-
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: '24.x'
-          package-manager-cache: false
-
-      - name: Use npm 11.6.2
-        run: npm i -g npm@11.6.2
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
@@ -69,7 +82,7 @@ jobs:
         run: |
           wget https://github.com/iden3/circom/releases/download/v2.2.2/circom-linux-amd64 -O circom
           chmod +x circom
-          sudo mv circom /usr/local/bin/
+          mv circom /usr/local/bin/
 
       - name: Install snarkjs
         run: npm install -g snarkjs@0.7.6 --ignore-scripts
