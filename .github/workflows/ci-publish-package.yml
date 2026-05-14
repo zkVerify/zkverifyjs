@@ -38,6 +38,7 @@ jobs:
 
   build-and-publish:
     runs-on: ubuntu-latest
+    environment: npm-publish
     container:
       image: node:24-bookworm
     defaults:
