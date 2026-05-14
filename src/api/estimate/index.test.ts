@@ -1,8 +1,8 @@
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { estimateCost, convertFeeToToken } from './index';
-import { AccountConnection } from '../connection/types';
+import { estimateCost, convertFeeToToken } from './index.js';
+import { AccountConnection } from '../connection/types.js';
 
 describe('estimateCost', () => {
   let mockApi: jest.Mocked<ApiPromise>;

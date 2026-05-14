@@ -1,7 +1,7 @@
-import { TransactionStatus, TransactionType } from '../../../enums';
-import { VerifyOptions } from '../../../session/types';
-import { TransactionInfoByType } from '../types';
-import { TransactionInfo } from '../../../types';
+import { TransactionStatus, TransactionType } from '../../../enums.js';
+import { VerifyOptions } from '../../../session/types.js';
+import { TransactionInfoByType } from '../types.js';
+import { TransactionInfo } from '../../../types.js';
 
 /**
  * Initializes a transaction object based on its type.

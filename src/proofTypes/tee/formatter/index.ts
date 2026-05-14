@@ -1,4 +1,5 @@
-import { TeeIntelVk, TeeProof, TeeVk } from '../types';
+import { TeeIntelVk, TeeProof, TeeVk } from '../types.js';
+import { validateHexString } from '../../../utils/helpers/index.js';
 
 export function formatProof(proof: TeeProof['proof']): string {
   return validateHexString(proof);
@@ -31,11 +32,4 @@ export function formatIntelVk(vk: TeeVk['vk']): TeeIntelVk {
 
 export function formatPubs(): string {
   return '0x';
-}
-
-function validateHexString(input: string): string {
-  if (!input.startsWith('0x')) {
-    throw new Error('Invalid format: string input must be 0x-prefixed.');
-  }
-  return input;
 }

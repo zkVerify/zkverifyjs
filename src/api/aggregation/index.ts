@@ -2,8 +2,8 @@ import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces/system';
 import { Vec } from '@polkadot/types-codec';
 import { EventEmitter } from 'events';
-import { ZkVerifyEvents } from '../../enums';
-import { NewAggregationEventSubscriptionOptions } from './types';
+import { ZkVerifyEvents } from '../../enums.js';
+import { NewAggregationEventSubscriptionOptions } from './types.js';
 import { Codec } from '@polkadot/types/types';
 
 type EmitterWithCleanups = EventEmitter & {

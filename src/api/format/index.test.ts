@@ -1,8 +1,8 @@
-import { ProofProcessor } from '../../types';
-import { getProofProcessor } from '../../utils/helpers';
-import { ProofType } from '../../config';
-import { format, formatVk } from './index';
-import { CurveType, Library } from '../../enums';
+import { ProofProcessor } from '../../types.js';
+import { getProofProcessor } from '../../utils/helpers/index.js';
+import { ProofType } from '../../config/index.js';
+import { format, formatVk } from './index.js';
+import { CurveType, Library } from '../../enums.js';
 
 jest.mock('../../utils/helpers', () => ({
   getProofProcessor: jest.fn(),

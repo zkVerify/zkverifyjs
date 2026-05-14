@@ -1,7 +1,7 @@
-import { WalletOptions, zkVerifySessionOptions } from '../../types';
-import { zkVerifySession } from '../../index';
-import { SupportedNetwork } from '../../../config';
-import { CustomNetworkConfig, NetworkConfig } from '../../../types';
+import { WalletOptions, zkVerifySessionOptions } from '../../types.js';
+import { zkVerifySession } from '../../index.js';
+import { SupportedNetwork } from '../../../config/index.js';
+import { CustomNetworkConfig, NetworkConfig } from '../../../types.js';
 
 export type SupportedNetworkMap = {
   [K in Exclude<

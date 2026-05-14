@@ -1,16 +1,16 @@
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
-import { handleTransaction } from '../../utils/transactions';
+import { handleTransaction } from '../../utils/transactions/index.js';
 import {
   extractErrorMessage,
   getProofPallet,
   getProofProcessor,
   getSelectedAccount,
-} from '../../utils/helpers';
-import { VKRegistrationTransactionInfo } from '../../types';
-import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { AccountConnection } from '../connection/types';
-import { VerifyOptions } from '../../session/types';
+} from '../../utils/helpers/index.js';
+import { VKRegistrationTransactionInfo } from '../../types.js';
+import { TransactionType, ZkVerifyEvents } from '../../enums.js';
+import { AccountConnection } from '../connection/types.js';
+import { VerifyOptions } from '../../session/types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 
 export async function registerVk(

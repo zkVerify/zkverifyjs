@@ -1,11 +1,11 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { establishConnection } from './index';
+import { establishConnection } from './index.js';
 import {
   waitForNodeToSync,
   fetchRuntimeVersionFromProvider,
-} from '../../utils/helpers';
-import { getZkvTypes, zkvRpc, SupportedNetwork } from '../../config';
-import { NetworkConfig } from '../../types';
+} from '../../utils/helpers/index.js';
+import { getZkvTypes, zkvRpc, SupportedNetwork } from '../../config/index.js';
+import { NetworkConfig } from '../../types.js';
 
 jest.mock('@polkadot/api');
 jest.mock('../../utils/helpers');
@@ -86,7 +86,9 @@ describe('establishConnection', () => {
 
     expect(WsProvider).toHaveBeenCalledWith(networkConfig.websocket);
     expectApiPromiseCreateToHaveBeenCalledWith();
-    expect(waitForNodeToSync).toHaveBeenCalledWith(result.api);
+    expect(waitForNodeToSync).toHaveBeenCalledWith(result.api, {
+      timeoutMs: undefined,
+    });
     expect(fetchRuntimeVersionFromProvider).toHaveBeenCalledWith(
       result.provider,
     );
@@ -110,7 +112,9 @@ describe('establishConnection', () => {
 
     expect(WsProvider).toHaveBeenCalledWith(customUrl);
     expectApiPromiseCreateToHaveBeenCalledWith();
-    expect(waitForNodeToSync).toHaveBeenCalledWith(result.api);
+    expect(waitForNodeToSync).toHaveBeenCalledWith(result.api, {
+      timeoutMs: undefined,
+    });
     expect(fetchRuntimeVersionFromProvider).toHaveBeenCalledWith(
       result.provider,
     );
@@ -193,5 +197,69 @@ describe('establishConnection', () => {
     await expect(establishConnection(networkConfig)).rejects.toThrow(
       'Failed to establish connection due to an unknown error.',
     );
+  });
+
+  it('uses default WsProvider construction when wsProvider is omitted', async () => {
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Volta,
+      websocket: 'wss://volta-rpc.zkverify.io',
+      rpc: 'http://volta-rpc.zkverify.io',
+    };
+
+    await establishConnection(networkConfig);
+
+    expect(WsProvider).toHaveBeenCalledWith(networkConfig.websocket);
+    expect(WsProvider).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes autoConnectMs and timeout to WsProvider when wsProvider is set', async () => {
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Custom,
+      websocket: 'ws://custom-url',
+      rpc: 'http://custom-rpc-url',
+      wsProvider: { autoConnectMs: 10_000, timeout: 30_000 },
+    };
+
+    await establishConnection(networkConfig);
+
+    expect(WsProvider).toHaveBeenLastCalledWith(
+      'ws://custom-url',
+      10_000,
+      undefined,
+      30_000,
+    );
+  });
+
+  it('honors autoConnectMs: false to disable auto-reconnect', async () => {
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Custom,
+      websocket: 'ws://custom-url',
+      rpc: 'http://custom-rpc-url',
+      wsProvider: { autoConnectMs: false },
+    };
+
+    await establishConnection(networkConfig);
+
+    expect(WsProvider).toHaveBeenLastCalledWith(
+      'ws://custom-url',
+      false,
+      undefined,
+      undefined,
+    );
+  });
+
+  it('threads syncTimeoutMs through to waitForNodeToSync', async () => {
+    const networkConfig: NetworkConfig = {
+      host: SupportedNetwork.Custom,
+      websocket: 'ws://custom-url',
+      rpc: 'http://custom-rpc-url',
+      syncTimeoutMs: 60_000,
+    };
+
+    const result = await establishConnection(networkConfig);
+
+    expect(waitForNodeToSync).toHaveBeenCalledWith(result.api, {
+      timeoutMs: 60_000,
+    });
   });
 });

@@ -1,6 +1,6 @@
-import { ProofProcessor } from '../../../types';
-import { SP1Pubs, SP1Vk } from '../types';
-import * as formatter from '../formatter';
+import { ProofProcessor } from '../../../types.js';
+import { SP1Pubs, SP1Vk } from '../types.js';
+import * as formatter from '../formatter/index.js';
 
 class SP1Processor implements ProofProcessor {
   formatProof(proof: string): string {

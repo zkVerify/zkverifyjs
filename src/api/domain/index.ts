@@ -1,10 +1,14 @@
-import { AccountConnection, WalletConnection } from '../connection/types';
-import { RuntimeVersion, TransactionType, ZkVerifyEvents } from '../../enums';
+import { AccountConnection, WalletConnection } from '../connection/types.js';
+import {
+  RuntimeVersion,
+  TransactionType,
+  ZkVerifyEvents,
+} from '../../enums.js';
 import {
   getKeyringAccountIfAvailable,
   isVersionAtLeast,
   requireVersionAtLeast,
-} from '../../utils/helpers';
+} from '../../utils/helpers/index.js';
 import EventEmitter from 'events';
 import {
   AggregateTransactionInfo,
@@ -12,9 +16,9 @@ import {
   DomainOptions,
   DomainTransactionInfo,
   RegisterDomainTransactionInfo,
-} from '../../types';
-import { VerifyOptions } from '../../session/types';
-import { handleTransaction } from '../../utils/transactions';
+} from '../../types.js';
+import { VerifyOptions } from '../../session/types.js';
+import { handleTransaction } from '../../utils/transactions/index.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 

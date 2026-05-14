@@ -6,14 +6,14 @@ import {
   TeeConfig,
   UltraplonkConfig,
   UltrahonkConfig,
-} from '../config';
+} from '../config/index.js';
 
-import { BatchOptimisticVerificationBuilder } from './builders/batchOptimisticVerify';
-import { BatchVerificationBuilder } from './builders/batchVerify';
-import { NetworkConfig } from '../types';
-import { OptimisticVerificationBuilder } from './builders/optimisticVerify';
-import { RegisterKeyBuilder } from './builders/register';
-import { VerificationBuilder } from './builders/verify';
+import { BatchOptimisticVerificationBuilder } from './builders/batchOptimisticVerify/index.js';
+import { BatchVerificationBuilder } from './builders/batchVerify/index.js';
+import { NetworkConfig } from '../types.js';
+import { OptimisticVerificationBuilder } from './builders/optimisticVerify/index.js';
+import { RegisterKeyBuilder } from './builders/register/index.js';
+import { VerificationBuilder } from './builders/verify/index.js';
 
 export interface zkVerifySessionOptions {
   networkConfig: NetworkConfig;

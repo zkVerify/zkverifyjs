@@ -1,8 +1,8 @@
-import { ProofProcessor } from '../../../types';
-import { TeeVk, VariantTeeVk } from '../types';
-import * as formatter from '../formatter';
-import { ProofOptions } from '../../../config';
-import { isTeeConfig } from '../../../utils/helpers';
+import { ProofProcessor } from '../../../types.js';
+import { TeeVk, VariantTeeVk } from '../types.js';
+import * as formatter from '../formatter/index.js';
+import { ProofOptions } from '../../../config/index.js';
+import { isTeeConfig } from '../../../utils/helpers/index.js';
 
 class TEEProcessor implements ProofProcessor {
   formatProof(proof: string): string {

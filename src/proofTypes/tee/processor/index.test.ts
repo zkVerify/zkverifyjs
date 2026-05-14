@@ -1,6 +1,6 @@
-import { ProofType } from '../../../config';
-import { TeeVariant } from '../../../enums';
-import processor from './index';
+import { ProofType } from '../../../config/index.js';
+import { TeeVariant } from '../../../enums.js';
+import processor from './index.js';
 
 describe('TEEProcessor', () => {
   const options = {

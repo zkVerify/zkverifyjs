@@ -7,8 +7,8 @@ import {
   afterEach,
 } from '@jest/globals';
 import { EventEmitter } from 'events';
-import { subscribeToNewAggregationReceipts, unsubscribe } from './index';
-import { ZkVerifyEvents } from '../../enums';
+import { subscribeToNewAggregationReceipts, unsubscribe } from './index.js';
+import { ZkVerifyEvents } from '../../enums.js';
 import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces/system';
 import Mock = jest.Mock;

@@ -2,7 +2,7 @@ import {
   FflonkProof,
   FflonkPublicSignals,
   FflonkVerificationKey,
-} from '../types';
+} from '../types.js';
 import BigNumber from 'bignumber.js';
 
 /**

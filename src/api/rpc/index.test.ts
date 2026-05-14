@@ -1,21 +1,21 @@
-import { getAggregateStatementPath, getVkHash } from './index';
+import { getAggregateStatementPath, getVkHash } from './index.js';
 import { ApiPromise } from '@polkadot/api';
 import { jest } from '@jest/globals';
-import { AggregateStatementPathResult } from '../../types';
-import { ProofType } from '../../config';
-import { CurveType, Library } from '../../enums';
-import * as formatModule from '../format';
+import { AggregateStatementPathResult } from '../../types.js';
+import { ProofType } from '../../config/index.js';
+import { CurveType, Library } from '../../enums.js';
+import * as formatModule from '../format/index.js';
 
 describe('getAggregateStatementPath', () => {
   let api: ApiPromise;
 
   beforeEach(() => {
     const mockStatementPathResult = {
-      toHuman: jest.fn().mockReturnValue({
+      toJSON: jest.fn().mockReturnValue({
         root: '0x05c3108a7986770ad69be1e0ed049af70d0279b95b07c08bd6b95d58912d7844',
         proof: [],
-        number_of_leaves: '1',
-        leaf_index: '0',
+        number_of_leaves: 1,
+        leaf_index: 0,
         leaf: '0xbf6ece54635da4a0ccbe130a251c8edca773236c5aa933aa9a37ffd369300672',
       }),
     };
@@ -137,6 +137,55 @@ describe('getAggregateStatementPath', () => {
     await getAggregateStatementPath(api, '0x123', 1, 2, 'test-statement');
     // @ts-expect-error: Custom RPC method 'aggregate.statementPath' is not recognized by TypeScript's type system
     expect(api.rpc.aggregate.statementPath).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves large numberOfLeaves (>= 1000) without losing precision', async () => {
+    const mockLargeResult = {
+      toJSON: jest.fn().mockReturnValue({
+        root: '0x' + 'a'.repeat(64),
+        proof: ['0x' + 'b'.repeat(64), '0x' + 'c'.repeat(64)],
+        number_of_leaves: 1_234_567,
+        leaf_index: 999_999,
+        leaf: '0x' + 'd'.repeat(64),
+      }),
+    };
+    // @ts-expect-error: Custom RPC method 'aggregate.statementPath' is not recognized by TypeScript's type system
+    (api.rpc.aggregate.statementPath as jest.Mock).mockImplementation(() =>
+      Promise.resolve(mockLargeResult),
+    );
+
+    const result = await getAggregateStatementPath(
+      api,
+      '0x123',
+      1,
+      2,
+      'test-statement',
+    );
+
+    expect(result.numberOfLeaves).toBe(1_234_567);
+    expect(result.leafIndex).toBe(999_999);
+    expect(Number.isNaN(result.numberOfLeaves)).toBe(false);
+    expect(Number.isNaN(result.leafIndex)).toBe(false);
+  });
+
+  it('rejects comma-formatted strings (.toHuman()-shaped response)', async () => {
+    const mockHumanShapedResult = {
+      toJSON: jest.fn().mockReturnValue({
+        root: '0x' + 'a'.repeat(64),
+        proof: [],
+        number_of_leaves: '1,234,567',
+        leaf_index: '999,999',
+        leaf: '0x' + 'd'.repeat(64),
+      }),
+    };
+    // @ts-expect-error: Custom RPC method 'aggregate.statementPath' is not recognized by TypeScript's type system
+    (api.rpc.aggregate.statementPath as jest.Mock).mockImplementation(() =>
+      Promise.resolve(mockHumanShapedResult),
+    );
+
+    await expect(
+      getAggregateStatementPath(api, '0x123', 1, 2, 'test-statement'),
+    ).rejects.toThrow('Invalid response structure from RPC call.');
   });
 });
 

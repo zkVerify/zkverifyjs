@@ -1,7 +1,7 @@
-import { VerifyOptions } from '../../types';
-import { ProofOptions } from '../../../config';
+import { VerifyOptions } from '../../types.js';
+import { ProofOptions } from '../../../config/index.js';
 import { EventEmitter } from 'events';
-import { VKRegistrationTransactionInfo } from '../../../types';
+import { VKRegistrationTransactionInfo } from '../../../types.js';
 
 export class RegisterKeyBuilder {
   private readonly options: VerifyOptions;

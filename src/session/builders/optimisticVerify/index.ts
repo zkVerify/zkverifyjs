@@ -1,7 +1,7 @@
-import { VerifyInput } from '../../../api/verify/types';
-import { ProofOptions } from '../../../config';
-import { OptimisticVerifyOptions } from '../../types';
-import { OptimisticVerifyResult } from '../../../types';
+import { VerifyInput } from '../../../api/verify/types.js';
+import { ProofOptions } from '../../../config/index.js';
+import { OptimisticVerifyOptions } from '../../types.js';
+import { OptimisticVerifyResult } from '../../../types.js';
 
 export class OptimisticVerificationBuilder {
   private readonly options: OptimisticVerifyOptions;

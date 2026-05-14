@@ -1,6 +1,6 @@
-import { ProofProcessor } from '../../../types';
-import { EZKLPubs, EZKLVk } from '../types';
-import * as formatter from '../formatter';
+import { ProofProcessor } from '../../../types.js';
+import { EZKLPubs, EZKLVk } from '../types.js';
+import * as formatter from '../formatter/index.js';
 
 class EZKLProcessor implements ProofProcessor {
   formatProof(proof: string): string {

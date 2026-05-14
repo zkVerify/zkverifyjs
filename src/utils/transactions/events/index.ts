@@ -1,13 +1,13 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { DispatchInfo } from '@polkadot/types/interfaces';
 import { EventEmitter } from 'events';
-import { TransactionType, ZkVerifyEvents } from '../../../enums';
-import { getProofPallet, safeEmit } from '../../helpers';
-import { TransactionInfoByType } from '../types';
+import { TransactionType, ZkVerifyEvents } from '../../../enums.js';
+import { getProofPallet, safeEmit } from '../../helpers/index.js';
+import { TransactionInfoByType } from '../types.js';
 import {
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
-} from '../../../types';
+} from '../../../types.js';
 
 export const handleTransactionEvents = <T extends TransactionType>(
   api: ApiPromise,
@@ -24,6 +24,18 @@ export const handleTransactionEvents = <T extends TransactionType>(
   let receipt: string | undefined;
 
   let myExtrinsicIndex: number | undefined;
+
+  const expectedPallet =
+    transactionType === TransactionType.Verify ||
+    transactionType === TransactionType.VKRegistration
+      ? getProofPallet(
+          (
+            transactionInfo as
+              | VerifyTransactionInfo
+              | VKRegistrationTransactionInfo
+          ).proofType,
+        )
+      : undefined;
 
   events.forEach(({ event, phase }) => {
     if (phase.isApplyExtrinsic && myExtrinsicIndex === undefined) {
@@ -70,8 +82,7 @@ export const handleTransactionEvents = <T extends TransactionType>(
 
     if (
       transactionType === TransactionType.Verify &&
-      event.section ===
-        getProofPallet((transactionInfo as VerifyTransactionInfo).proofType) &&
+      event.section === expectedPallet &&
       event.method === 'ProofVerified'
     ) {
       statement = event.data[0].toString();
@@ -96,10 +107,7 @@ export const handleTransactionEvents = <T extends TransactionType>(
 
     if (
       transactionType === TransactionType.VKRegistration &&
-      event.section ===
-        getProofPallet(
-          (transactionInfo as VKRegistrationTransactionInfo).proofType,
-        ) &&
+      event.section === expectedPallet &&
       event.method === 'VkRegistered'
     ) {
       statementHash = event.data[0].toString();

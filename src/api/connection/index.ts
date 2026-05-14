@@ -1,11 +1,11 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { EstablishedConnection } from './types';
+import { EstablishedConnection } from './types.js';
 import {
   waitForNodeToSync,
   fetchRuntimeVersionFromProvider,
-} from '../../utils/helpers';
-import { getZkvTypes, zkvRpc } from '../../config';
-import { NetworkConfig } from '../../types';
+} from '../../utils/helpers/index.js';
+import { getZkvTypes, zkvRpc } from '../../config/index.js';
+import { NetworkConfig } from '../../types.js';
 
 /**
  * Establishes a connection to the zkVerify blockchain by initializing the API and provider.
@@ -24,7 +24,16 @@ export const establishConnection = async (
   }
 
   try {
-    const provider = new WsProvider(websocket);
+    const wsOpts = config.wsProvider;
+    const provider =
+      wsOpts !== undefined
+        ? new WsProvider(
+            websocket,
+            wsOpts.autoConnectMs,
+            undefined,
+            wsOpts.timeout,
+          )
+        : new WsProvider(websocket);
     const runtimeSpec = await fetchRuntimeVersionFromProvider(provider);
 
     const api = await ApiPromise.create({
@@ -33,7 +42,7 @@ export const establishConnection = async (
       rpc: zkvRpc,
     });
 
-    await waitForNodeToSync(api);
+    await waitForNodeToSync(api, { timeoutMs: config.syncTimeoutMs });
 
     return { api, provider, runtimeSpec };
   } catch (error) {

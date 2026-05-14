@@ -1,8 +1,11 @@
-import { ConnectionManager } from '../connection';
+import { ConnectionManager } from '../connection/index.js';
 import { ApiPromise } from '@polkadot/api';
-import { getAggregateStatementPath, getVkHash } from '../../../api/rpc';
-import { AggregateStatementPathResult } from '../../../types';
-import { ProofOptions } from '../../../config';
+import {
+  getAggregateStatementPath,
+  getVkHash,
+} from '../../../api/rpc/index.js';
+import { AggregateStatementPathResult } from '../../../types.js';
+import { ProofOptions } from '../../../config/index.js';
 
 export class RpcManager {
   private readonly connectionManager: ConnectionManager;

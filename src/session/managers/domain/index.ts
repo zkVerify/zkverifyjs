@@ -5,21 +5,21 @@ import {
   registerDomain,
   removeDomainSubmitters,
   unregisterDomain,
-} from '../../../api/domain';
+} from '../../../api/domain/index.js';
 
-import { ConnectionManager } from '../connection';
+import { ConnectionManager } from '../connection/index.js';
 import { EventEmitter } from 'events';
-import { checkReadOnly } from '../../../utils/helpers';
+import { checkReadOnly } from '../../../utils/helpers/index.js';
 import {
   AccountConnection,
   WalletConnection,
-} from '../../../api/connection/types';
+} from '../../../api/connection/types.js';
 import {
   AggregateTransactionInfo,
   DomainOptions,
   DomainTransactionInfo,
   RegisterDomainTransactionInfo,
-} from '../../../types';
+} from '../../../types.js';
 
 export class DomainManager {
   private readonly connectionManager: ConnectionManager;
@@ -35,13 +35,13 @@ export class DomainManager {
   /**
    * Registers a new domain with the given configuration.
    *
-   * @param aggregationSize - Number of statements per aggregation.
-   * @param queueSize - Max number of aggregations in the queue (default is 16).
+   * @param aggregationSize - Number of statements per aggregation. Must be between 1 and 128 inclusive.
+   * @param queueSize - Max number of aggregations in the queue. Must be between 1 and 16 inclusive. Defaults to 16 when omitted; passing 0 throws (the default only applies when the argument is not supplied).
    * @param domainOptions - options object containing additional params such as destination and security rules.
    * @param signerAccount - Optional address of the account signing the transaction if multiple have been added to the session.
    * @returns {{ events: EventEmitter; transactionResult: Promise<RegisterDomainTransactionInfo> }}
    * An object containing an event emitter and a promise that resolves to a DomainTransactionInfo object when the call completes.
-   * @throws {Error} If the session is read-only.
+   * @throws {Error} If the session is read-only, or if aggregationSize/queueSize are out of range.
    */
   registerDomain(
     aggregationSize: number,

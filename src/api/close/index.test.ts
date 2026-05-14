@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api';
-import { closeSession } from './index';
+import { closeSession } from './index.js';
 import {
   jest,
   describe,

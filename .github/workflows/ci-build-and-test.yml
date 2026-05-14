@@ -2,12 +2,42 @@ name: CI Build And Test Workflow
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 jobs:
+  supply-chain-audit:
+    # Host-runner companion to the containerized build-and-test job.
+    # harden-runner does not support container jobs, so this job re-runs the
+    # most network-sensitive step (`npm ci`) on a bare runner with egress
+    # auditing enabled. Build/test/lint correctness is owned by build-and-test;
+    # this job exists only to audit registry traffic.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9ca718d3bf646d6534007c269a635b3e54cadf99 # v2.19.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Install dependencies (audited)
+        run: npm ci --ignore-scripts
+
   build-and-test:
     runs-on: ubuntu-latest
+    container:
+      image: node:24-bookworm
+    defaults:
+      run:
+        shell: bash
     env:
       SEED_PHRASE_1: ${{ secrets.SEED_PHRASE_1 }}
       SEED_PHRASE_2: ${{ secrets.SEED_PHRASE_2 }}
@@ -32,26 +62,24 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20.x'
-
-      - name: Use npm 11.6.2
-        run: npm i -g npm@11.6.2
+      - name: Mark workspace as a safe git directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Run commitlint
         run: npx commitlint --from origin/main --to HEAD
 
       - name: Lint
         run: npm run lint
+
+      - name: Knip (dead code/dep check)
+        run: npm run knip
 
       - name: Run build
         run: npm run build
@@ -60,10 +88,10 @@ jobs:
         run: |
           wget https://github.com/iden3/circom/releases/download/v2.2.2/circom-linux-amd64 -O circom
           chmod +x circom
-          sudo mv circom /usr/local/bin/
+          mv circom /usr/local/bin/
 
       - name: Install snarkjs
-        run: npm install -g snarkjs
+        run: npm install -g snarkjs@0.7.6 --ignore-scripts
 
       - name: Run tests & generate test output files
         id: run_tests
@@ -158,8 +186,10 @@ jobs:
 
       - name: Send Slack Notification
         if: ${{ !cancelled() }}
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
+          webhook: ${{ secrets.QA_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "blocks": [
@@ -172,6 +202,3 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.QA_SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

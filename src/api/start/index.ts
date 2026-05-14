@@ -1,13 +1,13 @@
-import { establishConnection } from '../connection';
-import { setupAccount } from '../account';
-import { zkVerifySessionOptions } from '../../session/types';
+import { establishConnection } from '../connection/index.js';
+import { setupAccount } from '../account/index.js';
+import { zkVerifySessionOptions } from '../../session/types.js';
 import {
   AccountConnection,
   EstablishedConnection,
   WalletConnection,
-} from '../connection/types';
+} from '../connection/types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { SupportedNetwork } from '../../config';
+import { SupportedNetwork } from '../../config/index.js';
 
 export async function startSession(
   options: zkVerifySessionOptions,
@@ -22,11 +22,12 @@ export async function startSession(
   const { api, provider, runtimeSpec } =
     await establishConnection(networkConfig);
   const isMainnetNetwork = networkConfig.network !== SupportedNetwork.Volta;
+  const isCustomNetwork = networkConfig.host === SupportedNetwork.Custom;
   if (seedPhrases && seedPhrases.length > 0) {
     const uniqueAccounts = new Map<string, KeyringPair>();
 
     for (const phrase of seedPhrases) {
-      const account = setupAccount(phrase, isMainnetNetwork);
+      const account = setupAccount(phrase, isMainnetNetwork, isCustomNetwork);
       if (uniqueAccounts.has(account.address)) {
         console.warn(
           `Skipping adding account ${account.address} to session as it is already active.`,

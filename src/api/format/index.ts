@@ -1,7 +1,7 @@
-import { ProofProcessor } from '../../types';
-import { getProofProcessor } from '../../utils/helpers';
-import { FormattedProofData } from './types';
-import { ProofOptions, ProofType } from '../../config';
+import { ProofProcessor } from '../../types.js';
+import { getProofProcessor } from '../../utils/helpers/index.js';
+import { FormattedProofData } from './types.js';
+import { ProofOptions, ProofType } from '../../config/index.js';
 
 export function format(
   options: ProofOptions,

@@ -1,12 +1,15 @@
-import { Plonky2Proof, Plonky2Pubs, Plonky2Vk } from '../types';
-import { ProofOptions } from '../../../config';
-import { isPlonky2Config } from '../../../utils/helpers';
+import { Plonky2Proof, Plonky2Pubs, Plonky2Vk } from '../types.js';
+import { ProofOptions } from '../../../config/index.js';
+import {
+  isPlonky2Config,
+  validateHexString,
+} from '../../../utils/helpers/index.js';
 
 export function formatProof(
   proof: Plonky2Proof['proof'],
   options: ProofOptions,
 ): { bytes: string } {
-  validatedHexString(proof);
+  validateHexString(proof);
 
   if (isPlonky2Config(options)) {
     return {
@@ -21,7 +24,7 @@ export function formatVk(
   vk: Plonky2Vk['vk'],
   options: ProofOptions,
 ): { config: string; bytes: string } {
-  validatedHexString(vk);
+  validateHexString(vk);
 
   if (isPlonky2Config(options)) {
     return {
@@ -37,19 +40,13 @@ export function formatPubs(
   pubs: Plonky2Pubs['pubs'],
   options: ProofOptions,
 ): string {
-  validatedHexString(pubs);
+  validateHexString(pubs);
 
   if (isPlonky2Config(options)) {
     return pubs;
   }
 
   throwInvalidPlonky2Config();
-}
-
-function validatedHexString(input: string): void {
-  if (!input.startsWith('0x')) {
-    throw new Error('Invalid format: string input must be 0x-prefixed.');
-  }
 }
 
 function throwInvalidPlonky2Config(): never {

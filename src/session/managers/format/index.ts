@@ -1,6 +1,6 @@
-import { FormattedProofData } from '../../../api/format/types';
-import { format, formatVk } from '../../../api/format';
-import { ProofOptions } from '../../../config';
+import { FormattedProofData } from '../../../api/format/types.js';
+import { format, formatVk } from '../../../api/format/index.js';
+import { ProofOptions } from '../../../config/index.js';
 
 /**
  * Manages proof formatting operations.

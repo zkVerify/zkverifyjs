@@ -2,13 +2,13 @@ import {
   TransactionStatus,
   TransactionType,
   ZkVerifyEvents,
-} from '../../../enums';
+} from '../../../enums.js';
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
-import { TransactionInfoByType } from '../types';
+import { TransactionInfoByType } from '../types.js';
 import { EventEmitter } from 'events';
-import { handleTransactionEvents } from '../events';
-import { safeEmit } from '../../helpers';
-import { handleError } from '../errors';
+import { handleTransactionEvents } from '../events/index.js';
+import { safeEmit } from '../../helpers/index.js';
+import { handleError } from '../errors/index.js';
 
 /**
  * Handles "In Block" transaction updates.

@@ -1,5 +1,5 @@
-import { RuntimeVersion } from '../enums';
-import { getZkvTypes, legacyZkvTypes, v1_6ZkvTypes } from './index';
+import { RuntimeVersion } from '../enums.js';
+import { getZkvTypes, legacyZkvTypes, v1_6ZkvTypes } from './index.js';
 
 describe('getZkvTypes', () => {
   it('uses legacy type definitions before runtime version 1.6.0', () => {

@@ -1,6 +1,6 @@
 import { ApiPromise } from '@polkadot/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { ExtrinsicCostEstimate } from './types';
+import { ExtrinsicCostEstimate } from './types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 
 /**

@@ -3,10 +3,10 @@ import {
   Groth16VerificationKey,
   Proof,
   ProofInput,
-} from '../../types';
-import { ProofOptions } from '../../../../config';
-import { isGroth16Config } from '../../../../utils/helpers';
-import { extractCurve } from '../utils';
+} from '../../types.js';
+import { ProofOptions } from '../../../../config/index.js';
+import { isGroth16Config } from '../../../../utils/helpers/index.js';
+import { extractCurve } from '../utils.js';
 
 /**
  * Arkworks VK format already matches Groth16VerificationKey shape.

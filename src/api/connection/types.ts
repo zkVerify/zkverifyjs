@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { InjectedExtension } from '@polkadot/extension-inject/types';
-import { RuntimeSpec } from '../../types';
+import { RuntimeSpec } from '../../types.js';
 
 export interface EstablishedConnection {
   api: ApiPromise;

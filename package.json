@@ -1,6 +1,6 @@
 {
   "name": "zkverifyjs",
-  "version": "2.5.0",
+  "version": "3.0.0",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "zkVerify <web3-platform@zkverify.io>",
   "license": "GPL-3.0",
@@ -33,7 +33,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">= 18"
+    "node": ">= 24"
   },
   "browser": {
     "buffer": "buffer"
@@ -42,9 +42,8 @@
     "clean": "rm -rf dist",
     "build": "npm run clean && npm run build:commonjs && npm run build:esm && npm run build:types",
     "build:commonjs": "tsc -p tsconfig.commonjs.json",
-    "build:esm": "tsc -p tsconfig.esm.json && npm run fix-extensions",
+    "build:esm": "tsc -p tsconfig.esm.json",
     "build:types": "tsc -p tsconfig.types.json",
-    "fix-extensions": "babel dist/esm --extensions \".js\" --out-dir dist/esm --plugins babel-plugin-add-import-extension",
     "pack-and-install": "npm run build && npm pack && rm -rf node_modules/zkverifyjs && npm install ./$(npm pack | tail -n 1) --no-save",
     "bump-version": "npm version $npm_config_level && git add . && git commit -S -m \"chore: bump version to $npm_package_version\" && git push && npm run build",
     "push-tag": "git checkout main && git pull && git tag -s -m $npm_package_version $npm_package_version && git push origin $npm_package_version",
@@ -53,6 +52,7 @@
     "test:coverage": "npm run refresh-tee-tcb && jest --coverage",
     "test:file:coverage": "node -e 'const path = process.argv[1]; require(\"child_process\").execSync(`jest --coverage --collectCoverageFrom=\"${path}/index.ts\" ${path}/index.test.ts`, { stdio: \"inherit\" });' --",
     "lint": "eslint 'src/**/*.ts' --fix --ignore-pattern '**/*.test.ts'",
+    "knip": "knip --exclude unlisted,exports,nsExports,types,nsTypes,enumMembers,namespaceMembers,duplicates",
     "format": "prettier --write 'src/**/*.ts'",
     "generate-readme-for-docs": "node ci/generateDocsReadme.js",
     "refresh-tee-tcb": "node tests/common/scripts/refresh-tee-tcb.mjs",
@@ -61,8 +61,7 @@
   "lint-staged": {
     "src/**/*.ts": [
       "prettier --write",
-      "eslint --fix --ignore-pattern '**/*.test.ts'",
-      "git add"
+      "eslint --fix --ignore-pattern '**/*.test.ts'"
     ]
   },
   "keywords": [
@@ -97,53 +96,52 @@
     "@polkadot/extension-dapp": "0.63.1",
     "async-mutex": "0.5.0",
     "bignumber.js": "11.1.0",
-    "buffer": "6.0.3",
-    "js-sha3": "0.9.3",
-    "snarkjs": "0.7.6",
-    "web3": "4.16.0"
+    "buffer": "6.0.3"
   },
   "devDependencies": {
-    "@babel/cli": "^7.27.1",
-    "@babel/core": "^7.27.1",
     "@commitlint/cli": "19.8.0",
     "@commitlint/config-conventional": "19.8.0",
     "@eslint/js": "9.25.1",
     "@jest/globals": "29.7.0",
-    "@types/debug": "4.1.12",
     "@types/fs-extra": "11.0.4",
     "@types/jest": "29.5.14",
     "@types/node": "20.17.32",
-    "@types/snarkjs": "0.7.9",
-    "@types/web3": "1.2.2",
-    "@typescript-eslint/eslint-plugin": "8.31.1",
-    "@typescript-eslint/parser": "8.31.1",
-    "axios": "1.8.2",
-    "babel-plugin-add-import-extension": "^1.6.0",
-    "conventional-changelog-cli": "5.0.0",
+    "axios": "1.16.0",
     "dotenv": "16.5.0",
-    "eslint": "9.25.1",
-    "eslint-config-prettier": "9.1.0",
-    "eslint-plugin-prettier": "5.2.6",
+    "eslint": "9.39.4",
+    "eslint-plugin-security": "4.0.0",
     "execa": "5.1.1",
-    "fastify": "4.29.1",
+    "fastify": "5.8.5",
     "fs-extra": "11.3.0",
-    "globals": "15.15.0",
     "husky": "9.1.7",
     "jest": "29.7.0",
+    "knip": "6.13.1",
     "lint-staged": "15.5.1",
-    "ls-engines": "0.9.3",
     "prettier": "3.5.3",
     "remark-parse": "11.0.0",
     "remark-stringify": "11.0.0",
     "ts-jest": "29.3.2",
-    "ts-node": "10.9.2",
     "typescript": "5.8.3",
     "typescript-eslint": "8.31.1",
     "unified": "11.0.5",
     "unist-util-visit": "5.0.0"
   },
   "overrides": {
-    "@polkadot/util": "14.0.3"
+    "@polkadot/util": "14.0.3",
+    "ajv@^8": "8.18.0",
+    "bn.js": "5.2.3",
+    "brace-expansion@^1": "1.1.13",
+    "brace-expansion@^2": "2.0.3",
+    "fast-uri": "3.1.2",
+    "flatted": "3.4.2",
+    "js-yaml@^3": "3.14.2",
+    "js-yaml@^4": "4.1.1",
+    "minimatch@^5": "5.1.8",
+    "minimatch@^9": "9.0.7",
+    "picomatch@^2": "2.3.2"
   },
-  "sideEffects": false
+  "sideEffects": [
+    "./dist/commonjs/shims/globalBuffer.js",
+    "./dist/esm/shims/globalBuffer.js"
+  ]
 }

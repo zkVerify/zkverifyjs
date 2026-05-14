@@ -1,15 +1,15 @@
-import { handleTransaction } from '../../utils/transactions';
-import { AccountConnection, WalletConnection } from '../connection/types';
+import { handleTransaction } from '../../utils/transactions/index.js';
+import { AccountConnection, WalletConnection } from '../connection/types.js';
 import { EventEmitter } from 'events';
-import { BatchVerifyTransactionInfo } from '../../types';
-import { VerifyOptions } from '../../session/types';
-import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { format } from '../format';
-import { createSubmitProofExtrinsic } from '../extrinsic';
-import { VerifyInput } from '../verify/types';
+import { BatchVerifyTransactionInfo } from '../../types.js';
+import { VerifyOptions } from '../../session/types.js';
+import { TransactionType, ZkVerifyEvents } from '../../enums.js';
+import { format } from '../format/index.js';
+import { createSubmitProofExtrinsic } from '../extrinsic/index.js';
+import { VerifyInput } from '../verify/types.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { FormattedProofData } from '../format/types';
-import { getKeyringAccountIfAvailable } from '../../utils/helpers';
+import { FormattedProofData } from '../format/types.js';
+import { getKeyringAccountIfAvailable } from '../../utils/helpers/index.js';
 
 export const batchVerify = async (
   connection: AccountConnection | WalletConnection,

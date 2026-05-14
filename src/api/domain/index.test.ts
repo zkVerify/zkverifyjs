@@ -1,9 +1,9 @@
-import { addDomainSubmitters, removeDomainSubmitters } from './index';
-import { RuntimeVersion, TransactionType } from '../../enums';
-import { AccountConnection } from '../connection/types';
+import { addDomainSubmitters, removeDomainSubmitters } from './index.js';
+import { RuntimeVersion, TransactionType } from '../../enums.js';
+import { AccountConnection } from '../connection/types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { handleTransaction } from '../../utils/transactions';
-import * as helpers from '../../utils/helpers';
+import { handleTransaction } from '../../utils/transactions/index.js';
+import * as helpers from '../../utils/helpers/index.js';
 
 jest.mock('../../utils/helpers', () => {
   const actual = jest.requireActual('../../utils/helpers');

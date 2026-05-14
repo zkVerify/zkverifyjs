@@ -6,10 +6,10 @@ import {
   expect,
   afterEach,
 } from '@jest/globals';
-import { EventManager } from './index';
-import { ZkVerifyEvents } from '../../../enums';
+import { EventManager } from './index.js';
+import { ZkVerifyEvents } from '../../../enums.js';
 import { ApiPromise } from '@polkadot/api';
-import { ConnectionManager } from '../connection';
+import { ConnectionManager } from '../connection/index.js';
 import { EventEmitter } from 'events';
 
 type SystemEventsCb = (records: any[]) => void;
@@ -148,6 +148,29 @@ describe('EventManager', () => {
     expect(cb2).not.toHaveBeenCalled();
 
     // And the underlying polkadot subscription is still single.
+    expect(mock.systemEventsCalls).toBe(1);
+  });
+
+  it('does not overwrite an existing runtime-event handler when called directly', () => {
+    const cb1 = jest.fn();
+    const cb2 = jest.fn();
+    const register = (
+      manager as unknown as {
+        _registerRuntimeEvent: (
+          api: ApiPromise,
+          eventType: ZkVerifyEvents,
+          cb?: (data: unknown) => void,
+        ) => void;
+      }
+    )._registerRuntimeEvent.bind(manager);
+
+    register(mock.api, ZkVerifyEvents.ProofVerified, cb1);
+    register(mock.api, ZkVerifyEvents.ProofVerified, cb2);
+
+    mock.emitBlockToLatest([makeRecord('proof', 'ProofVerified', ['0xa'])]);
+
+    expect(cb1).toHaveBeenCalledTimes(1);
+    expect(cb2).not.toHaveBeenCalled();
     expect(mock.systemEventsCalls).toBe(1);
   });
 

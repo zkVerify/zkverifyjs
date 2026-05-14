@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api';
-import { fetchRuntimeVersionFromProvider } from './index';
+import { fetchRuntimeVersionFromProvider } from './index.js';
 
 describe('fetchRuntimeVersionFromProvider', () => {
   it('waits for the WebSocket provider before sending runtime RPC', async () => {

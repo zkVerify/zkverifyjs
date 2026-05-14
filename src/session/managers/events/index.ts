@@ -1,20 +1,31 @@
 import {
   subscribeToNewAggregationReceipts,
   unsubscribe,
-} from '../../../api/aggregation';
+} from '../../../api/aggregation/index.js';
 import { EventEmitter } from 'events';
-import { ConnectionManager } from '../connection';
-import { PUBLIC_ZK_VERIFY_EVENTS, ZkVerifyEvents } from '../../../enums';
-import { NewAggregationEventSubscriptionOptions } from '../../../api/aggregation/types';
+import { ConnectionManager } from '../connection/index.js';
+import { PUBLIC_ZK_VERIFY_EVENTS, ZkVerifyEvents } from '../../../enums.js';
+import { NewAggregationEventSubscriptionOptions } from '../../../api/aggregation/types.js';
 import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces/system';
 import {
   NewAggregationReceipt,
   NewAggregationReceiptEvent,
   SubscriptionEntry,
-} from '../../../types';
+} from '../../../types.js';
 
 type RuntimeEventHandler = (records: EventRecord[]) => void;
+
+const RUNTIME_EVENT_MATCHERS: Partial<Record<ZkVerifyEvents, string | RegExp>> =
+  {
+    [ZkVerifyEvents.ProofVerified]: /::ProofVerified/,
+    [ZkVerifyEvents.CannotAggregate]: 'aggregate::CannotAggregate',
+    [ZkVerifyEvents.NewProof]: 'aggregate::NewProof',
+    [ZkVerifyEvents.VkRegistered]: /::VkRegistered/,
+    [ZkVerifyEvents.AggregationComplete]: 'aggregate::AggregationComplete',
+    [ZkVerifyEvents.NewDomain]: 'aggregate::NewDomain',
+    [ZkVerifyEvents.DomainStateChanged]: 'aggregate::DomainStateChanged',
+  };
 
 export class EventManager {
   private readonly connectionManager: ConnectionManager;
@@ -128,21 +139,14 @@ export class EventManager {
     eventType: ZkVerifyEvents,
     callback?: (data: unknown) => void,
   ): void {
-    const matchMap: Partial<Record<ZkVerifyEvents, string | RegExp>> = {
-      [ZkVerifyEvents.ProofVerified]: /::ProofVerified/,
-      [ZkVerifyEvents.CannotAggregate]: 'aggregate::CannotAggregate',
-      [ZkVerifyEvents.NewProof]: 'aggregate::NewProof',
-      [ZkVerifyEvents.VkRegistered]: /::VkRegistered/,
-      [ZkVerifyEvents.AggregationComplete]: 'aggregate::AggregationComplete',
-      [ZkVerifyEvents.NewDomain]: 'aggregate::NewDomain',
-      [ZkVerifyEvents.DomainStateChanged]: 'aggregate::DomainStateChanged',
-    };
+    if (this.runtimeEventHandlers.has(eventType)) return;
+
+    const expected = RUNTIME_EVENT_MATCHERS[eventType];
+    if (!expected) return;
 
     const handler: RuntimeEventHandler = (records) => {
       for (const { event, phase } of records) {
         const key = `${event.section}::${event.method}`;
-        const expected = matchMap[eventType];
-        if (!expected) continue;
 
         const matches =
           (typeof expected === 'string' && key === expected) ||

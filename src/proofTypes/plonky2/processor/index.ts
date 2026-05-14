@@ -1,7 +1,7 @@
-import { ProofProcessor } from '../../../types';
-import { Plonky2Proof, Plonky2Vk, Plonky2Pubs } from '../types';
-import * as formatter from '../formatter';
-import { ProofOptions } from '../../../config';
+import { ProofProcessor } from '../../../types.js';
+import { Plonky2Proof, Plonky2Vk, Plonky2Pubs } from '../types.js';
+import * as formatter from '../formatter/index.js';
+import { ProofOptions } from '../../../config/index.js';
 
 class Plonky2Processor implements ProofProcessor {
   formatProof(

@@ -1,7 +1,7 @@
 import { expect, jest } from '@jest/globals';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { accountInfo } from './index';
+import { accountInfo } from './index.js';
 
 jest.mock('@polkadot/api');
 

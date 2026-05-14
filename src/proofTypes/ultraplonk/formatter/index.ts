@@ -1,5 +1,5 @@
-import { ProofOptions } from '../../../config';
-import { isUltraplonkConfig } from '../../../utils/helpers';
+import { ProofOptions } from '../../../config/index.js';
+import { isUltraplonkConfig } from '../../../utils/helpers/index.js';
 
 function getNumPublicInputs(options: ProofOptions): number {
   if (!isUltraplonkConfig(options)) {

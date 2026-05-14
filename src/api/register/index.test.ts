@@ -1,18 +1,21 @@
-import { registerVk } from './index';
+import { registerVk } from './index.js';
 import { EventEmitter } from 'events';
-import { getProofPallet, getProofProcessor } from '../../utils/helpers';
-import { handleTransaction } from '../../utils/transactions';
-import { AccountConnection } from '../connection/types';
-import { VerifyOptions } from '../../session/types';
+import {
+  getProofPallet,
+  getProofProcessor,
+} from '../../utils/helpers/index.js';
+import { handleTransaction } from '../../utils/transactions/index.js';
+import { AccountConnection } from '../connection/types.js';
+import { VerifyOptions } from '../../session/types.js';
 import {
   CurveType,
   Library,
   TransactionType,
   ZkVerifyEvents,
-} from '../../enums';
-import { ProofType } from '../../config';
+} from '../../enums.js';
+import { ProofType } from '../../config/index.js';
 import { KeyringPair } from '@polkadot/keyring/types';
-import * as helpers from '../../utils/helpers';
+import * as helpers from '../../utils/helpers/index.js';
 
 jest.mock('../../utils/helpers', () => {
   const actual = jest.requireActual('../../utils/helpers');
