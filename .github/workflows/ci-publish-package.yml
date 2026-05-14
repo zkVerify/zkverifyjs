@@ -48,6 +48,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Mark workspace as a safe git directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Install GitHub CLI
         run: |
           mkdir -p -m 755 /etc/apt/keyrings
