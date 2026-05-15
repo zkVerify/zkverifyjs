@@ -69,12 +69,12 @@ export function validateProofTypeOptions(
       return options;
 
     case ProofType.ultrahonk: {
-      if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_0)) {
+      if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_1)) {
         const defaulted = withDefaultedUltrahonkVersion(options);
 
         if (!isVersionedUltrahonkConfig(defaulted)) {
           throw new Error(
-            `Proof type '${proofType}' requires 'version' and 'variant' options for runtime version 1.6.0 or later.`,
+            `Proof type '${proofType}' requires 'version' and 'variant' options for runtime version 1.6.1 or later.`,
           );
         }
         return defaulted;
@@ -84,7 +84,7 @@ export function validateProofTypeOptions(
 
       if (config?.version !== undefined) {
         throw new Error(
-          `Proof type '${proofType}' does not support a 'version' option before runtime version 1.6.0.`,
+          `Proof type '${proofType}' does not support a 'version' option before runtime version 1.6.1.`,
         );
       }
 
@@ -118,14 +118,14 @@ export function validateProofTypeOptions(
         RuntimeVersion.V1_5_0,
         'TEE proof type',
       );
-      if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_0)) {
+      if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_1)) {
         return withDefaultedTeeVariant(options);
       }
 
       const config = options.config as TeeConfig | undefined;
       if (config?.variant !== undefined) {
         throw new Error(
-          `Proof type '${proofType}' does not support a 'variant' option before runtime version 1.6.0.`,
+          `Proof type '${proofType}' does not support a 'variant' option before runtime version 1.6.1.`,
         );
       }
       return options;
@@ -148,15 +148,17 @@ function withDefaultedUltrahonkVersion(options: ProofOptions): ProofOptions {
     return options;
   }
 
+  const defaultVersion = UltrahonkVersion.Legacy;
+
   console.warn(
-    `zkverifyjs: Proof type '${ProofType.ultrahonk}' now supports versioned proofs on runtime version 1.6.0 or later. Defaulting missing 'version' to '${UltrahonkVersion.V0_84}' for backwards compatibility. Pass 'version' explicitly to silence this warning.`,
+    `zkverifyjs: Proof type '${ProofType.ultrahonk}' now supports versioned proofs on runtime version 1.6.1 or later. Defaulting missing 'version' to '${defaultVersion}' for backwards compatibility. Pass 'version' explicitly to silence this warning.`,
   );
 
   return {
     ...options,
     config: {
       ...config,
-      version: UltrahonkVersion.V0_84,
+      version: defaultVersion,
     },
   };
 }
@@ -169,7 +171,7 @@ function withDefaultedTeeVariant(options: ProofOptions): ProofOptions {
   }
 
   console.warn(
-    `zkverifyjs: Proof type '${ProofType.tee}' now supports variant verification keys on runtime version 1.6.0 or later. Defaulting missing 'variant' to '${TeeVariant.Intel}' for backwards compatibility. Pass 'variant' explicitly to silence this warning.`,
+    `zkverifyjs: Proof type '${ProofType.tee}' now supports variant verification keys on runtime version 1.6.1 or later. Defaulting missing 'variant' to '${TeeVariant.Intel}' for backwards compatibility. Pass 'variant' explicitly to silence this warning.`,
   );
 
   return {

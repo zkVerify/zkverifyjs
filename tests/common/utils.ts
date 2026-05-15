@@ -75,8 +75,8 @@ export function getProofFilenameComponents(
       if (!variant) {
         throw new Error('Ultrahonk fixture lookup requires a variant.');
       }
-      // Legacy fallback test path: SDK defaults missing Ultrahonk version to V0_84 on runtime v1.6.0+.
-      // Remove this default when support for pre-versioned Ultrahonk calls is dropped.
+      // Legacy fallback test path: SDK defaults missing Ultrahonk version to Legacy on runtime v1.6.1+.
+      // Fixtures still reuse V0_84 bytes as Legacy wraps the same proof/VK format.
       components.push(
         (version ?? UltrahonkVersion.V0_84).toLowerCase(),
         variant.toLowerCase(),
@@ -88,7 +88,7 @@ export function getProofFilenameComponents(
       break;
     }
     case ProofType.tee: {
-      // Legacy fallback test path: SDK defaults missing TEE variant to Intel on runtime v1.6.0+.
+      // Legacy fallback test path: SDK defaults missing TEE variant to Intel on runtime v1.6.1+.
       // Remove this default when support for variant-less TEE calls is dropped.
       const variant =
         (config as TeeConfig | undefined)?.variant ?? TeeVariant.Intel;

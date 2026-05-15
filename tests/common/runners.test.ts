@@ -37,7 +37,7 @@ describe('generateTestPromises', () => {
     );
   });
 
-  it('excludes v1.6-only explicit configs before runtime version 1.6.0', async () => {
+  it('excludes v1.6.1-only explicit configs before runtime version 1.6.1', async () => {
     const proofOptions: ProofOptions[] = [];
 
     generateTestPromises(
