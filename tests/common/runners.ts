@@ -1,4 +1,4 @@
-import { ProofOptions, ProofType, RuntimeVersion } from "../../src";
+import { ProofOptions, ProofType, RuntimeVersion, UltrahonkVersion } from "../../src";
 import { RuntimeSpec } from "../../src/types";
 import {
     loadProofAndVK,
@@ -142,7 +142,8 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.ultrahonk:
-                // Legacy fallback coverage: SDK defaults missing version to V0_84 on runtime v1.6.0+.
+                // Legacy fallback coverage: SDK defaults missing version to V0_84 on runtime v1.6.0
+                // and to Legacy on runtime v1.6.1+.
                 // Remove these generated cases when support for pre-versioned Ultrahonk calls is dropped.
                 testOptions.ultrahonkVariants.forEach((variant) => {
                     promises.push(runTest({
@@ -155,6 +156,9 @@ export const generateTestPromises = (
                 }
                 testOptions.ultrahonkVersions
                     .filter((v) => !excludedVersions.includes(v))
+                    .filter((v) =>
+                        supportsV1_6_1(runtimeSpec) ? true : v !== UltrahonkVersion.Legacy
+                    )
                     .forEach((version) => {
                         testOptions.ultrahonkVariants.forEach((variant) => {
                             promises.push(runTest({
@@ -201,6 +205,9 @@ export const generateTestPromises = (
 
 const supportsV1_6_0 = (runtimeSpec?: RuntimeSpec): boolean =>
     runtimeSpec === undefined || runtimeSpec.specVersion >= RuntimeVersion.V1_6_0;
+
+const supportsV1_6_1 = (runtimeSpec?: RuntimeSpec): boolean =>
+    runtimeSpec === undefined || runtimeSpec.specVersion >= RuntimeVersion.V1_6_1;
 
 export const runAllProofTests = async (
     withAggregation: boolean

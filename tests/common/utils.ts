@@ -75,8 +75,9 @@ export function getProofFilenameComponents(
       if (!variant) {
         throw new Error('Ultrahonk fixture lookup requires a variant.');
       }
-      // Legacy fallback test path: SDK defaults missing Ultrahonk version to V0_84 on runtime v1.6.0+.
-      // Remove this default when support for pre-versioned Ultrahonk calls is dropped.
+      // Legacy fallback test path: SDK defaults missing Ultrahonk version to V0_84 on runtime v1.6.0
+      // and to Legacy on runtime v1.6.1+.
+      // Fixtures still reuse V0_84 bytes because Legacy wraps the same proof/VK format.
       components.push(
         (version ?? UltrahonkVersion.V0_84).toLowerCase(),
         variant.toLowerCase(),

@@ -61,7 +61,7 @@ describe('validateProofTypeOptions', () => {
       ).toThrow("does not support a 'version' option");
     });
 
-    it('defaults missing version from runtime version 1.6.0', () => {
+    it('defaults missing version to V0_84 on runtime version 1.6.0', () => {
       const options = {
         proofType: ProofType.ultrahonk,
         config: { variant: UltrahonkVariant.Plain },
@@ -78,7 +78,28 @@ describe('validateProofTypeOptions', () => {
       });
       expect(options.config).toEqual({ variant: UltrahonkVariant.Plain });
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Defaulting missing 'version'"),
+        expect.stringContaining(`'${UltrahonkVersion.V0_84}'`),
+      );
+    });
+
+    it('defaults missing version to Legacy on runtime version 1.6.1', () => {
+      const options = {
+        proofType: ProofType.ultrahonk,
+        config: { variant: UltrahonkVariant.Plain },
+      };
+
+      const result = validateProofTypeOptions(
+        options,
+        runtimeSpec(RuntimeVersion.V1_6_1),
+      );
+
+      expect(result.config).toEqual({
+        version: UltrahonkVersion.Legacy,
+        variant: UltrahonkVariant.Plain,
+      });
+      expect(options.config).toEqual({ variant: UltrahonkVariant.Plain });
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`'${UltrahonkVersion.Legacy}'`),
       );
     });
 

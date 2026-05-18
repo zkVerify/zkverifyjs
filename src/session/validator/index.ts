@@ -70,7 +70,7 @@ export function validateProofTypeOptions(
 
     case ProofType.ultrahonk: {
       if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_0)) {
-        const defaulted = withDefaultedUltrahonkVersion(options);
+        const defaulted = withDefaultedUltrahonkVersion(options, runtimeSpec);
 
         if (!isVersionedUltrahonkConfig(defaulted)) {
           throw new Error(
@@ -141,22 +141,29 @@ export function validateProofTypeOptions(
   }
 }
 
-function withDefaultedUltrahonkVersion(options: ProofOptions): ProofOptions {
+function withDefaultedUltrahonkVersion(
+  options: ProofOptions,
+  runtimeSpec: RuntimeSpec,
+): ProofOptions {
   const config = options.config as UltrahonkConfig | undefined;
 
   if (config?.variant === undefined || config.version !== undefined) {
     return options;
   }
 
+  const defaultVersion = isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_1)
+    ? UltrahonkVersion.Legacy
+    : UltrahonkVersion.V0_84;
+
   console.warn(
-    `zkverifyjs: Proof type '${ProofType.ultrahonk}' now supports versioned proofs on runtime version 1.6.0 or later. Defaulting missing 'version' to '${UltrahonkVersion.V0_84}' for backwards compatibility. Pass 'version' explicitly to silence this warning.`,
+    `zkverifyjs: Proof type '${ProofType.ultrahonk}' now supports versioned proofs on runtime version 1.6.0 or later. Defaulting missing 'version' to '${defaultVersion}' for backwards compatibility. Pass 'version' explicitly to silence this warning.`,
   );
 
   return {
     ...options,
     config: {
       ...config,
-      version: UltrahonkVersion.V0_84,
+      version: defaultVersion,
     },
   };
 }
