@@ -1,4 +1,4 @@
-import { ProofOptions, ProofType, RuntimeVersion } from "../../src";
+import { ProofOptions, ProofType, RuntimeVersion, UltrahonkVersion } from "../../src";
 import { RuntimeSpec } from "../../src/types";
 import {
     loadProofAndVK,
@@ -142,7 +142,8 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.ultrahonk:
-                // Legacy fallback coverage: SDK defaults missing version to Legacy on runtime v1.6.1+.
+                // Legacy fallback coverage: SDK defaults missing version to V0_84 on runtime v1.6.0
+                // and to Legacy on runtime v1.6.1+.
                 // Remove these generated cases when support for pre-versioned Ultrahonk calls is dropped.
                 testOptions.ultrahonkVariants.forEach((variant) => {
                     promises.push(runTest({
@@ -150,11 +151,14 @@ export const generateTestPromises = (
                         config: { variant },
                     }));
                 });
-                if (!supportsV1_6_1(runtimeSpec)) {
+                if (!supportsV1_6_0(runtimeSpec)) {
                     break;
                 }
                 testOptions.ultrahonkVersions
                     .filter((v) => !excludedVersions.includes(v))
+                    .filter((v) =>
+                        supportsV1_6_1(runtimeSpec) ? true : v !== UltrahonkVersion.Legacy
+                    )
                     .forEach((version) => {
                         testOptions.ultrahonkVariants.forEach((variant) => {
                             promises.push(runTest({
@@ -178,10 +182,10 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.tee:
-                // Legacy fallback coverage: SDK defaults missing variant to Intel on runtime v1.6.1+.
+                // Legacy fallback coverage: SDK defaults missing variant to Intel on runtime v1.6.0+.
                 // Remove this generated case when support for variant-less TEE calls is dropped.
                 promises.push(runTest({ proofType }));
-                if (!supportsV1_6_1(runtimeSpec)) {
+                if (!supportsV1_6_0(runtimeSpec)) {
                     break;
                 }
                 testOptions.teeVariants.forEach((variant) => {
@@ -198,6 +202,9 @@ export const generateTestPromises = (
 
     return promises;
 };
+
+const supportsV1_6_0 = (runtimeSpec?: RuntimeSpec): boolean =>
+    runtimeSpec === undefined || runtimeSpec.specVersion >= RuntimeVersion.V1_6_0;
 
 const supportsV1_6_1 = (runtimeSpec?: RuntimeSpec): boolean =>
     runtimeSpec === undefined || runtimeSpec.specVersion >= RuntimeVersion.V1_6_1;

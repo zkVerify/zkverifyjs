@@ -85,7 +85,10 @@ session.verify().ezkl().execute({...})
 Supports versions: `V0_84`, `V3_0`, `Legacy`
 Supports variants: `Plain`, `ZK`
 
-**Note for zkverifyjs v2.4.0+ and runtime v1.6.1+**: The `version` and `variant` options are required. If `version` is omitted, zkverifyjs defaults to `Legacy` for backwards compatibility and logs a warning.
+**Note for zkverifyjs v2.4.0+ and runtime v1.6.0+**: The `version` and `variant` options are required. If `version` is omitted, zkverifyjs defaults to:
+
+* `V0_84` on runtime v1.6.0
+* `Legacy` on runtime v1.6.1+
 
 The `Legacy` default preserves pre-versioning Ultrahonk statement hash compatibility.
 
@@ -100,7 +103,7 @@ session.verify().ultrahonk({
 
 Supports variants: `Intel`
 
-**Note for zkverifyjs v2.4.0+ and runtime v1.6.1+**: The `variant` option is required. If omitted, zkverifyjs defaults to `Intel` for backwards compatibility and logs a warning.
+**Note for zkverifyjs v2.4.0+ and runtime v1.6.0+**: The `variant` option is required. If omitted, zkverifyjs defaults to `Intel` for backwards compatibility and logs a warning.
 
 ```typescript
 session.verify().tee({

@@ -96,6 +96,7 @@ export enum Destination {
 export enum RuntimeVersion {
   V1_3_0 = 1003000,
   V1_5_0 = 1005000,
+  V1_6_0 = 1006000,
   V1_6_1 = 1006001,
 }
 

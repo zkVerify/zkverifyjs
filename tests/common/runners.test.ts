@@ -37,7 +37,7 @@ describe('generateTestPromises', () => {
     );
   });
 
-  it('excludes v1.6.1-only explicit configs before runtime version 1.6.1', async () => {
+  it('excludes legacy-only explicit ultrahonk configs before runtime version 1.6.1', async () => {
     const proofOptions: ProofOptions[] = [];
 
     generateTestPromises(
@@ -66,7 +66,7 @@ describe('generateTestPromises', () => {
         {
           proofType: ProofType.ultrahonk,
           config: {
-            version: UltrahonkVersion.V0_84,
+            version: UltrahonkVersion.Legacy,
             variant: UltrahonkVariant.Plain,
           },
         },

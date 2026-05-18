@@ -34,7 +34,7 @@ describe('validateProofTypeOptions', () => {
       ).toThrow("requires a 'variant' option");
     });
 
-    it('allows variant-only config before runtime version 1.6.1', () => {
+    it('allows variant-only config before runtime version 1.6.0', () => {
       expect(() =>
         validateProofTypeOptions(
           {
@@ -46,7 +46,7 @@ describe('validateProofTypeOptions', () => {
       ).not.toThrow();
     });
 
-    it('rejects versioned config before runtime version 1.6.1', () => {
+    it('rejects versioned config before runtime version 1.6.0', () => {
       expect(() =>
         validateProofTypeOptions(
           {
@@ -59,6 +59,27 @@ describe('validateProofTypeOptions', () => {
           runtimeSpec(RuntimeVersion.V1_5_0),
         ),
       ).toThrow("does not support a 'version' option");
+    });
+
+    it('defaults missing version to V0_84 on runtime version 1.6.0', () => {
+      const options = {
+        proofType: ProofType.ultrahonk,
+        config: { variant: UltrahonkVariant.Plain },
+      };
+
+      const result = validateProofTypeOptions(
+        options,
+        runtimeSpec(RuntimeVersion.V1_6_0),
+      );
+
+      expect(result.config).toEqual({
+        version: UltrahonkVersion.V0_84,
+        variant: UltrahonkVariant.Plain,
+      });
+      expect(options.config).toEqual({ variant: UltrahonkVariant.Plain });
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`'${UltrahonkVersion.V0_84}'`),
+      );
     });
 
     it('defaults missing version to Legacy on runtime version 1.6.1', () => {
@@ -82,18 +103,18 @@ describe('validateProofTypeOptions', () => {
       );
     });
 
-    it('still requires variant from runtime version 1.6.1', () => {
+    it('still requires variant from runtime version 1.6.0', () => {
       expect(() =>
         validateProofTypeOptions(
           {
             proofType: ProofType.ultrahonk,
           },
-          runtimeSpec(RuntimeVersion.V1_6_1),
+          runtimeSpec(RuntimeVersion.V1_6_0),
         ),
       ).toThrow("requires 'version' and 'variant' options");
     });
 
-    it('allows versioned config from runtime version 1.6.1', () => {
+    it('allows versioned config from runtime version 1.6.0', () => {
       expect(() =>
         validateProofTypeOptions(
           {
@@ -103,7 +124,7 @@ describe('validateProofTypeOptions', () => {
               variant: UltrahonkVariant.Plain,
             },
           },
-          runtimeSpec(RuntimeVersion.V1_6_1),
+          runtimeSpec(RuntimeVersion.V1_6_0),
         ),
       ).not.toThrow();
       expect(warnSpy).not.toHaveBeenCalled();
@@ -111,7 +132,7 @@ describe('validateProofTypeOptions', () => {
   });
 
   describe('tee runtime gates', () => {
-    it('allows missing variant before runtime version 1.6.1', () => {
+    it('allows missing variant before runtime version 1.6.0', () => {
       expect(() =>
         validateProofTypeOptions(
           { proofType: ProofType.tee },
@@ -120,7 +141,7 @@ describe('validateProofTypeOptions', () => {
       ).not.toThrow();
     });
 
-    it('rejects variant config before runtime version 1.6.1', () => {
+    it('rejects variant config before runtime version 1.6.0', () => {
       expect(() =>
         validateProofTypeOptions(
           {
@@ -132,12 +153,12 @@ describe('validateProofTypeOptions', () => {
       ).toThrow("does not support a 'variant' option");
     });
 
-    it('defaults missing variant from runtime version 1.6.1', () => {
+    it('defaults missing variant from runtime version 1.6.0', () => {
       const options: ProofOptions = { proofType: ProofType.tee };
 
       const result = validateProofTypeOptions(
         options,
-        runtimeSpec(RuntimeVersion.V1_6_1),
+        runtimeSpec(RuntimeVersion.V1_6_0),
       );
 
       expect(result.config).toEqual({ variant: TeeVariant.Intel });
@@ -147,14 +168,14 @@ describe('validateProofTypeOptions', () => {
       );
     });
 
-    it('allows variant config from runtime version 1.6.1', () => {
+    it('allows variant config from runtime version 1.6.0', () => {
       expect(() =>
         validateProofTypeOptions(
           {
             proofType: ProofType.tee,
             config: { variant: TeeVariant.Intel },
           },
-          runtimeSpec(RuntimeVersion.V1_6_1),
+          runtimeSpec(RuntimeVersion.V1_6_0),
         ),
       ).not.toThrow();
       expect(warnSpy).not.toHaveBeenCalled();

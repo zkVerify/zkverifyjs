@@ -201,6 +201,25 @@ export const legacyZkvTypes: ZkvTypes = {
   },
 };
 
+export const v1_6ZkvTypes: ZkvTypes = {
+  ...commonZkvTypes,
+  UltraHonkVk: {
+    _enum: {
+      V0_84: 'Bytes',
+      V3_0: 'Bytes',
+    },
+  },
+  TeeIntelVk: {
+    tcb_response: 'Bytes',
+    certificates: 'Bytes',
+  },
+  TeeVk: {
+    _enum: {
+      Intel: 'TeeIntelVk',
+    },
+  },
+};
+
 export const v1_6_1ZkvTypes: ZkvTypes = {
   ...commonZkvTypes,
   UltraHonkVk: {
@@ -229,6 +248,13 @@ export function getZkvTypes(runtimeSpec?: RuntimeSpec): ZkvTypes {
     runtimeSpec.specVersion >= RuntimeVersion.V1_6_1
   ) {
     return v1_6_1ZkvTypes;
+  }
+
+  if (
+    runtimeSpec !== undefined &&
+    runtimeSpec.specVersion >= RuntimeVersion.V1_6_0
+  ) {
+    return v1_6ZkvTypes;
   }
 
   return legacyZkvTypes;
