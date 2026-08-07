@@ -34,10 +34,7 @@ describe('closeSession', () => {
   };
 
   it('should disconnect provider successfully', async () => {
-    jest
-      .spyOn(provider, 'isConnected', 'get')
-      .mockReturnValueOnce(true)
-      .mockReturnValueOnce(false);
+    jest.spyOn(provider, 'isConnected', 'get').mockReturnValueOnce(false);
 
     const providerDisconnectSpy = setupProviderSpy();
 
@@ -46,14 +43,14 @@ describe('closeSession', () => {
     expect(providerDisconnectSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('should not call provider.disconnect if provider is already disconnected', async () => {
+  it('should call provider.disconnect even when already disconnected, disarming auto-reconnect', async () => {
     jest.spyOn(provider, 'isConnected', 'get').mockReturnValue(false);
 
     const providerDisconnectSpy = setupProviderSpy();
 
     await closeSession(provider);
 
-    expect(providerDisconnectSpy).toHaveBeenCalledTimes(0);
+    expect(providerDisconnectSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should retry provider disconnect if it remains connected initially', async () => {
@@ -61,7 +58,6 @@ describe('closeSession', () => {
 
     jest
       .spyOn(provider, 'isConnected', 'get')
-      .mockReturnValueOnce(true)
       .mockReturnValueOnce(true)
       .mockReturnValueOnce(true)
       .mockReturnValueOnce(false);

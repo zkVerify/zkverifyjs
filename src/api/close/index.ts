@@ -32,8 +32,10 @@ export async function closeSession(provider: WsProvider): Promise<void> {
     if (apiInstances?.length) {
       await Promise.all(
         apiInstances.map(async (api) => {
-          if (api?.isConnected) {
-            await api.disconnect();
+          try {
+            await api?.disconnect();
+          } catch (error) {
+            console.debug('Error disconnecting API instance:', error);
           }
         }),
       );
@@ -52,15 +54,16 @@ export async function closeSession(provider: WsProvider): Promise<void> {
     console.debug('Error while removing event listeners:', error);
   }
 
-  if (provider.isConnected) {
-    try {
-      await disconnectWithRetries(
-        'Provider',
-        () => provider.disconnect(),
-        () => provider.isConnected,
-      );
-    } catch (error) {
-      console.warn('Provider disconnection failed:', error);
-    }
+  // disconnect() must run even when the socket is already down: it zeroes
+  // WsProvider's autoConnectMs, disarming the auto-reconnect that would
+  // otherwise resurrect the closed session.
+  try {
+    await disconnectWithRetries(
+      'Provider',
+      () => provider.disconnect(),
+      () => provider.isConnected,
+    );
+  } catch (error) {
+    console.warn('Provider disconnection failed:', error);
   }
 }
