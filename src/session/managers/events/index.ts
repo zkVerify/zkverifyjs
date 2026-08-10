@@ -81,16 +81,14 @@ export class EventManager {
 
     const eventsToSubscribe: SubscriptionEntry[] = subscriptions?.length
       ? subscriptions
-      : PUBLIC_ZK_VERIFY_EVENTS.map(
-          (event): SubscriptionEntry => ({
-            event,
-            callback: undefined,
-            options:
-              event === ZkVerifyEvents.NewAggregationReceipt
-                ? (undefined as NewAggregationEventSubscriptionOptions)
-                : undefined,
-          }),
-        );
+      : PUBLIC_ZK_VERIFY_EVENTS.map((event): SubscriptionEntry => ({
+          event,
+          callback: undefined,
+          options:
+            event === ZkVerifyEvents.NewAggregationReceipt
+              ? (undefined as NewAggregationEventSubscriptionOptions)
+              : undefined,
+        }));
 
     eventsToSubscribe.forEach(({ event, callback, options }) => {
       if (this.subscribedEvents.has(event)) {

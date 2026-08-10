@@ -4,10 +4,9 @@ import { SupportedNetwork } from '../../../config/index.js';
 import { CustomNetworkConfig, NetworkConfig } from '../../../types.js';
 
 export type SupportedNetworkMap = {
-  [K in Exclude<
-    SupportedNetwork,
-    SupportedNetwork.Custom
-  >]: () => NetworkBuilder;
+  [
+    K in Exclude<SupportedNetwork, SupportedNetwork.Custom>
+  ]: () => NetworkBuilder;
 } & {
   [SupportedNetwork.Custom]: (config: CustomNetworkConfig) => NetworkBuilder;
 };

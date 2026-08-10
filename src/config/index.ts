@@ -361,21 +361,13 @@ export const zkvRpc = {
       params: [
         {
           name: 'vk',
-          type: 'EzklVK',
+          type: 'EzklVk',
         },
       ],
       type: 'H256',
     },
-    tee: {
-      description: 'Get the hash of a TEE verification key',
-      params: [
-        {
-          name: 'vk',
-          type: 'TeeVk',
-        },
-      ],
-      type: 'H256',
-    },
+    // No `tee` entry: the node's vk_hash RPC (zkVerify rpc/vk_hash crate)
+    // does not expose a method for the TEE verifier.
     // ADD_NEW_PROOF_TYPE
   },
 };

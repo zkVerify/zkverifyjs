@@ -109,7 +109,7 @@ export async function getVkHash(
 
     if (typeof rpcCall !== 'function') {
       throw new Error(
-        `RPC method for ${proofOptions.proofType} is not registered.`,
+        `The node does not expose a vk_hash RPC method for proof type "${proofOptions.proofType}".`,
       );
     }
 

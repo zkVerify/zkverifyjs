@@ -98,6 +98,7 @@ export enum RuntimeVersion {
   V1_5_0 = 1005000,
   V1_6_0 = 1006000,
   V1_6_1 = 1006001,
+  V2_0_0 = 2000000,
 }
 
 export const PUBLIC_ZK_VERIFY_EVENTS: ZkVerifyEvents[] = [
