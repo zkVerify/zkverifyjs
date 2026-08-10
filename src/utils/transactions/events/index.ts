@@ -31,8 +31,7 @@ export const handleTransactionEvents = <T extends TransactionType>(
       ? getProofPallet(
           (
             transactionInfo as
-              | VerifyTransactionInfo
-              | VKRegistrationTransactionInfo
+              VerifyTransactionInfo | VKRegistrationTransactionInfo
           ).proofType,
         )
       : undefined;

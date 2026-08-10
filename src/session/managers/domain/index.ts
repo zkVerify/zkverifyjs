@@ -56,8 +56,7 @@ export class DomainManager {
 
     return registerDomain(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       aggregationSize,
       queueSize,
       domainOptions,
@@ -77,8 +76,7 @@ export class DomainManager {
 
     return aggregate(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       domainId,
       aggregationId,
       signerAccount,
@@ -104,8 +102,7 @@ export class DomainManager {
 
     return holdDomain(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       domainId,
       accountAddress,
     );
@@ -130,8 +127,7 @@ export class DomainManager {
 
     return unregisterDomain(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       domainId,
       accountAddress,
     );
@@ -159,8 +155,7 @@ export class DomainManager {
 
     return addDomainSubmitters(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       domainId,
       submitters,
       signerAccount,
@@ -189,8 +184,7 @@ export class DomainManager {
 
     return removeDomainSubmitters(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       domainId,
       submitters,
       signerAccount,

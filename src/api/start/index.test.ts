@@ -210,9 +210,8 @@ describe('startWalletSession', () => {
   it('should throw an error if no accounts are found', async () => {
     Object.defineProperty(global, 'window', { value: {}, writable: true });
 
-    const { web3Enable, web3Accounts } = await import(
-      '@polkadot/extension-dapp'
-    );
+    const { web3Enable, web3Accounts } =
+      await import('@polkadot/extension-dapp');
     (web3Enable as jest.Mock).mockResolvedValue([{}]);
     (web3Accounts as jest.Mock).mockResolvedValue([]);
 
@@ -229,9 +228,8 @@ describe('startWalletSession', () => {
   it('should throw an error if no account matches the provided wallet source and address', async () => {
     Object.defineProperty(global, 'window', { value: {}, writable: true });
 
-    const { web3Enable, web3Accounts } = await import(
-      '@polkadot/extension-dapp'
-    );
+    const { web3Enable, web3Accounts } =
+      await import('@polkadot/extension-dapp');
     const mockAccounts = [
       { address: 'differentAddress', meta: { source: 'mockSource' } },
     ];
@@ -252,9 +250,8 @@ describe('startWalletSession', () => {
   it('should successfully return a WalletConnection when extensions and accounts are available and match the wallet', async () => {
     Object.defineProperty(global, 'window', { value: {}, writable: true });
 
-    const { web3Enable, web3Accounts, web3FromSource } = await import(
-      '@polkadot/extension-dapp'
-    );
+    const { web3Enable, web3Accounts, web3FromSource } =
+      await import('@polkadot/extension-dapp');
     const mockAccounts = [
       { address: 'mockAddress', meta: { source: 'mockSource' } },
     ];
