@@ -5,6 +5,12 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
+# This workflow builds and tests PR-authored code, so its token is read-only.
+# Without an explicit block the GITHUB_TOKEN inherits the repository default,
+# which may be read/write across contents, packages, issues and pull requests.
+permissions:
+  contents: read
+
 jobs:
   supply-chain-audit:
     # Host-runner companion to the containerized build-and-test job.
@@ -21,6 +27,8 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -65,6 +73,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Mark workspace as a safe git directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
