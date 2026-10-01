@@ -5,6 +5,7 @@ import { format, formatVk } from './index.js';
 import { CurveType, Library } from '../../enums.js';
 
 jest.mock('../../utils/helpers', () => ({
+  ...jest.requireActual('../../utils/helpers'),
   getProofProcessor: jest.fn(),
   validateProofVersion: jest.fn(),
 }));

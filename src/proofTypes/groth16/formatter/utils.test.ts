@@ -1,4 +1,10 @@
-import { formatPublicSignals, unstringifyBigInts } from './utils.js';
+import {
+  formatG1Point,
+  formatPublicSignals,
+  formatScalar,
+  toHex,
+  unstringifyBigInts,
+} from './utils.js';
 
 describe('unstringifyBigInts', () => {
   it('converts decimal strings to bigint', () => {
@@ -95,5 +101,71 @@ describe('formatPublicSignals', () => {
     expect(() =>
       formatPublicSignals(['1', { value: '2' } as unknown as string]),
     ).toThrow('Invalid public signals format: Expected an array of strings.');
+  });
+});
+
+describe('toHex', () => {
+  describe('in-range encoding', () => {
+    it('encodes little-endian', () => {
+      expect(toHex(1n, 32, 'LE')).toBe('0x' + '01' + '00'.repeat(31));
+      expect(toHex(0n, 32, 'LE')).toBe('0x' + '00'.repeat(32));
+      expect(toHex(2n ** 256n - 1n, 32, 'LE')).toBe('0x' + 'ff'.repeat(32));
+    });
+
+    it('encodes big-endian', () => {
+      expect(toHex(1n, 48, 'BE')).toBe('0x' + '00'.repeat(47) + '01');
+    });
+
+    it('byte-reverses for little-endian', () => {
+      expect(toHex(0x0102n, 2, 'LE')).toBe('0x0201');
+    });
+
+    it('produces a 32-byte scalar for a realistic field element', () => {
+      const s =
+        '21888242871839275222246405745257275088548364400416034343698204186575808495616';
+      expect(formatScalar(s)).toBe(toHex(BigInt(s), 32, 'LE'));
+      expect(formatScalar(s)).toHaveLength(66);
+    });
+  });
+
+  describe('out-of-range rejection', () => {
+    // Regression: `padStart` only pads, so an oversized value used to pass through
+    // silently. For the little-endian path the odd-length hex was then byte-reversed
+    // by a /.{1,2}/ split, leaving an orphan trailing character and misaligning every
+    // byte — a corrupt encoding rather than an error.
+    it('throws rather than silently corrupting an oversized value', () => {
+      expect(() => toHex(2n ** 256n, 32, 'LE')).toThrow(
+        /does not fit in 32 bytes/,
+      );
+      expect(() => toHex(2n ** 260n, 32, 'LE')).toThrow(
+        /does not fit in 32 bytes/,
+      );
+    });
+
+    it('throws on negative values', () => {
+      expect(() => toHex(-1n, 32, 'LE')).toThrow(/negative/);
+    });
+
+    it('propagates the rejection through formatG1Point', () => {
+      expect(() => formatG1Point([(2n ** 300n).toString(), '1'], 'LE')).toThrow(
+        /does not fit/,
+      );
+    });
+  });
+});
+
+describe('unstringifyBigInts prototype safety', () => {
+  it('does not let a __proto__ key reshape the result prototype', () => {
+    const hostile = JSON.parse('{"__proto__": {"polluted": "yes"}, "a": "1"}');
+    const result = unstringifyBigInts(hostile) as Record<string, unknown>;
+
+    // __proto__ must become an own property, not a prototype assignment.
+    expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).toBe(
+      true,
+    );
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect((result as { polluted?: unknown }).polluted).toBeUndefined();
+    expect(({} as { polluted?: unknown }).polluted).toBeUndefined();
+    expect(result.a).toBe(1n);
   });
 });

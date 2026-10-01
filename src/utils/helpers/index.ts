@@ -97,20 +97,34 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-export function getProofProcessor(proofType: ProofType): ProofProcessor {
+/**
+ * Looks up the configuration for a proof type.
+ *
+ * Own-property check rather than a bare index: `proofType` originates from the caller
+ * and is unchecked at runtime, so a key such as `constructor` or `toString` would
+ * otherwise resolve to an inherited member of `Object.prototype`. That value is truthy,
+ * so it passed the guard below and failed later as an opaque `TypeError` instead of the
+ * intended "unsupported proof type" error.
+ */
+function getProofConfig(proofType: ProofType, kind: string): ProofConfig {
+  if (!Object.prototype.hasOwnProperty.call(proofConfigurations, proofType)) {
+    throw new Error(`No config found for ${kind}: ${proofType}`);
+  }
+
   const config = proofConfigurations[proofType];
   if (!config) {
-    throw new Error(`No config found for Proof Processor: ${proofType}`);
+    throw new Error(`No config found for ${kind}: ${proofType}`);
   }
-  return config.processor;
+
+  return config;
+}
+
+export function getProofProcessor(proofType: ProofType): ProofProcessor {
+  return getProofConfig(proofType, 'Proof Processor').processor;
 }
 
 export function getProofPallet(proofType: ProofType): string {
-  const config = proofConfigurations[proofType as ProofType];
-  if (!config) {
-    throw new Error(`No config found for Proof Pallet: ${proofType}`);
-  }
-  return config.pallet;
+  return getProofConfig(proofType, 'Proof Pallet').pallet;
 }
 
 export function checkReadOnly(
@@ -504,4 +518,44 @@ export function validateHexString(input: string): string {
     throw new Error('Invalid format: string input must be 0x-prefixed.');
   }
   return input;
+}
+
+/** Default cap on the length of diagnostic snippets embedded in error messages. */
+const SNIPPET_MAX_LENGTH = 50;
+
+/**
+ * Renders an arbitrary value as a short, bounded snippet for use in an error message.
+ *
+ * Proofs and verification keys are large. Interpolating one into an `Error.message`
+ * raw makes the message grow with the input, and calling `JSON.stringify` on the whole
+ * value before slicing it both allocates the full string and throws on circular or
+ * bigint-bearing input — masking the original error being reported.
+ *
+ * Truncation is silent (no ellipsis appended) so callers keep full control of the
+ * surrounding message format.
+ *
+ * @param value - The value to summarise.
+ * @param maxLength - Maximum number of characters to emit.
+ * @returns A truncated single-line representation, never throwing.
+ */
+export function safeSnippet(
+  value: unknown,
+  maxLength: number = SNIPPET_MAX_LENGTH,
+): string {
+  let text: string;
+
+  if (typeof value === 'string') {
+    text = value;
+  } else {
+    try {
+      text =
+        JSON.stringify(value, (_key, val) =>
+          typeof val === 'bigint' ? val.toString() : val,
+        ) ?? String(value);
+    } catch {
+      text = '[unserializable value]';
+    }
+  }
+
+  return text.slice(0, maxLength);
 }

@@ -169,6 +169,92 @@ describe('establishConnection', () => {
     );
   });
 
+  describe('WebSocket URL validation', () => {
+    const customConfig = (
+      websocket: string,
+      extra: Partial<NetworkConfig> = {},
+    ): NetworkConfig => ({
+      host: SupportedNetwork.Custom,
+      websocket,
+      rpc: 'https://custom-rpc-url',
+      ...extra,
+    });
+
+    // Warns rather than rejects: plaintext endpoints worked in earlier releases, so
+    // failing here would break consumers pointing at a private node.
+    it('warns but still connects for plaintext ws:// to a non-loopback host', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        await expect(
+          establishConnection(customConfig('ws://node.example.com:9944')),
+        ).resolves.toBeDefined();
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('unencrypted ws://'),
+        );
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it('does not warn when allowInsecureWebSocket is set', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        await establishConnection(
+          customConfig('ws://node.example.com:9944', {
+            allowInsecureWebSocket: true,
+          }),
+        );
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it('does not warn for loopback hosts', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        await establishConnection(customConfig('ws://127.0.0.1:9944'));
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it('allows plaintext ws:// to loopback hosts without an opt-in', async () => {
+      for (const url of [
+        'ws://localhost:9944',
+        'ws://custom-url',
+        'ws://[::1]:9944',
+      ]) {
+        await expect(
+          establishConnection(customConfig(url)),
+        ).resolves.toBeDefined();
+      }
+    });
+
+    // Already failed inside WsProvider (which requires /^(wss|ws):\/\//); this just
+    // reports it earlier and more clearly.
+    it('rejects an unparseable URL', async () => {
+      await expect(
+        establishConnection(customConfig('not a url')),
+      ).rejects.toThrow(/Invalid WebSocket URL/);
+      expect(ApiPromise.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects an unsupported scheme', async () => {
+      await expect(
+        establishConnection(customConfig('https://node.example.com')),
+      ).rejects.toThrow(/Unsupported WebSocket protocol "https:"/);
+      expect(ApiPromise.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts wss://', async () => {
+      await expect(
+        establishConnection(customConfig('wss://node.example.com')),
+      ).resolves.toBeDefined();
+    });
+  });
+
   it('should throw an error if ApiPromise.create fails', async () => {
     mockApiPromiseCreate.mockRejectedValueOnce(
       new Error('API creation failed'),

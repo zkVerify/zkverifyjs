@@ -40,8 +40,20 @@ describe('setupAccount', () => {
 
   it('rejects substrate dev SURIs (//Alice) on Volta', () => {
     expect(() => setupAccount('//Alice', false, false)).toThrowError(
-      /Dev account SURI .* is not valid on Volta or zkVerify mainnet/,
+      /Dev account SURIs .* are not valid on Volta or zkVerify mainnet/,
     );
+  });
+
+  it('does not echo the supplied SURI back in the error message', () => {
+    // Key-shaped input must not be reproduced into anything that logs the error.
+    expect(() => setupAccount('//NotInTheMessage', false, false)).toThrowError(
+      /Dev account SURIs/,
+    );
+    try {
+      setupAccount('//NotInTheMessage', false, false);
+    } catch (e) {
+      expect((e as Error).message).not.toContain('NotInTheMessage');
+    }
   });
 
   it('rejects substrate dev SURIs on zkVerify mainnet', () => {

@@ -108,7 +108,7 @@ describe('extrinsic utilities', () => {
       expect(() =>
         createSubmitProofExtrinsic(mockApi, ProofType.groth16, proofParams),
       ).toThrow(
-        'Error creating submittable extrinsic: groth16 Params: {\n  "formattedVk": "vk_data",\n  "formattedProof": "proof_data",\n  "formattedPubs": "pub_data"\n} Submission error',
+        `Error creating submittable extrinsic: groth16 Params: {"formattedVk":"vk_data","formattedProof":"proof_data","formattedPubs":"pub_data"} Submission error`,
       );
     });
 
@@ -120,7 +120,7 @@ describe('extrinsic utilities', () => {
       expect(() =>
         createSubmitProofExtrinsic(mockApi, ProofType.groth16, proofParams),
       ).toThrow(
-        'Error creating submittable extrinsic: groth16 Params: {\n  "formattedVk": "vk_data",\n  "formattedProof": "proof_data",\n  "formattedPubs": "pub_data"\n} An unknown error occurred',
+        `Error creating submittable extrinsic: groth16 Params: {"formattedVk":"vk_data","formattedProof":"proof_data","formattedPubs":"pub_data"} An unknown error occurred`,
       );
     });
   });
@@ -187,7 +187,7 @@ describe('extrinsic utilities', () => {
       expect(() =>
         createExtrinsicHex(mockApi, ProofType.groth16, proofParams),
       ).toThrow(
-        'Error creating submittable extrinsic: groth16 Params: {\n  "formattedVk": "vk_data",\n  "formattedProof": "proof_data",\n  "formattedPubs": "pub_data"\n} Hex generation error',
+        `Error creating submittable extrinsic: groth16 Params: {"formattedVk":"vk_data","formattedProof":"proof_data","formattedPubs":"pub_data"} Hex generation error`,
       );
     });
   });
