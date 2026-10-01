@@ -22,9 +22,7 @@ import { SupportedNetwork } from '../../../config/index.js';
 export class ConnectionManager {
   private accountMutex = new Mutex();
   private connection:
-    | AccountConnection
-    | WalletConnection
-    | EstablishedConnection;
+    AccountConnection | WalletConnection | EstablishedConnection;
   public isMainnetNetwork: boolean;
   public customNetwork: boolean;
   public readOnly: boolean;
@@ -249,9 +247,7 @@ export class ConnectionManager {
    * @returns {AccountConnection | WalletConnection | EstablishedConnection} The current connection instance.
    */
   get connectionDetails():
-    | AccountConnection
-    | WalletConnection
-    | EstablishedConnection {
+    AccountConnection | WalletConnection | EstablishedConnection {
     return this.connection;
   }
 

@@ -64,9 +64,8 @@ export async function startWalletSession(
     throw new Error('Wallet source and accountAddress must be provided.');
   }
 
-  const { web3Enable, web3Accounts, web3FromSource } = await import(
-    '@polkadot/extension-dapp'
-  );
+  const { web3Enable, web3Accounts, web3FromSource } =
+    await import('@polkadot/extension-dapp');
 
   const extensions = await web3Enable('zkVerify');
   if (extensions.length === 0) {

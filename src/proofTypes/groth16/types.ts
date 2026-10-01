@@ -19,9 +19,7 @@ export interface Groth16VerificationKey {
 }
 
 export type ProofInput =
-  | SnarkJSProofInput
-  | ArkworksProofInput
-  | GnarkProofInput;
+  SnarkJSProofInput | ArkworksProofInput | GnarkProofInput;
 
 export interface SnarkJSProofInput {
   pi_a: string[];

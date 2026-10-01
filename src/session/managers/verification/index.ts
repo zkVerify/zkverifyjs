@@ -272,8 +272,7 @@ export class VerificationManager {
     const events = new EventEmitter();
     const transactionResult = verify(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       options,
       events,
       input,
@@ -321,8 +320,7 @@ export class VerificationManager {
 
     return optimisticVerify(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       options,
       input,
     );
@@ -362,8 +360,7 @@ export class VerificationManager {
     const events = new EventEmitter();
     const transactionResult = batchVerify(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       options,
       events,
       input,
@@ -405,8 +402,7 @@ export class VerificationManager {
 
     return batchOptimisticVerify(
       this.connectionManager.connectionDetails as
-        | AccountConnection
-        | WalletConnection,
+        AccountConnection | WalletConnection,
       options,
       input,
     );

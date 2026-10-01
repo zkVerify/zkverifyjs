@@ -271,7 +271,7 @@ describe('getVkHash', () => {
     const vk = { dummy: 'vk' };
 
     await expect(getVkHash(api, proofOptions, vk)).rejects.toThrow(
-      'RPC call for groth16 failed: RPC method for groth16 is not registered.',
+      'RPC call for groth16 failed: The node does not expose a vk_hash RPC method for proof type "groth16".',
     );
   });
 

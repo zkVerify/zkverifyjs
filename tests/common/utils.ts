@@ -77,11 +77,13 @@ export function getProofFilenameComponents(
       }
       // Legacy fallback test path: SDK defaults missing Ultrahonk version to V0_84 on runtime v1.6.0
       // and to Legacy on runtime v1.6.1+.
-      // Fixtures still reuse V0_84 bytes because Legacy wraps the same proof/VK format.
-      components.push(
-        (version ?? UltrahonkVersion.V0_84).toLowerCase(),
-        variant.toLowerCase(),
-      );
+      // Fixtures still reuse V0_84 bytes because Legacy wraps the same proof/VK format,
+      // so Legacy maps to the v0_84 fixture files rather than duplicating them.
+      const fixtureVersion =
+        version === undefined || version === UltrahonkVersion.Legacy
+          ? UltrahonkVersion.V0_84
+          : version;
+      components.push(fixtureVersion.toLowerCase(), variant.toLowerCase());
       break;
     }
     case ProofType.ezkl: {

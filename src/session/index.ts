@@ -166,9 +166,7 @@ export class zkVerifySession {
    * @returns {AccountConnection | WalletConnection | EstablishedConnection} The connection details.
    */
   get connection():
-    | AccountConnection
-    | WalletConnection
-    | EstablishedConnection {
+    AccountConnection | WalletConnection | EstablishedConnection {
     return this.connectionManager.connectionDetails;
   }
 
