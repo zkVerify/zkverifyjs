@@ -14,7 +14,10 @@ import {
   unstringifyBigInts,
 } from '../utils.js';
 import { ProofOptions } from '../../../../config/index.js';
-import { isGroth16Config } from '../../../../utils/helpers/index.js';
+import {
+  isGroth16Config,
+  safeSnippet,
+} from '../../../../utils/helpers/index.js';
 
 /**
  * Formats zk-SNARK proof data for Groth16.
@@ -41,9 +44,8 @@ export const formatProof = (
     !('pi_b' in raw) ||
     !('pi_c' in raw)
   ) {
-    const snippet = JSON.stringify(proof).slice(0, 80);
     throw new Error(
-      `Invalid SnarkJS proof format. Expected pi_a, pi_b, pi_c. Snippet: "${snippet}..."`,
+      `Invalid SnarkJS proof format. Expected pi_a, pi_b, pi_c. Snippet: "${safeSnippet(proof, 80)}..."`,
     );
   }
 

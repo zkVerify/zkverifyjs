@@ -5,11 +5,14 @@
     "tests/common/walletServer.js",
     "tests/common/generators/scripts/generateAndProve.ts"
   ],
-  "project": ["src/**/*.ts", "tests/**/*.{ts,js,mjs,cjs}", "ci/**/*.js"],
+  "project": [
+    "src/**/*.ts",
+    "tests/**/*.{ts,js,mjs,cjs}",
+    "ci/**/*.js"
+  ],
   "ignoreBinaries": [
     "tail",
-    "circom",
-    "snarkjs"
+    "circom"
   ],
   "ignoreDependencies": [
     "buffer"

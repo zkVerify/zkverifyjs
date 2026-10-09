@@ -68,7 +68,7 @@ describe('batchOptimisticVerify functionality', () => {
             session.batchOptimisticVerify()
                 .groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
                 .execute(input)
-        ).rejects.toThrowError('Optimistic batch verification is only supported on custom networks.');
+        ).rejects.toThrow('Optimistic batch verification is only supported on custom networks.');
     });
 
     it.skip('should succeed when called on a custom network with valid proof details', async () => {

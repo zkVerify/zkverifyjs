@@ -1,10 +1,7 @@
 import { AccountConnection, WalletConnection } from '../connection/types.js';
+import { RuntimeVersion, TransactionType } from '../../enums.js';
 import {
-  RuntimeVersion,
-  TransactionType,
-  ZkVerifyEvents,
-} from '../../enums.js';
-import {
+  emitError,
   getKeyringAccountIfAvailable,
   isVersionAtLeast,
   requireVersionAtLeast,
@@ -281,7 +278,7 @@ export const performTransaction = async <T>(
     emitter.removeAllListeners();
     return result as T;
   } catch (error) {
-    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+    emitError(emitter, error);
     emitter.removeAllListeners();
     throw error;
   }

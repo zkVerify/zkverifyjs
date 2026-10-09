@@ -12,6 +12,7 @@ import { VerifyInput } from '../verify/types.js';
 import {
   getKeyringAccountIfAvailable,
   interpretDryRunResponse,
+  safeSnippet,
   toSubmittableExtrinsic,
 } from '../../utils/helpers/index.js';
 import { ApiPromise } from '@polkadot/api';
@@ -176,6 +177,6 @@ const buildTransaction = (
   }
 
   throw new Error(
-    `Invalid input provided. Expected either 'proofData' or 'extrinsic'. Received: ${JSON.stringify(input)}`,
+    `Invalid input provided. Expected either 'proofData' or 'extrinsic'. Received: ${safeSnippet(input, 200)}`,
   );
 };

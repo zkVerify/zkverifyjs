@@ -278,4 +278,132 @@ describe('EventManager', () => {
       ),
     ).toBe(0);
   });
+
+  describe('NewAggregationReceipt subscription failures', () => {
+    const onUnhandled = jest.fn();
+
+    beforeEach(() => {
+      onUnhandled.mockClear();
+      process.on('unhandledRejection', onUnhandled);
+      (
+        mock.api.rpc.chain.subscribeFinalizedHeads as unknown as jest.Mock
+      ).mockImplementation(async () => jest.fn());
+    });
+
+    afterEach(() => {
+      process.off('unhandledRejection', onUnhandled);
+    });
+
+    it('subscribe() with aggregationId + timeout never produces an unhandled rejection when no error listener is attached', async () => {
+      jest.useFakeTimers();
+      manager.subscribe([
+        {
+          event: ZkVerifyEvents.NewAggregationReceipt,
+          callback: jest.fn(),
+          options: { domainId: 1, aggregationId: 2, timeout: 5 },
+        },
+      ]);
+      await Promise.resolve();
+
+      jest.advanceTimersByTime(5);
+      jest.useRealTimers();
+      // Let the rejection (and Node's unhandled-rejection tracking) settle.
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(onUnhandled).not.toHaveBeenCalled();
+    });
+
+    it('subscribe() reports the failure as ErrorEvent when a listener is attached', async () => {
+      jest.useFakeTimers();
+      const errors: unknown[] = [];
+      const emitter = manager.subscribe([
+        {
+          event: ZkVerifyEvents.NewAggregationReceipt,
+          callback: jest.fn(),
+          options: { domainId: 1, aggregationId: 2, timeout: 5 },
+        },
+      ]);
+      emitter.on(ZkVerifyEvents.ErrorEvent, (e) => errors.push(e));
+      await Promise.resolve();
+
+      jest.advanceTimersByTime(5);
+      jest.useRealTimers();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(errors).toHaveLength(1);
+      expect((errors[0] as Error).message).toMatch(/Timeout exceeded/);
+      expect(onUnhandled).not.toHaveBeenCalled();
+    });
+
+    it('allows re-subscribing to NewAggregationReceipt once the previous subscription has ended', async () => {
+      jest.useFakeTimers();
+      manager.subscribe([
+        {
+          event: ZkVerifyEvents.NewAggregationReceipt,
+          options: { domainId: 1, aggregationId: 2, timeout: 5 },
+        },
+      ]);
+      await Promise.resolve();
+      jest.advanceTimersByTime(5);
+      jest.useRealTimers();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      manager.subscribe([
+        {
+          event: ZkVerifyEvents.NewAggregationReceipt,
+          options: { domainId: 1, aggregationId: 3, timeout: 10_000 },
+        },
+      ]);
+      await new Promise((resolve) => setImmediate(resolve));
+
+      // One subscription per cycle: the first ended, the second started fresh.
+      expect(
+        mock.api.rpc.chain.subscribeFinalizedHeads as unknown as jest.Mock,
+      ).toHaveBeenCalledTimes(2);
+      manager.unsubscribe();
+    });
+  });
+
+  it('a timed-out waitForAggregationReceipt does not wipe runtime-event subscriptions on the shared emitter', async () => {
+    jest.useFakeTimers();
+    (
+      mock.api.rpc.chain.subscribeFinalizedHeads as unknown as jest.Mock
+    ).mockImplementation(async () => jest.fn());
+
+    const proofVerified = jest.fn();
+    manager.subscribe([
+      { event: ZkVerifyEvents.ProofVerified, callback: proofVerified },
+    ]);
+    const emitter = (manager as any).emitter as EventEmitter;
+    const consumerListener = jest.fn();
+    emitter.on(ZkVerifyEvents.ProofVerified, consumerListener);
+
+    const wait = manager.waitForAggregationReceipt(7, 9, 5);
+    await Promise.resolve();
+    jest.advanceTimersByTime(5);
+    jest.useRealTimers();
+    await expect(wait).rejects.toThrow(/Timeout exceeded/);
+
+    // Runtime-event delivery still works for both the manager's dispatch and
+    // the consumer's directly-attached listener.
+    mock.emitBlockToLatest([makeRecord('proof', 'ProofVerified', ['0xa'])]);
+    expect(proofVerified).toHaveBeenCalledTimes(1);
+    expect(consumerListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not throw from the system.events callback when a handler fails and nobody listens for errors', () => {
+    manager.subscribe([
+      {
+        event: ZkVerifyEvents.ProofVerified,
+        callback: () => {
+          throw new Error('consumer callback failed');
+        },
+      },
+    ]);
+
+    expect(() =>
+      mock.emitBlockToLatest([makeRecord('proof', 'ProofVerified', ['0xa'])]),
+    ).not.toThrow();
+  });
 });

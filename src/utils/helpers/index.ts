@@ -18,6 +18,7 @@ import {
   UltrahonkConfig,
 } from '../../config/index.js';
 import { decodeDispatchError } from '../transactions/errors/index.js';
+import { ZkVerifyEvents } from '../../enums.js';
 import { DispatchError, Extrinsic } from '@polkadot/types/interfaces';
 import {
   AccountConnection,
@@ -371,6 +372,16 @@ export const safeEmit = (
 };
 
 /**
+ * Emits `ZkVerifyEvents.ErrorEvent` only when a listener is attached, since Node's
+ * `EventEmitter` throws when `'error'` is emitted with no listener.
+ */
+export const emitError = (emitter: EventEmitter, error: unknown): void => {
+  if (emitter.listenerCount(ZkVerifyEvents.ErrorEvent) > 0) {
+    safeEmit(emitter, ZkVerifyEvents.ErrorEvent, error);
+  }
+};
+
+/**
  * Type guard for Groth16Config
  */
 export function isGroth16Config(
@@ -542,20 +553,128 @@ export function safeSnippet(
   value: unknown,
   maxLength: number = SNIPPET_MAX_LENGTH,
 ): string {
-  let text: string;
-
   if (typeof value === 'string') {
-    text = value;
-  } else {
-    try {
-      text =
-        JSON.stringify(value, (_key, val) =>
-          typeof val === 'bigint' ? val.toString() : val,
-        ) ?? String(value);
-    } catch {
-      text = '[unserializable value]';
+    return value.slice(0, maxLength);
+  }
+
+  try {
+    return boundedStringify(value, maxLength);
+  } catch {
+    return '[unserializable value]'.slice(0, maxLength);
+  }
+}
+
+/** Thrown internally once the output budget is spent, to abandon the walk early. */
+class SnippetBudgetExhausted extends Error {}
+
+/**
+ * JSON-like serialisation that stops emitting once `maxLength` characters have been
+ * produced, so the cost is proportional to the snippet rather than to the input.
+ *
+ * Mirrors `JSON.stringify` closely enough for a diagnostic: `toJSON` is honoured,
+ * `bigint` is rendered as a quoted decimal string, unsupported scalars become `null`
+ * inside arrays and are skipped inside objects, and a cycle renders as `"[Circular]"`
+ * instead of throwing.
+ */
+function boundedStringify(value: unknown, maxLength: number): string {
+  const chunks: string[] = [];
+  let produced = 0;
+
+  const push = (chunk: string): void => {
+    const remaining = maxLength - produced;
+    if (chunk.length >= remaining) {
+      chunks.push(chunk.slice(0, remaining));
+      throw new SnippetBudgetExhausted();
+    }
+    chunks.push(chunk);
+    produced += chunk.length;
+  };
+
+  const encode = (input: unknown, ancestors: Set<object>): boolean => {
+    let current = input;
+
+    if (
+      current !== null &&
+      (typeof current === 'object' || typeof current === 'bigint') &&
+      typeof (current as { toJSON?: unknown }).toJSON === 'function'
+    ) {
+      current = (current as { toJSON: () => unknown }).toJSON();
+    }
+
+    switch (typeof current) {
+      case 'string':
+        push(JSON.stringify(current));
+        return true;
+      case 'number':
+        push(Number.isFinite(current) ? String(current) : 'null');
+        return true;
+      case 'boolean':
+        push(String(current));
+        return true;
+      case 'bigint':
+        push(`"${current.toString()}"`);
+        return true;
+      case 'object':
+        break;
+      default:
+        // undefined, function, symbol: not representable.
+        return false;
+    }
+
+    if (current === null) {
+      push('null');
+      return true;
+    }
+
+    const container = current as object;
+
+    if (ancestors.has(container)) {
+      push('"[Circular]"');
+      return true;
+    }
+    ancestors.add(container);
+
+    if (Array.isArray(container)) {
+      push('[');
+      container.forEach((item, index) => {
+        if (index > 0) push(',');
+        if (!encode(item, ancestors)) push('null');
+      });
+      push(']');
+    } else {
+      push('{');
+      let first = true;
+      for (const key of Object.keys(container)) {
+        const item = (container as Record<string, unknown>)[key];
+        const marker = chunks.length;
+        const producedBefore = produced;
+        if (!first) push(',');
+        push(`${JSON.stringify(key)}:`);
+        if (!encode(item, ancestors)) {
+          // Roll back the separator and key for an unrepresentable member.
+          chunks.length = marker;
+          produced = producedBefore;
+          continue;
+        }
+        first = false;
+      }
+      push('}');
+    }
+
+    ancestors.delete(container);
+    return true;
+  };
+
+  try {
+    if (!encode(value, new Set())) {
+      // Top-level undefined / function / symbol: JSON.stringify would yield undefined.
+      return String(value).slice(0, maxLength);
+    }
+  } catch (error) {
+    if (!(error instanceof SnippetBudgetExhausted)) {
+      throw error;
     }
   }
 
-  return text.slice(0, maxLength);
+  return chunks.join('');
 }

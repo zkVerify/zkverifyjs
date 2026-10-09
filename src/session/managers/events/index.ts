@@ -13,6 +13,7 @@ import {
   NewAggregationReceiptEvent,
   SubscriptionEntry,
 } from '../../../types.js';
+import { emitError } from '../../../utils/helpers/index.js';
 
 type RuntimeEventHandler = (records: EventRecord[]) => void;
 
@@ -106,7 +107,14 @@ export class EventManager {
             },
             options as NewAggregationEventSubscriptionOptions,
             this.emitter,
-          );
+          )
+            .catch((error: unknown) => {
+              emitError(this.emitter, error);
+            })
+            .finally(() => {
+              // Subscription ended (matched, timed out or failed); allow a new one.
+              this.subscribedEvents.delete(event);
+            });
           break;
 
         case ZkVerifyEvents.ProofVerified:
@@ -182,7 +190,7 @@ export class EventManager {
           try {
             handler(records);
           } catch (err) {
-            this.emitter.emit(ZkVerifyEvents.ErrorEvent, err);
+            emitError(this.emitter, err);
           }
         }
       },
@@ -210,7 +218,7 @@ export class EventManager {
         handleUnsubscribeFn(subscriptionResult);
       } else if (typeof subscriptionResult.then === 'function') {
         subscriptionResult.then(handleUnsubscribeFn).catch((error: unknown) => {
-          this.emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+          emitError(this.emitter, error);
         });
       }
     }

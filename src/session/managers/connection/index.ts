@@ -19,6 +19,18 @@ import { AccountInfo, NetworkConfig } from '../../../types.js';
 import { Mutex } from 'async-mutex';
 import { SupportedNetwork } from '../../../config/index.js';
 
+/** Upper bound on the number of accounts a single `addDerivedAccounts` call may add. */
+export const MAX_DERIVED_ACCOUNTS_PER_CALL = 1_000;
+
+/** Zeroes a pair's secret key once the session no longer holds it. */
+const lockPair = (pair: KeyringPair): void => {
+  try {
+    pair.lock?.();
+  } catch (error) {
+    console.debug('Failed to lock removed account:', error);
+  }
+};
+
 export class ConnectionManager {
   private accountMutex = new Mutex();
   private connection:
@@ -178,7 +190,11 @@ export class ConnectionManager {
         throw new Error(`Account ${address} not found.`);
       }
 
+      const removedPair = accountConnection.accounts.get(address);
       accountConnection.accounts.delete(address);
+      if (removedPair) {
+        lockPair(removedPair);
+      }
 
       if (accountConnection.accounts.size === 0) {
         this.connection = {
@@ -266,6 +282,11 @@ export class ConnectionManager {
   ): Promise<string[]> {
     if (!Number.isInteger(count) || count <= 0) {
       throw new Error('count must be a positive integer.');
+    }
+    if (count > MAX_DERIVED_ACCOUNTS_PER_CALL) {
+      throw new Error(
+        `count must not exceed ${MAX_DERIVED_ACCOUNTS_PER_CALL} per call.`,
+      );
     }
 
     return this.accountMutex.runExclusive(async () => {

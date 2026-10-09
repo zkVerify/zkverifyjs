@@ -5,7 +5,10 @@ import {
   ProofInput,
 } from '../../types.js';
 import { ProofOptions } from '../../../../config/index.js';
-import { isGroth16Config } from '../../../../utils/helpers/index.js';
+import {
+  isGroth16Config,
+  safeSnippet,
+} from '../../../../utils/helpers/index.js';
 import { extractCurve } from '../utils.js';
 
 /**
@@ -36,9 +39,8 @@ export const formatProof = (
     typeof proof.proof.c !== 'string' ||
     typeof proof.curve !== 'string'
   ) {
-    const snippet = JSON.stringify(proof).slice(0, 80);
     throw new Error(
-      `Invalid Arkworks proof format. Expected { curve, proof: { a, b, c } }. Snippet: "${snippet}..."`,
+      `Invalid Arkworks proof format. Expected { curve, proof: { a, b, c } }. Snippet: "${safeSnippet(proof, 80)}..."`,
     );
   }
 
