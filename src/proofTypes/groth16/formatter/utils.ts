@@ -20,7 +20,15 @@ export const unstringifyBigInts = (o: unknown): unknown => {
     const result: Record<string, unknown> = {};
     for (const key in o) {
       if (Object.prototype.hasOwnProperty.call(o, key)) {
-        result[key] = unstringifyBigInts((o as Record<string, unknown>)[key]);
+        // Plain assignment to a key named `__proto__` triggers the prototype setter
+        // rather than creating an own property, letting untrusted JSON reshape this
+        // object's prototype chain. defineProperty always creates an own property.
+        Object.defineProperty(result, key, {
+          value: unstringifyBigInts((o as Record<string, unknown>)[key]),
+          enumerable: true,
+          writable: true,
+          configurable: true,
+        });
       }
     }
     return result;
@@ -45,19 +53,45 @@ export const extractCurve = (curve: CurveType): string => {
 };
 
 /**
- * Converts bigint to a hexadecimal string based on endianess.
+ * Converts bigint to a fixed-width hexadecimal string based on endianess.
+ *
+ * @throws {Error} If `value` is negative, or does not fit within `length` bytes.
  */
 export const toHex = (
   value: bigint,
   length: number,
   endianess: 'LE' | 'BE',
 ): string => {
-  const hex = value.toString(16).padStart(length * 2, '0');
-  const reversed = hex
-    .match(/.{1,2}/g)!
-    .reverse()
-    .join('');
-  return `0x${endianess === 'LE' ? reversed : hex}`;
+  if (value < 0n) {
+    throw new Error(
+      `Cannot encode negative value as a field element: ${value}`,
+    );
+  }
+
+  const digits = value.toString(16);
+
+  // `padStart` only ever pads, never truncates, so an out-of-range value would
+  // otherwise pass through silently. For the little-endian path the resulting
+  // odd-length string is then byte-reversed by a 1-or-2 character split, which
+  // leaves a trailing single character and misaligns every byte of the output —
+  // a silently corrupt encoding rather than an error.
+  if (digits.length > length * 2) {
+    throw new Error(
+      `Value does not fit in ${length} bytes ` +
+        `(requires ${Math.ceil(digits.length / 2)}): ${value}`,
+    );
+  }
+
+  const hex = digits.padStart(length * 2, '0');
+
+  if (endianess === 'BE') {
+    return `0x${hex}`;
+  }
+
+  // Width is now guaranteed even, so a strict 2-character split is safe.
+  const reversed = (hex.match(/.{2}/g) ?? []).reverse().join('');
+
+  return `0x${reversed}`;
 };
 
 /**

@@ -806,6 +806,12 @@ const session = await zkVerifySession
 - `wsProvider.timeout`: per-request timeout in ms.
 - `syncTimeoutMs`: max time to wait for the node to finish syncing during session start. Throws if exceeded. Default 5 minutes.
 
+### Endpoint validation
+
+The `websocket` URL is validated at session start: an unparseable URL, or a scheme other than `wss://` / `ws://`, throws. An unencrypted `ws://` endpoint on a non-loopback host still connects but logs a warning, since a network-position attacker on a plaintext connection can forge the chain state the SDK reports (including verification results). Loopback (`localhost`, `127.0.0.0/8`, `::1`) never warns.
+
+- `allowInsecureWebSocket`: set `true` to silence the `ws://` warning for a trusted private network you control.
+
 ## `zkVerifySession.close`
 
 ```typescript

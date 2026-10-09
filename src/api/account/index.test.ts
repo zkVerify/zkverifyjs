@@ -28,24 +28,36 @@ describe('setupAccount', () => {
   it('should throw an error with a custom message when an invalid seed phrase is provided', () => {
     const invalidSeedPhrase = 'invalid-seed-phrase';
 
-    expect(() => setupAccount(invalidSeedPhrase)).toThrowError(
+    expect(() => setupAccount(invalidSeedPhrase)).toThrow(
       /Invalid seed phrase: expected a BIP39 mnemonic of 12, 15, 18, 21, or 24 words/,
     );
   });
 
   it('rejects an empty seed phrase', () => {
-    expect(() => setupAccount('')).toThrowError(/must not be empty/);
-    expect(() => setupAccount('   ')).toThrowError(/must not be empty/);
+    expect(() => setupAccount('')).toThrow(/must not be empty/);
+    expect(() => setupAccount('   ')).toThrow(/must not be empty/);
   });
 
   it('rejects substrate dev SURIs (//Alice) on Volta', () => {
-    expect(() => setupAccount('//Alice', false, false)).toThrowError(
-      /Dev account SURI .* is not valid on Volta or zkVerify mainnet/,
+    expect(() => setupAccount('//Alice', false, false)).toThrow(
+      /Dev account SURIs .* are not valid on Volta or zkVerify mainnet/,
     );
   });
 
+  it('does not echo the supplied SURI back in the error message', () => {
+    // Key-shaped input must not be reproduced into anything that logs the error.
+    expect(() => setupAccount('//NotInTheMessage', false, false)).toThrow(
+      /Dev account SURIs/,
+    );
+    try {
+      setupAccount('//NotInTheMessage', false, false);
+    } catch (e) {
+      expect((e as Error).message).not.toContain('NotInTheMessage');
+    }
+  });
+
   it('rejects substrate dev SURIs on zkVerify mainnet', () => {
-    expect(() => setupAccount('//Bob', true, false)).toThrowError(
+    expect(() => setupAccount('//Bob', true, false)).toThrow(
       /not valid on Volta or zkVerify mainnet/,
     );
   });
@@ -58,7 +70,7 @@ describe('setupAccount', () => {
 
   it('rejects mnemonics with the wrong word count', () => {
     const ten = 'one two three four five six seven eight nine ten';
-    expect(() => setupAccount(ten)).toThrowError(
+    expect(() => setupAccount(ten)).toThrow(
       /expected a BIP39 mnemonic.* got 10/,
     );
   });

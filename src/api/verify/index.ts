@@ -3,7 +3,7 @@ import { AccountConnection, WalletConnection } from '../connection/types.js';
 import { EventEmitter } from 'events';
 import { VerifyTransactionInfo, ProofData } from '../../types.js';
 import { VerifyOptions } from '../../session/types.js';
-import { TransactionType, ZkVerifyEvents } from '../../enums.js';
+import { TransactionType } from '../../enums.js';
 import { format } from '../format/index.js';
 import { createSubmitProofExtrinsic } from '../extrinsic/index.js';
 import { VerifyInput } from './types.js';
@@ -11,6 +11,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 import {
+  emitError,
   getKeyringAccountIfAvailable,
   toSubmittableExtrinsic,
 } from '../../utils/helpers/index.js';
@@ -85,7 +86,7 @@ export const verify = async (
 
     return result as VerifyTransactionInfo;
   } catch (error) {
-    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+    emitError(emitter, error);
     emitter.removeAllListeners();
     throw error;
   }

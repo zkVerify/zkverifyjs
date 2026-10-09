@@ -187,4 +187,126 @@ describe('handleTransaction', () => {
     await expect(transactionPromise).rejects.toThrow('Transaction is invalid.');
     expect(errors).toHaveLength(1);
   });
+
+  // Every `SubmittableResult.isError` status must settle the transaction.
+  describe.each([
+    ['isDropped', 'Transaction was dropped from the transaction pool.'],
+    [
+      'isUsurped',
+      'Transaction was usurped by another transaction with the same nonce.',
+    ],
+    ['isFinalityTimeout', 'Transaction timed out waiting for finality.'],
+  ])('terminal status %s', (flag, expectedMessage) => {
+    it('rejects the transaction, reports the error and releases the subscription', async () => {
+      let capturedCallback!: (result: SubmittableResult) => Promise<void>;
+      const unsubscribe = jest.fn();
+      const submitExtrinsic = {
+        signAndSend: jest.fn(
+          (
+            _account: KeyringPair,
+            _options: unknown,
+            callback: (result: SubmittableResult) => Promise<void>,
+          ) => {
+            capturedCallback = callback;
+            return Promise.resolve(unsubscribe);
+          },
+        ),
+      } as unknown as SubmittableExtrinsic<'promise'>;
+
+      const emitter = new EventEmitter();
+      const errors: Array<{ error: string }> = [];
+      emitter.on(ZkVerifyEvents.ErrorEvent, (payload) => errors.push(payload));
+
+      const transactionPromise = handleTransaction(
+        {} as ApiPromise,
+        submitExtrinsic,
+        {} as KeyringPair,
+        undefined,
+        emitter,
+        {
+          proofOptions: { proofType: ProofType.groth16 },
+        } as VerifyOptions,
+        TransactionType.Verify,
+      );
+      await flushMicrotasks();
+
+      const terminalResult = {
+        status: {
+          isBroadcast: false,
+          isInBlock: false,
+          isFinalized: false,
+          isInvalid: false,
+          [flag]: true,
+        },
+        txHash: { toString: () => '0xdead' },
+        dispatchError: undefined,
+        events: [],
+      } as unknown as SubmittableResult;
+
+      await expect(capturedCallback(terminalResult)).resolves.toBeUndefined();
+
+      await expect(transactionPromise).rejects.toThrow(expectedMessage);
+      expect(errors).toEqual([
+        expect.objectContaining({ error: expectedMessage }),
+      ]);
+      expect(unsubscribe).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('ignores non-terminal statuses such as isReady and isRetracted', async () => {
+    let capturedCallback!: (result: SubmittableResult) => Promise<void>;
+    const submitExtrinsic = {
+      signAndSend: jest.fn(
+        (
+          _account: KeyringPair,
+          _options: unknown,
+          callback: (result: SubmittableResult) => Promise<void>,
+        ) => {
+          capturedCallback = callback;
+          return Promise.resolve(() => {});
+        },
+      ),
+    } as unknown as SubmittableExtrinsic<'promise'>;
+
+    const transactionPromise = handleTransaction(
+      {} as ApiPromise,
+      submitExtrinsic,
+      {} as KeyringPair,
+      undefined,
+      new EventEmitter(),
+      {
+        proofOptions: { proofType: ProofType.groth16 },
+      } as VerifyOptions,
+      TransactionType.Verify,
+    );
+
+    const inFlight = (flag: string) =>
+      ({
+        status: {
+          isBroadcast: false,
+          isInBlock: false,
+          isFinalized: false,
+          isInvalid: false,
+          [flag]: true,
+        },
+        events: [],
+      }) as unknown as SubmittableResult;
+
+    await capturedCallback(inFlight('isReady'));
+    await capturedCallback(inFlight('isRetracted'));
+    await capturedCallback(inFlight('isFuture'));
+
+    let settled = false;
+    transactionPromise.then(
+      () => (settled = true),
+      () => (settled = true),
+    );
+    await flushMicrotasks();
+    expect(settled).toBe(false);
+
+    await capturedCallback(finalizedResult);
+    await expect(transactionPromise).resolves.toEqual(
+      expect.objectContaining({ status: TransactionStatus.Finalized }),
+    );
+  });
 });

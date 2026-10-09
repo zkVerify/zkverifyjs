@@ -119,7 +119,7 @@ describe('verify', () => {
         emitter,
         input,
       ),
-    ).rejects.toThrow('Error: Unsupported proof type: undefined');
+    ).rejects.toThrow('Unsupported proof type: undefined');
   });
 
   it('should throw an error if unsupported proofType is provided', async () => {
