@@ -158,10 +158,14 @@ export const formatVk = (
  * Formats an array of public signals.
  *
  * @param {string[]} pubs - Array of public signals.
+ * @param {ProofOptions} options - Proof options containing curve information.
  * @returns {string[]} - Formatted public signals.
  */
-export const formatPubs = (pubs: string[]): string[] => {
-  return formatPublicSignals(pubs);
+export const formatPubs = (pubs: string[], options: ProofOptions): string[] => {
+  const curve = isGroth16Config(options)
+    ? extractCurve(options.config.curve)
+    : undefined;
+  return formatPublicSignals(pubs, curve);
 };
 
 export default {

@@ -128,6 +128,32 @@ export function getProofPallet(proofType: ProofType): string {
   return getProofConfig(proofType, 'Proof Pallet').pallet;
 }
 
+/**
+ * Asserts that a caller-supplied extrinsic is the `submitProof` call of the
+ * verifier pallet for `proofType`, so a session key only ever signs the call the
+ * caller declared.
+ *
+ * @returns The extrinsic unchanged, for inline use.
+ * @throws {Error} If the call targets any other pallet or method.
+ */
+export function assertSubmitProofCall(
+  extrinsic: SubmittableExtrinsic<'promise'>,
+  proofType: ProofType,
+): SubmittableExtrinsic<'promise'> {
+  const expectedPallet = getProofPallet(proofType);
+  const section = extrinsic.method?.section;
+  const method = extrinsic.method?.method;
+
+  if (section !== expectedPallet || method !== 'submitProof') {
+    throw new Error(
+      `Refusing to sign ${section}.${method}: expected ${expectedPallet}.submitProof ` +
+        `for proof type '${proofType}'.`,
+    );
+  }
+
+  return extrinsic;
+}
+
 export function checkReadOnly(
   connection: AccountConnection | WalletConnection | EstablishedConnection,
 ): void {
@@ -517,16 +543,25 @@ export function toSubmittableExtrinsic(
   return api.tx(call);
 }
 
+const HEX_DIGITS_RE = /^0x[0-9a-fA-F]*$/;
+
 /**
- * Asserts that the given input is a 0x-prefixed hex string.
+ * Asserts that the given input is a 0x-prefixed hex string encoding whole bytes.
  *
  * @param input - The string to validate.
  * @returns The input unchanged, for ergonomic inline use.
- * @throws {Error} If the input does not start with `0x`.
+ * @throws {Error} If the input is not a string, lacks the `0x` prefix, contains a
+ *   non-hex character, or has an odd number of hex digits.
  */
 export function validateHexString(input: string): string {
-  if (!input.startsWith('0x')) {
-    throw new Error('Invalid format: string input must be 0x-prefixed.');
+  if (
+    typeof input !== 'string' ||
+    input.length % 2 !== 0 ||
+    !HEX_DIGITS_RE.test(input)
+  ) {
+    throw new Error(
+      'Invalid format: string input must be 0x-prefixed hex with an even number of digits.',
+    );
   }
   return input;
 }

@@ -11,6 +11,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types.js';
 import { KeyringPair } from '@polkadot/keyring/types';
 import {
+  assertSubmitProofCall,
   emitError,
   getKeyringAccountIfAvailable,
   toSubmittableExtrinsic,
@@ -52,7 +53,10 @@ export const verify = async (
       }
 
       if ('extrinsic' in input && input.extrinsic) {
-        return toSubmittableExtrinsic(input.extrinsic, api);
+        return assertSubmitProofCall(
+          toSubmittableExtrinsic(input.extrinsic, api),
+          options.proofOptions.proofType,
+        );
       }
 
       throw new Error(

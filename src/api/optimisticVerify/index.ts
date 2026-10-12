@@ -10,6 +10,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types.js';
 import { VerifyInput } from '../verify/types.js';
 import {
+  assertSubmitProofCall,
   getKeyringAccountIfAvailable,
   interpretDryRunResponse,
   safeSnippet,
@@ -53,29 +54,20 @@ const resolveBlockHash = async (
 };
 
 /**
- * Signs the dry-run payload with a short mortal era.
+ * Signs the dry-run payload with a short mortal era anchored at the parent of
+ * `atBlockHash`, the block the dry run executes against.
  *
- * When the caller pins a specific (possibly historical) block, the era is anchored at
- * that block's parent — an era anchored at the current head would be rejected by the
- * runtime's mortality check when executed against older state. The parent rather than
- * the pinned block itself, because `frame_system` only records `BlockHash[n]` while
- * initializing block `n + 1`, so state at the pinned block cannot resolve its own hash
- * and the signed payload would not match. This mirrors polkadot-js, which also anchors
- * at the parent of the best block. Otherwise `era` is omitted so polkadot-js applies
- * the same mortal-era logic it uses for real submissions.
+ * The parent rather than the block itself, because `frame_system` only records
+ * `BlockHash[n]` while initializing block `n + 1`, so state at the block cannot
+ * resolve its own hash and the runtime's mortality check would reject the payload.
  */
 const signForDryRun = async (
   api: ApiPromise,
   transaction: SubmittableExtrinsic<'promise'>,
   account: KeyringPair,
   nonce: number,
-  atBlockHash: string | undefined,
+  atBlockHash: string,
 ): Promise<void> => {
-  if (atBlockHash === undefined) {
-    await transaction.signAsync(account, { nonce });
-    return;
-  }
-
   const header = await api.rpc.chain.getHeader(atBlockHash);
   const blockNumber = header.number.toNumber();
 
@@ -118,8 +110,16 @@ export const optimisticVerify = async (
 
     // Resolved before signing: the mortal era is anchored to this block.
     const atBlockHash = await resolveBlockHash(api, options.block);
+    const anchorBlockHash =
+      atBlockHash ?? (await api.rpc.chain.getBlockHash()).toHex();
 
-    await signForDryRun(api, transaction, selectedAccount, nonce, atBlockHash);
+    await signForDryRun(
+      api,
+      transaction,
+      selectedAccount,
+      nonce,
+      anchorBlockHash,
+    );
 
     const txHex = transaction.toHex();
 
@@ -173,7 +173,10 @@ const buildTransaction = (
   }
 
   if ('extrinsic' in input && input.extrinsic) {
-    return toSubmittableExtrinsic(input.extrinsic, api);
+    return assertSubmitProofCall(
+      toSubmittableExtrinsic(input.extrinsic, api),
+      options.proofOptions.proofType,
+    );
   }
 
   throw new Error(

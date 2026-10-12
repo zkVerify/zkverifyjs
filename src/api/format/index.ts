@@ -3,6 +3,20 @@ import { getProofProcessor, safeSnippet } from '../../utils/helpers/index.js';
 import { FormattedProofData } from './types.js';
 import { ProofOptions, ProofType } from '../../config/index.js';
 
+const VK_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
+
+/**
+ * Asserts that a registered verification key reference is a 32-byte hex hash.
+ */
+const validateVkHash = (vk: unknown): string => {
+  if (typeof vk !== 'string' || !VK_HASH_RE.test(vk)) {
+    throw new Error(
+      'Invalid registered VK hash: expected a 0x-prefixed 32-byte hex string.',
+    );
+  }
+  return vk;
+};
+
 export function format(
   options: ProofOptions,
   proof: unknown,
@@ -82,7 +96,7 @@ export function format(
 
   try {
     if (registeredVk) {
-      formattedVk = { Hash: vk };
+      formattedVk = { Hash: validateVkHash(vk) };
     } else {
       formattedVk = { Vk: processor.formatVk(vk, options) };
     }

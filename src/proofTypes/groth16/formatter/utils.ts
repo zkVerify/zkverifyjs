@@ -36,6 +36,37 @@ export const unstringifyBigInts = (o: unknown): unknown => {
   return o;
 };
 
+/** Base-field (coordinate) and scalar-field (public input) moduli per curve. */
+const FIELD_MODULI: Record<string, { fq: bigint; fr: bigint }> = {
+  bn254: {
+    fq: 0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47n,
+    fr: 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001n,
+  },
+  Bls12_381: {
+    fq: 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn,
+    fr: 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001n,
+  },
+};
+
+const curveForEndianess = (endianess: 'LE' | 'BE'): string =>
+  endianess === 'LE' ? 'bn254' : 'Bls12_381';
+
+/**
+ * Asserts that `value` is a canonical element of the field with the given modulus.
+ *
+ * @throws {Error} If `value` is negative or not below `modulus`.
+ */
+export const requireCanonical = (
+  value: bigint,
+  modulus: bigint,
+  what: string,
+): bigint => {
+  if (value < 0n || value >= modulus) {
+    throw new Error(`${what} is not a canonical field element: ${value}`);
+  }
+  return value;
+};
+
 /**
  * Determines endianess based on the curve type.
  */
@@ -101,7 +132,9 @@ export const formatG1Point = (
   point: string[],
   endianess: 'LE' | 'BE',
 ): string => {
-  const [x, y] = [BigInt(point[0]), BigInt(point[1])];
+  const { fq } = FIELD_MODULI[curveForEndianess(endianess)];
+  const x = requireCanonical(BigInt(point[0]), fq, 'G1 x coordinate');
+  const y = requireCanonical(BigInt(point[1]), fq, 'G1 y coordinate');
   return (
     toHex(x, endianess === 'LE' ? 32 : 48, endianess) +
     toHex(y, endianess === 'LE' ? 32 : 48, endianess).slice(2)
@@ -141,21 +174,35 @@ export const formatG2Point = (
 
 /**
  * Formats a scalar as little-endian hexadecimal string.
+ *
+ * @param scalar - Decimal or hex string.
+ * @param curve - Normalized curve name; when given, the value must be a canonical
+ *   element of that curve's scalar field.
  */
-export const formatScalar = (scalar: string): string =>
-  toHex(BigInt(scalar), 32, 'LE');
+export const formatScalar = (scalar: string, curve?: string): string => {
+  const value = BigInt(scalar);
+  const moduli = curve ? FIELD_MODULI[curve] : undefined;
+  if (moduli) {
+    requireCanonical(value, moduli.fr, 'Public signal');
+  }
+  return toHex(value, 32, 'LE');
+};
 
 /**
  * Formats an array of public signals.
  *
  * @param {string[]} pubs - Array of public signals.
+ * @param {string} [curve] - Normalized curve name for the scalar-field check.
  * @returns {string[]} - Formatted public signals.
  */
-export const formatPublicSignals = (pubs: string[]): string[] => {
+export const formatPublicSignals = (
+  pubs: string[],
+  curve?: string,
+): string[] => {
   if (!Array.isArray(pubs) || pubs.some((p) => typeof p !== 'string')) {
     throw new Error(
       'Invalid public signals format: Expected an array of strings.',
     );
   }
-  return pubs.map(formatScalar);
+  return pubs.map((p) => formatScalar(p, curve));
 };

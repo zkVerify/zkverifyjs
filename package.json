@@ -96,7 +96,6 @@
     "@polkadot/api": "17.0.1",
     "@polkadot/extension-dapp": "0.64.1",
     "async-mutex": "0.5.0",
-    "bignumber.js": "11.1.5",
     "buffer": "6.0.3"
   },
   "devDependencies": {
@@ -142,7 +141,8 @@
     "minimatch@^5": "5.1.9",
     "minimatch@^9": "9.0.9",
     "picomatch@^2": "2.3.2",
-    "underscore": "1.13.8"
+    "underscore": "1.13.8",
+    "handlebars": "4.7.10"
   },
   "sideEffects": [
     "./dist/commonjs/shims/globalBuffer.js",

@@ -217,6 +217,7 @@ const session = await zkVerifySession.start()
         .withWallet({
           source: selectedWallet,
           accountAddress: selectedAccount,
+          appName: "My dApp", // Shown by the wallet extension in its access prompt; defaults to "zkVerify"
         }); // Uses browser session context "window"
 ```
 6. Full Frontend Browser Session (send transactions) with Custom WebSocket:
@@ -1044,6 +1045,7 @@ const extrinsic = await session.createExtrinsicFromHex(extrinsicHex);
 
 - `extrinsicHex`: A string representing the hex-encoded SubmittableExtrinsic to be reconstructed.
 - Returns: A Promise that resolves to a `SubmittableExtrinsic<'promise'>`, allowing you to interact with the reconstructed extrinsic.
+- Only reconstruct hex produced by `createExtrinsicHex` on a host you trust. When an extrinsic is passed to `verify`, `batchVerify` or `optimisticVerify`, the SDK signs it only if it is the `submitProof` call of the verifier pallet for the declared proof type; any other call is rejected.
 
 ## `zkVerifySession.estimateCost`
 
@@ -1145,6 +1147,11 @@ session.subscribe(subscriptions[]);
 
 - `undefined`: Subscribe to all NewAggregationReceipt events across all domains.
 - `{ domainId }`: Subscribe to all receipts for a specific domain.
+
+Notes:
+
+- Attach an `error` listener to the returned emitter. A subscription that fails or times out is reported there, and `error` events are only delivered when a listener is attached.
+- `NewAggregationReceipt` is read from finalized blocks. The other runtime events (`ProofVerified`, `NewProof`, `VkRegistered`, `NewDomain`, `DomainStateChanged`, `AggregationComplete`, `CannotAggregate`) follow the best chain and can be delivered for a block that is later discarded by a fork. Act on `transactionResult`, the `finalized` event or `waitForAggregationReceipt` when finality matters.
 
 ## `zkVerifySession.waitForAggregationReceipt`
 

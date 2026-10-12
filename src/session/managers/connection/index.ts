@@ -73,6 +73,11 @@ export class ConnectionManager {
    * @returns {Promise<void>} A promise that resolves when the session is closed.
    */
   async close(): Promise<void> {
+    if ('accounts' in this.connection) {
+      for (const pair of this.connection.accounts.values()) {
+        lockPair(pair);
+      }
+    }
     return closeSession(this.connection.provider);
   }
 

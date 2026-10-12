@@ -10,8 +10,10 @@ import { VerifyInput } from '../verify/types.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types.js';
 import {
+  assertSubmitProofCall,
   emitError,
   getKeyringAccountIfAvailable,
+  toSubmittableExtrinsic,
 } from '../../utils/helpers/index.js';
 
 export const batchVerify = async (
@@ -53,7 +55,12 @@ export const batchVerify = async (
 
         calls.push(extrinsic);
       } else if ('extrinsic' in item && item.extrinsic) {
-        calls.push(item.extrinsic);
+        calls.push(
+          assertSubmitProofCall(
+            toSubmittableExtrinsic(item.extrinsic, api),
+            options.proofOptions.proofType,
+          ),
+        );
       } else {
         throw new Error('Missing both proofData and extrinsic.');
       }

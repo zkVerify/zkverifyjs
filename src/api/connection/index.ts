@@ -49,10 +49,13 @@ const validateWebSocketUrl = (config: NetworkConfig): string => {
     parsed = new URL(url);
   } catch {
     throw new Error(
-      `Invalid WebSocket URL for network ${host}: "${url}". ` +
+      `Invalid WebSocket URL for network ${host}. ` +
         `Expected a URL such as "wss://your-node.example:443".`,
     );
   }
+
+  // Scheme and host only: the raw string may carry credentials or API keys.
+  const redacted = `${parsed.protocol}//${parsed.host}`;
 
   if (parsed.protocol === 'wss:') {
     return url;
@@ -64,7 +67,7 @@ const validateWebSocketUrl = (config: NetworkConfig): string => {
     // risk is surfaced instead, and `allowInsecureWebSocket` silences the warning.
     if (!isLoopbackHost(parsed.hostname) && !allowInsecureWebSocket) {
       console.warn(
-        `zkverifyjs: connecting to network ${host} over unencrypted ws:// ("${url}"). ` +
+        `zkverifyjs: connecting to network ${host} over unencrypted ws:// (${redacted}). ` +
           `On a plaintext connection an attacker in a network position can forge the ` +
           `chain state this SDK reports, including proof verification results. ` +
           `Prefer wss://. Set allowInsecureWebSocket: true to silence this warning ` +
@@ -77,7 +80,7 @@ const validateWebSocketUrl = (config: NetworkConfig): string => {
 
   throw new Error(
     `Unsupported WebSocket protocol "${parsed.protocol}" for network ${host} ` +
-      `("${url}"). Expected wss:// (or ws:// for local development).`,
+      `(${redacted}). Expected wss:// (or ws:// for local development).`,
   );
 };
 

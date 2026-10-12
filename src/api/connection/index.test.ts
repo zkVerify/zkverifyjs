@@ -196,6 +196,40 @@ describe('establishConnection', () => {
       }
     });
 
+    it('never prints credentials or paths from the endpoint URL', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        await establishConnection(
+          customConfig('ws://ops:S3cret@node.example.com:9944/key?token=abc'),
+        );
+        const message = String(warn.mock.calls[0][0]);
+        expect(message).toContain('ws://node.example.com:9944');
+        expect(message).not.toContain('S3cret');
+        expect(message).not.toContain('ops');
+        expect(message).not.toContain('/key');
+        expect(message).not.toContain('token=abc');
+
+        await expect(
+          establishConnection(
+            customConfig('https://ops:S3cret@node.example.com/key?token=abc'),
+          ),
+        ).rejects.toThrow(
+          expect.objectContaining({
+            message: expect.not.stringContaining('S3cret'),
+          }),
+        );
+        await expect(
+          establishConnection(customConfig('ws://ops:S3cret@not a url')),
+        ).rejects.toThrow(
+          expect.objectContaining({
+            message: expect.not.stringContaining('S3cret'),
+          }),
+        );
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
     it('does not warn when allowInsecureWebSocket is set', async () => {
       const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
       try {

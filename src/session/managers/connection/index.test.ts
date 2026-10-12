@@ -47,6 +47,21 @@ describe('ConnectionManager key hygiene', () => {
     expect(() => pair.sign(new Uint8Array([1]))).toThrow();
   });
 
+  it('locks every keypair when the session is closed', async () => {
+    const alice = keyring.addFromUri('//Alice');
+    const bob = keyring.addFromUri('//Bob');
+    const manager = makeManager([alice, bob]);
+    (manager.connectionDetails as AccountConnection).provider = {
+      disconnect: async () => {},
+      isConnected: false,
+    } as unknown as WsProvider;
+
+    await manager.close();
+
+    expect(alice.isLocked).toBe(true);
+    expect(bob.isLocked).toBe(true);
+  });
+
   it('leaves other accounts usable after one is removed', async () => {
     const alice = keyring.addFromUri('//Alice');
     const bob = keyring.addFromUri('//Bob');

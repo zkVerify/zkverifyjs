@@ -70,8 +70,16 @@ Out of scope for this repository (report to the relevant project instead):
   network you control.
 - **`optimisticVerify` transmits a signed payload.** `system.dryRun` verifies
   signatures, so optimistic verification signs a real extrinsic and sends it to the RPC
-  endpoint. It is signed with a short mortal era so it expires within a few blocks,
-  but treat the endpoint you dry-run against as trusted.
+  endpoint. It is signed with a mortal era of 64 blocks (about six minutes), so a
+  captured payload stops being valid after that, but treat the endpoint you dry-run
+  against as trusted.
+- **Pre-built extrinsics are checked before signing.** The `{ extrinsic }` input form
+  of `verify`, `batchVerify` and `optimisticVerify` only signs the `submitProof` call
+  of the verifier pallet for the declared proof type; any other call is rejected.
+  Only reconstruct extrinsics from hex produced by `createExtrinsicHex` on a host you
+  trust.
 - **Seed phrases stay in memory.** Accounts added to a session are held as
-  `KeyringPair`s for the lifetime of the session. Call `session.close()` when done, and
-  never pass a mainnet mnemonic to a session pointed at an untrusted endpoint.
+  `KeyringPair`s for the lifetime of the session. `session.close()` and
+  `removeAccount` lock the pairs, zeroing their secret keys; call `close()` when
+  done, and never pass a mainnet mnemonic to a session pointed at an untrusted
+  endpoint.

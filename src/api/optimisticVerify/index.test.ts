@@ -26,6 +26,7 @@ jest.mock('../../utils/helpers/index.js', () => ({
     message: 'ok',
   })),
   toSubmittableExtrinsic: jest.fn(() => mockTransaction),
+  assertSubmitProofCall: jest.fn((extrinsic: unknown) => extrinsic),
 }));
 
 const mockTransaction = {
@@ -92,13 +93,18 @@ describe('optimisticVerify signing', () => {
     expect(signOptions()).not.toHaveProperty('era', 0);
   });
 
-  it('omits era when dry-running against the current head, so polkadot-js applies its default mortal era', async () => {
-    const result = await optimisticVerify(connection, baseOptions, input);
+  it('anchors the era at the parent of the best block when no block is pinned', async () => {
+    await optimisticVerify(connection, baseOptions, input);
 
-    expect(result.success).toBe(true);
-    expect(signOptions()).toEqual({ nonce: -1 });
-    expect(signOptions().era).toBeUndefined();
-    // dryRun at head takes no block hash
+    expect(api.rpc.chain.getBlockHash).toHaveBeenCalledWith();
+    expect(api.rpc.chain.getHeader).toHaveBeenCalledWith('0xhashofblock500');
+    const opts = signOptions();
+    expect(opts.blockHash).toBe('0xparenthash');
+    expect(opts.era).toEqual({
+      type: 'ExtrinsicEra',
+      value: { current: 999, period: 64 },
+    });
+    // The dry run itself still executes against the current head.
     expect(api.rpc.system.dryRun).toHaveBeenCalledWith('0xsignedpayload');
   });
 

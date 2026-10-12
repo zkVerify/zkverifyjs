@@ -3,7 +3,12 @@ import {
   FflonkPublicSignals,
   FflonkVerificationKey,
 } from '../types.js';
-import BigNumber from 'bignumber.js';
+import { requireCanonical, toHex } from '../../groth16/formatter/utils.js';
+
+const BN254_FQ =
+  0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47n;
+const BN254_FR =
+  0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001n;
 
 /**
  * Formats the FFLONK verification key.
@@ -37,15 +42,21 @@ export const formatVk = (
 };
 
 /**
- * Converts a number string to a 32-byte hexadecimal string.
+ * Converts a canonical field element to a 32-byte big-endian hexadecimal string
+ * without the `0x` prefix.
  *
  * @param {string} numStr - The number string to convert.
+ * @param {bigint} modulus - Field modulus the value must be below.
+ * @param {string} what - Label used in the error message.
  * @returns {string} - The 32-byte hexadecimal string.
+ * @throws {Error} If the value is negative or not below `modulus`.
  */
-export const to32ByteHex = (numStr: string): string => {
-  const hexStr = BigInt(numStr).toString(16);
-  return hexStr.padStart(64, '0');
-};
+export const to32ByteHex = (
+  numStr: string,
+  modulus: bigint,
+  what: string,
+): string =>
+  toHex(requireCanonical(BigInt(numStr), modulus, what), 32, 'BE').slice(2);
 
 /**
  * Formats the FFLONK proof data.
@@ -54,7 +65,8 @@ export const to32ByteHex = (numStr: string): string => {
  * @returns {string} - The formatted proof data as a single hexadecimal string.
  */
 export const formatProof = (proof: FflonkProof): string => {
-  const formatG1 = (g1: string[]): string[] => g1.slice(0, 2).map(to32ByteHex);
+  const formatG1 = (g1: string[]): string[] =>
+    g1.slice(0, 2).map((v) => to32ByteHex(v, BN254_FQ, 'G1 coordinate'));
 
   const formattedPolynomials = [
     ...formatG1(proof.polynomials.C1),
@@ -80,7 +92,7 @@ export const formatProof = (proof: FflonkProof): string => {
     proof.evaluations.t1w,
     proof.evaluations.t2w,
     proof.evaluations.inv,
-  ].map(to32ByteHex);
+  ].map((v) => to32ByteHex(v, BN254_FR, 'Evaluation'));
 
   const combined = [...formattedPolynomials, ...formattedEvaluations];
   if (combined.length !== 24) {
@@ -106,5 +118,14 @@ export const formatProof = (proof: FflonkProof): string => {
  * @returns {string} - The formatted hexadecimal string of the first public signal, padded to 64 characters.
  */
 export const formatPubs = (pubs: FflonkPublicSignals): string => {
-  return '0x' + BigNumber(pubs[0]).toString(16).padStart(64, '0');
+  if (
+    !Array.isArray(pubs) ||
+    pubs.length === 0 ||
+    typeof pubs[0] !== 'string'
+  ) {
+    throw new Error(
+      'Invalid public signals format: Expected a non-empty array of strings.',
+    );
+  }
+  return '0x' + to32ByteHex(pubs[0], BN254_FR, 'Public signal');
 };

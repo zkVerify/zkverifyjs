@@ -14,15 +14,15 @@ describe('TEEProcessor', () => {
     expect(
       processor.formatVk(
         {
-          tcbResponse: '0xtcb',
-          certificates: '0xcertificates',
+          tcbResponse: '0x7c',
+          certificates: '0xce',
         },
         options,
       ),
     ).toEqual({
       Intel: {
-        tcb_response: '0xtcb',
-        certificates: '0xcertificates',
+        tcb_response: '0x7c',
+        certificates: '0xce',
       },
     });
   });
@@ -31,16 +31,16 @@ describe('TEEProcessor', () => {
     expect(
       processor.formatVk(
         {
-          tcbResponse: '0xtcb',
-          certificates: '0xcertificates',
+          tcbResponse: '0x7c',
+          certificates: '0xce',
         },
         {
           proofType: ProofType.tee,
         },
       ),
     ).toEqual({
-      tcbResponse: '0xtcb',
-      certificates: '0xcertificates',
+      tcbResponse: '0x7c',
+      certificates: '0xce',
     });
   });
 });

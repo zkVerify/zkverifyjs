@@ -24,6 +24,11 @@ export interface zkVerifySessionOptions {
 export interface WalletOptions {
   source: string;
   accountAddress: string;
+  /**
+   * Name the browser extension shows the user when asking whether to grant this
+   * application access. Defaults to `'zkVerify'`; dApps should set their own name.
+   */
+  appName?: string;
 }
 
 export interface VerifyOptions {

@@ -312,6 +312,7 @@ describe('verify', () => {
       toHex: jest.fn(),
       signAsync: jest.fn(),
       send: jest.fn(),
+      method: { section: 'settlementGroth16Pallet', method: 'submitProof' },
     } as unknown as SubmittableExtrinsic<'promise'>;
 
     const input: VerifyInput = { extrinsic: mockExtrinsic };
@@ -341,6 +342,7 @@ describe('verify', () => {
       toHex: jest.fn(),
       signAsync: jest.fn(),
       send: jest.fn(),
+      method: { section: 'settlementGroth16Pallet', method: 'submitProof' },
     } as unknown as SubmittableExtrinsic<'promise'>;
 
     const input: VerifyInput = {
@@ -410,6 +412,24 @@ describe('verify', () => {
     ).rejects.toThrow('Transaction error');
 
     expect(errorListener).toHaveBeenCalledWith(new Error('Transaction error'));
+  });
+
+  it('refuses to sign a pre-built extrinsic that is not the declared submitProof call', async () => {
+    const foreignExtrinsic = {
+      toHex: jest.fn(),
+      signAsync: jest.fn(),
+      send: jest.fn(),
+      method: { section: 'balances', method: 'transferAll' },
+    } as unknown as SubmittableExtrinsic<'promise'>;
+
+    await expect(
+      verify(mockAccountConnection, mockOptions, emitter, {
+        extrinsic: foreignExtrinsic,
+      }),
+    ).rejects.toThrow(
+      "Refusing to sign balances.transferAll: expected settlementGroth16Pallet.submitProof for proof type 'groth16'.",
+    );
+    expect(handleTransaction).not.toHaveBeenCalled();
   });
 
   it('should throw an error and call emitter.removeAllListeners if both proofData and extrinsic are missing', async () => {
