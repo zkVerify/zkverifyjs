@@ -5,11 +5,21 @@ import { EventEmitter } from 'events';
 import { ZkVerifyEvents } from '../../enums.js';
 import { NewAggregationEventSubscriptionOptions } from './types.js';
 import { Codec } from '@polkadot/types/types';
-import { emitError } from '../../utils/helpers/index.js';
 
 type EmitterWithCleanups = EventEmitter & {
   _cleanups?: Array<() => void>;
 };
+
+/**
+ * Rejection reason for a receipt subscription ended by an explicit
+ * `unsubscribe(emitter)` rather than by a failure.
+ */
+export class SubscriptionCancelledError extends Error {
+  constructor() {
+    super('Unsubscribed before a matching NewAggregationReceipt was received.');
+    this.name = 'SubscriptionCancelledError';
+  }
+}
 
 function registerCleanup(
   emitter: EventEmitter,
@@ -41,6 +51,10 @@ interface FinalizedEventsSubscriber {
  */
 interface FinalizedEventsFeed {
   subscribers: Set<FinalizedEventsSubscriber>;
+  /** Subscribers that have received at least one block from this feed. */
+  delivered: WeakSet<FinalizedEventsSubscriber>;
+  /** Most recent finalized block, replayed to subscribers that join later. */
+  latest?: { blockHash: string; events: Vec<EventRecord> };
   unsubscribe?: () => void;
   closed: boolean;
 }
@@ -50,6 +64,7 @@ const finalizedEventsFeeds = new WeakMap<ApiPromise, FinalizedEventsFeed>();
 const closeFeed = (api: ApiPromise, feed: FinalizedEventsFeed): void => {
   if (feed.closed) return;
   feed.closed = true;
+  feed.latest = undefined;
   if (finalizedEventsFeeds.get(api) === feed) {
     finalizedEventsFeeds.delete(api);
   }
@@ -63,9 +78,25 @@ const closeFeed = (api: ApiPromise, feed: FinalizedEventsFeed): void => {
   }
 };
 
+const deliver = (
+  feed: FinalizedEventsFeed,
+  subscriber: FinalizedEventsSubscriber,
+  blockHash: string,
+  events: Vec<EventRecord>,
+): void => {
+  if (!feed.subscribers.has(subscriber)) return;
+  feed.delivered.add(subscriber);
+  try {
+    subscriber.onEvents(blockHash, events);
+  } catch (error) {
+    subscriber.onError(error);
+  }
+};
+
 const createFeed = (api: ApiPromise): FinalizedEventsFeed => {
   const feed: FinalizedEventsFeed = {
     subscribers: new Set(),
+    delivered: new WeakSet(),
     closed: false,
   };
 
@@ -97,14 +128,11 @@ const createFeed = (api: ApiPromise): FinalizedEventsFeed => {
 
     if (feed.closed) return;
 
+    feed.latest = { blockHash, events };
+
     // Snapshot: a subscriber may resolve and remove itself while being notified.
     for (const subscriber of Array.from(feed.subscribers)) {
-      if (!feed.subscribers.has(subscriber)) continue;
-      try {
-        subscriber.onEvents(blockHash, events);
-      } catch (error) {
-        subscriber.onError(error);
-      }
+      deliver(feed, subscriber, blockHash, events);
     }
   };
 
@@ -169,6 +197,15 @@ export function subscribeFinalizedEvents(
   const activeFeed = feed;
   activeFeed.subscribers.add(subscriber);
 
+  // polkadot-js replays the latest finalized head to each new heads subscriber;
+  // a subscriber joining an existing feed gets the same starting point.
+  queueMicrotask(() => {
+    const latest = activeFeed.latest;
+    if (latest && !activeFeed.delivered.has(subscriber)) {
+      deliver(activeFeed, subscriber, latest.blockHash, latest.events);
+    }
+  });
+
   return () => {
     activeFeed.subscribers.delete(subscriber);
     if (activeFeed.subscribers.size === 0) {
@@ -185,8 +222,8 @@ export function subscribeFinalizedEvents(
  * - If neither is provided, listens to all receipts across all domains.
  * - Throws if `aggregationId` is provided without a `domainId`.
  *
- * Errors are reported on `emitter` as `ZkVerifyEvents.ErrorEvent` only when a listener
- * is attached, and always through the returned promise's rejection.
+ * Failures reject the returned promise; an explicit `unsubscribe(emitter)` rejects
+ * it with `SubscriptionCancelledError`.
  *
  * @param {ApiPromise} api - The Polkadot.js API instance.
  * @param callback
@@ -244,19 +281,14 @@ export async function subscribeToNewAggregationReceipts(
       }
     };
 
+    // Failures are reported through the returned promise only; callers that
+    // surface them as events do so in one place.
     const fail = (error: unknown) => {
-      emitError(emitter, error);
       safeReject(error);
     };
 
-    // An explicit `unsubscribe(emitter)` settles the promise; it is the caller's own
-    // action, so it is not reported as an ErrorEvent.
     const cancel = () => {
-      safeReject(
-        new Error(
-          'Unsubscribed before a matching NewAggregationReceipt was received.',
-        ),
-      );
+      safeReject(new SubscriptionCancelledError());
     };
 
     unregisterCleanup = registerCleanup(emitter, cancel);

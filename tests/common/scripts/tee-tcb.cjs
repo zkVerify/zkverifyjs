@@ -8,6 +8,9 @@
 /** Refresh when the fixture's `nextUpdate` is closer than this (ms). */
 const REFRESH_MARGIN_MS = 24 * 60 * 60 * 1000;
 
+/** Upper bound on an accepted TCB response body (bytes). */
+const MAX_TCB_RESPONSE_BYTES = 256 * 1024;
+
 /**
  * Decodes the `tcbInfo` JSON embedded (hex-encoded) in a TEE fixture.
  *
@@ -73,9 +76,24 @@ function shouldRefreshTcb(fixture, nowMs, options = {}) {
  * @param {string} tcbJson - Raw JSON body from the Intel TCB API.
  */
 function applyTcbResponse(fixture, tcbJson) {
+  if (typeof tcbJson !== 'string') {
+    throw new Error('TCB response must be a string');
+  }
+  if (Buffer.byteLength(tcbJson, 'utf8') > MAX_TCB_RESPONSE_BYTES) {
+    throw new Error('TCB response exceeds the maximum accepted size');
+  }
   const parsed = JSON.parse(tcbJson);
-  if (!parsed || typeof parsed !== 'object' || !parsed.tcbInfo) {
+  const info = parsed && typeof parsed === 'object' ? parsed.tcbInfo : undefined;
+  if (!info || typeof info !== 'object') {
     throw new Error('TCB response does not contain tcbInfo');
+  }
+  for (const field of ['issueDate', 'nextUpdate']) {
+    if (typeof info[field] !== 'string' || !Number.isFinite(Date.parse(info[field]))) {
+      throw new Error(`TCB response has an invalid tcbInfo.${field}`);
+    }
+  }
+  if (typeof parsed.signature !== 'string' || !/^[0-9a-fA-F]+$/.test(parsed.signature)) {
+    throw new Error('TCB response has an invalid signature');
   }
   return {
     ...fixture,
@@ -88,6 +106,7 @@ function applyTcbResponse(fixture, tcbJson) {
 
 module.exports = {
   REFRESH_MARGIN_MS,
+  MAX_TCB_RESPONSE_BYTES,
   decodeTcbInfo,
   shouldRefreshTcb,
   applyTcbResponse,

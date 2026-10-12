@@ -1,4 +1,5 @@
 import {
+  SubscriptionCancelledError,
   subscribeToNewAggregationReceipts,
   unsubscribe,
 } from '../../../api/aggregation/index.js';
@@ -57,6 +58,9 @@ export class EventManager {
   // the manager has moved on — closing this avoids cross-cycle leaks where
   // an old handshake completes after a re-subscribe and orphans its sub.
   private systemEventsGeneration = 0;
+  // Bumped per NewAggregationReceipt subscription so the settle handlers of a
+  // subscription replaced by unsubscribe()/subscribe() leave the new one alone.
+  private receiptSubscriptionGeneration = 0;
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
@@ -97,8 +101,9 @@ export class EventManager {
       }
 
       switch (event) {
-        case ZkVerifyEvents.NewAggregationReceipt:
+        case ZkVerifyEvents.NewAggregationReceipt: {
           this.subscribedEvents.add(event);
+          const generation = ++this.receiptSubscriptionGeneration;
           subscribeToNewAggregationReceipts(
             api,
             (data) => {
@@ -109,13 +114,17 @@ export class EventManager {
             this.emitter,
           )
             .catch((error: unknown) => {
+              if (error instanceof SubscriptionCancelledError) return;
               emitError(this.emitter, error);
             })
             .finally(() => {
               // Subscription ended (matched, timed out or failed); allow a new one.
-              this.subscribedEvents.delete(event);
+              if (generation === this.receiptSubscriptionGeneration) {
+                this.subscribedEvents.delete(event);
+              }
             });
           break;
+        }
 
         case ZkVerifyEvents.ProofVerified:
         case ZkVerifyEvents.NewProof:

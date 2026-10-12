@@ -4,10 +4,18 @@ import { describe, it, expect } from '@jest/globals';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const {
   REFRESH_MARGIN_MS,
+  MAX_TCB_RESPONSE_BYTES,
   decodeTcbInfo,
   shouldRefreshTcb,
   applyTcbResponse,
 } = require('./tee-tcb.cjs');
+
+const tcbBody = (issueDate: string, nextUpdate: string, extra = {}) =>
+  JSON.stringify({
+    tcbInfo: { issueDate, nextUpdate },
+    signature: 'abcdef0123',
+    ...extra,
+  });
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -78,12 +86,7 @@ describe('refresh-tee-tcb helpers', () => {
 
   it('applyTcbResponse replaces only tcbResponse and round-trips the JSON', () => {
     const fixture = makeFixture('2026-10-31T00:00:00Z');
-    const fresh = JSON.stringify({
-      tcbInfo: {
-        issueDate: '2026-11-01T00:00:00Z',
-        nextUpdate: '2026-12-01T00:00:00Z',
-      },
-    });
+    const fresh = tcbBody('2026-11-01T00:00:00Z', '2026-12-01T00:00:00Z');
 
     const updated = applyTcbResponse(fixture, fresh);
 
@@ -98,8 +101,36 @@ describe('refresh-tee-tcb helpers', () => {
   });
 
   it('applyTcbResponse rejects a body that is not a TCB response', () => {
+    const fixture = makeFixture('2026-10-31T00:00:00Z');
+    expect(() => applyTcbResponse(fixture, '{}')).toThrow(
+      /does not contain tcbInfo/,
+    );
+    expect(() => applyTcbResponse(fixture, 'not json')).toThrow();
+    expect(() => applyTcbResponse(fixture, undefined)).toThrow(
+      /must be a string/,
+    );
+  });
+
+  it('applyTcbResponse rejects malformed dates, signatures and oversized bodies', () => {
+    const fixture = makeFixture('2026-10-31T00:00:00Z');
+
     expect(() =>
-      applyTcbResponse(makeFixture('2026-10-31T00:00:00Z'), '{}'),
-    ).toThrow(/does not contain tcbInfo/);
+      applyTcbResponse(fixture, tcbBody('soon', '2026-12-01T00:00:00Z')),
+    ).toThrow(/invalid tcbInfo.issueDate/);
+    expect(() =>
+      applyTcbResponse(
+        fixture,
+        tcbBody('2026-11-01T00:00:00Z', '2026-12-01T00:00:00Z', {
+          signature: 'not-hex!',
+        }),
+      ),
+    ).toThrow(/invalid signature/);
+
+    const oversized = tcbBody('2026-11-01T00:00:00Z', '2026-12-01T00:00:00Z', {
+      padding: 'x'.repeat(MAX_TCB_RESPONSE_BYTES),
+    });
+    expect(() => applyTcbResponse(fixture, oversized)).toThrow(
+      /maximum accepted size/,
+    );
   });
 });
