@@ -7,8 +7,25 @@ import {
   UltrahonkVersion,
 } from '../../src';
 import { generateTestPromises } from './runners';
+import { disabledProofTypes } from './options';
 
 describe('generateTestPromises', () => {
+  it('skips proof types whose verifier pallet is disabled', async () => {
+    const proofOptions: ProofOptions[] = [];
+
+    generateTestPromises(async (options) => {
+      proofOptions.push(options);
+    });
+
+    const generated = new Set(proofOptions.map((o) => o.proofType));
+
+    expect(disabledProofTypes.size).toBeGreaterThan(0);
+    for (const proofType of disabledProofTypes) {
+      expect(generated.has(proofType)).toBe(false);
+    }
+    expect(generated.has(ProofType.groth16)).toBe(true);
+  });
+
   it('includes legacy fallback Ultrahonk and TEE proof options', async () => {
     const proofOptions: ProofOptions[] = [];
 

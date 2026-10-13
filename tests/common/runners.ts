@@ -5,7 +5,7 @@ import {
     performVKRegistrationAndVerification,
     performVerifyTransaction
 } from "./utils";
-import { proofTypeVersionExclusions, testOptions } from "./options";
+import { disabledProofTypes, proofTypeVersionExclusions, testOptions } from "./options";
 
 import { walletPool } from "./walletPool";
 import { zkVerifySession } from "../../src";
@@ -98,6 +98,10 @@ export const generateTestPromises = (
     const promises: Promise<void>[] = [];
 
     testOptions.proofTypes.forEach((proofType) => {
+        if (disabledProofTypes.has(proofType)) {
+            return;
+        }
+
         const excludedVersions = proofTypeVersionExclusions[proofType] || [];
 
         switch (proofType) {
