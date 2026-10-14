@@ -1,18 +1,26 @@
 #!/usr/bin/env node
 
 /**
- * Fetches fresh Intel TDX TCB info and updates the TEE test fixture.
+ * Keeps the TEE test fixture's Intel TDX TCB info current.
  *
- * The TCB info expires roughly every 30 days, so this script should be run
- * before TEE integration tests to ensure the fixture data is current.
+ * The TCB info expires roughly every 30 days. This runs as `pretest`, but only
+ * rewrites the committed fixture when its data is expired or within a day of
+ * expiring, so a routine test run is deterministic and does not need the network.
+ * A fetch failure is a warning, never a test-suite failure.
  *
- * Usage: node tests/common/scripts/refresh-tee-tcb.mjs
+ * Usage:
+ *   node tests/common/scripts/refresh-tee-tcb.mjs            # refresh only if stale
+ *   FORCE_TEE_TCB_REFRESH=1 node tests/common/scripts/refresh-tee-tcb.mjs
  */
 
 import { readFileSync, writeFileSync } from 'fs';
 import { get } from 'https';
+import { createRequire } from 'module';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+const require = createRequire(import.meta.url);
+const { shouldRefreshTcb, applyTcbResponse } = require('./tee-tcb.cjs');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -35,17 +43,29 @@ function fetchTcbInfo() {
   });
 }
 
-const tcbJson = await fetchTcbInfo();
-const parsed = JSON.parse(tcbJson);
-
-console.log(
-  `TCB issueDate: ${parsed.tcbInfo.issueDate}, nextUpdate: ${parsed.tcbInfo.nextUpdate}`,
-);
-
-const tcbHex = '0x' + Buffer.from(tcbJson, 'utf8').toString('hex');
-
 const teeData = JSON.parse(readFileSync(TEE_JSON_PATH, 'utf8'));
-teeData.vk.tcbResponse = tcbHex;
-writeFileSync(TEE_JSON_PATH, JSON.stringify(teeData, null, 2) + '\n');
+const force = process.env.FORCE_TEE_TCB_REFRESH === '1';
+const decision = shouldRefreshTcb(teeData, Date.now(), { force });
 
-console.log(`Updated ${TEE_JSON_PATH}`);
+if (!decision.refresh) {
+  console.log(`TEE TCB fixture up to date (${decision.reason}); not refreshing.`);
+  process.exit(0);
+}
+
+console.log(`Refreshing TEE TCB fixture (${decision.reason})...`);
+
+try {
+  const tcbJson = await fetchTcbInfo();
+  const updated = applyTcbResponse(teeData, tcbJson);
+  const parsed = JSON.parse(tcbJson);
+  console.log(
+    `TCB issueDate: ${parsed.tcbInfo.issueDate}, nextUpdate: ${parsed.tcbInfo.nextUpdate}`,
+  );
+  writeFileSync(TEE_JSON_PATH, JSON.stringify(updated, null, 2) + '\n');
+  console.log(`Updated ${TEE_JSON_PATH}`);
+} catch (error) {
+  console.warn(
+    `WARNING: could not refresh TEE TCB fixture (${error instanceof Error ? error.message : String(error)}). ` +
+      `Continuing with the committed fixture; TEE tests may fail if it has expired.`,
+  );
+}

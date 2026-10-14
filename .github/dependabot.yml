@@ -30,6 +30,13 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    # Majors are ignored to keep routine churn down. Two consequences worth knowing:
+    #  1. A fix that ships only in a new major never raises a PR, so it stays invisible
+    #     here — run `npm audit` periodically rather than relying on Dependabot alone.
+    #  2. Dependabot cannot touch anything pinned in the root `overrides` block. Those
+    #     pins go stale silently: several had drifted into a vulnerable range by the
+    #     time they were caught, and an override blocks `npm audit fix` too. Re-check
+    #     each override against current advisories when auditing.
     ignore:
       - dependency-name: "*"
         update-types:

@@ -1,7 +1,21 @@
 import { ProofProcessor } from '../../types.js';
-import { getProofProcessor } from '../../utils/helpers/index.js';
+import { getProofProcessor, safeSnippet } from '../../utils/helpers/index.js';
 import { FormattedProofData } from './types.js';
 import { ProofOptions, ProofType } from '../../config/index.js';
+
+const VK_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
+
+/**
+ * Asserts that a registered verification key reference is a 32-byte hex hash.
+ */
+const validateVkHash = (vk: unknown): string => {
+  if (typeof vk !== 'string' || !VK_HASH_RE.test(vk)) {
+    throw new Error(
+      'Invalid registered VK hash: expected a 0x-prefixed 32-byte hex string.',
+    );
+  }
+  return vk;
+};
 
 export function format(
   options: ProofOptions,
@@ -65,12 +79,8 @@ export function format(
       formattedProof = result;
     }
   } catch (error) {
-    const snippet =
-      typeof proof === 'string'
-        ? proof.slice(0, 50)
-        : JSON.stringify(proof).slice(0, 50);
     throw new Error(
-      `Failed to format ${options.proofType} proof: ${error instanceof Error ? error.message : 'Unknown error'}. Proof snippet: "${snippet}..."`,
+      `Failed to format ${options.proofType} proof: ${error instanceof Error ? error.message : 'Unknown error'}. Proof snippet: "${safeSnippet(proof)}..."`,
     );
   }
 
@@ -78,28 +88,21 @@ export function format(
     try {
       formattedPubs = processor.formatPubs(publicSignals, options);
     } catch (error) {
-      const pubsSnippet = Array.isArray(publicSignals)
-        ? JSON.stringify(publicSignals).slice(0, 50)
-        : publicSignals?.toString().slice(0, 50);
       throw new Error(
-        `Failed to format ${options.proofType} public signals: ${error instanceof Error ? error.message : 'Unknown error'}. Public signals snippet: "${pubsSnippet}..."`,
+        `Failed to format ${options.proofType} public signals: ${error instanceof Error ? error.message : 'Unknown error'}. Public signals snippet: "${safeSnippet(publicSignals)}..."`,
       );
     }
   }
 
   try {
     if (registeredVk) {
-      formattedVk = { Hash: vk };
+      formattedVk = { Hash: validateVkHash(vk) };
     } else {
       formattedVk = { Vk: processor.formatVk(vk, options) };
     }
   } catch (error) {
-    const vkSnippet =
-      typeof vk === 'string'
-        ? vk.slice(0, 50)
-        : JSON.stringify(vk).slice(0, 50);
     throw new Error(
-      `Failed to format ${options.proofType} verification key: ${error instanceof Error ? error.message : 'Unknown error'}. Verification key snippet: "${vkSnippet}..."`,
+      `Failed to format ${options.proofType} verification key: ${error instanceof Error ? error.message : 'Unknown error'}. Verification key snippet: "${safeSnippet(vk)}..."`,
     );
   }
 
@@ -124,12 +127,8 @@ export function formatVk(options: ProofOptions, vk: unknown): unknown {
   try {
     return processor.formatVk(vk, options);
   } catch (error) {
-    const vkSnippet =
-      typeof vk === 'string'
-        ? vk.slice(0, 50)
-        : JSON.stringify(vk).slice(0, 50);
     throw new Error(
-      `Failed to format ${options.proofType} verification key: ${error instanceof Error ? error.message : 'Unknown error'}. Verification key snippet: "${vkSnippet}..."`,
+      `Failed to format ${options.proofType} verification key: ${error instanceof Error ? error.message : 'Unknown error'}. Verification key snippet: "${safeSnippet(vk)}..."`,
     );
   }
 }

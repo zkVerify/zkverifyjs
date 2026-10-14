@@ -18,9 +18,12 @@ function validateSeedPhrase(seed: string, isCustomNetwork: boolean): void {
 
   if (trimmed.startsWith('//')) {
     if (!isCustomNetwork) {
+      // The SURI itself is deliberately not echoed — it is key-shaped input, and
+      // reproducing it here would place it into any log that captures the error.
       throw new Error(
-        `Dev account SURI '${trimmed}' is not valid on Volta or zkVerify mainnet. ` +
-          `Use a real BIP39 mnemonic, or connect via .Custom() for local dev testing.`,
+        `Dev account SURIs (e.g. '//Alice') are not valid on Volta or zkVerify ` +
+          `mainnet. Use a real BIP39 mnemonic, or connect via .Custom() for local ` +
+          `dev testing.`,
       );
     }
     return;

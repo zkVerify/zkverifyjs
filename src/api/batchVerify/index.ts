@@ -3,13 +3,18 @@ import { AccountConnection, WalletConnection } from '../connection/types.js';
 import { EventEmitter } from 'events';
 import { BatchVerifyTransactionInfo } from '../../types.js';
 import { VerifyOptions } from '../../session/types.js';
-import { TransactionType, ZkVerifyEvents } from '../../enums.js';
+import { TransactionType } from '../../enums.js';
 import { format } from '../format/index.js';
 import { createSubmitProofExtrinsic } from '../extrinsic/index.js';
 import { VerifyInput } from '../verify/types.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FormattedProofData } from '../format/types.js';
-import { getKeyringAccountIfAvailable } from '../../utils/helpers/index.js';
+import {
+  assertSubmitProofCall,
+  emitError,
+  getKeyringAccountIfAvailable,
+  toSubmittableExtrinsic,
+} from '../../utils/helpers/index.js';
 
 export const batchVerify = async (
   connection: AccountConnection | WalletConnection,
@@ -50,7 +55,12 @@ export const batchVerify = async (
 
         calls.push(extrinsic);
       } else if ('extrinsic' in item && item.extrinsic) {
-        calls.push(item.extrinsic);
+        calls.push(
+          assertSubmitProofCall(
+            toSubmittableExtrinsic(item.extrinsic, api),
+            options.proofOptions.proofType,
+          ),
+        );
       } else {
         throw new Error('Missing both proofData and extrinsic.');
       }
@@ -68,7 +78,7 @@ export const batchVerify = async (
 
   if (calls.length === 0) {
     const err = new Error('No valid proofs provided for batch verification.');
-    emitter.emit(ZkVerifyEvents.ErrorEvent, err);
+    emitError(emitter, err);
     emitter.removeAllListeners();
     throw err;
   }
@@ -104,7 +114,7 @@ export const batchVerify = async (
 
     return result as BatchVerifyTransactionInfo;
   } catch (error) {
-    emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+    emitError(emitter, error);
     emitter.removeAllListeners();
     throw error;
   }

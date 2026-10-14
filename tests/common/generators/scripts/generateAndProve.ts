@@ -1,4 +1,8 @@
-import execa from 'execa';
+import execaDefault from 'execa';
+
+// Resolve binaries such as snarkjs from node_modules/.bin first.
+const execa = (file: string, args: string[]) =>
+    execaDefault(file, args, { preferLocal: true });
 import fs from 'fs-extra';
 import path from 'path';
 import crypto from 'crypto';

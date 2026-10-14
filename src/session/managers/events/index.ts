@@ -1,4 +1,5 @@
 import {
+  SubscriptionCancelledError,
   subscribeToNewAggregationReceipts,
   unsubscribe,
 } from '../../../api/aggregation/index.js';
@@ -13,6 +14,7 @@ import {
   NewAggregationReceiptEvent,
   SubscriptionEntry,
 } from '../../../types.js';
+import { emitError } from '../../../utils/helpers/index.js';
 
 type RuntimeEventHandler = (records: EventRecord[]) => void;
 
@@ -56,6 +58,9 @@ export class EventManager {
   // the manager has moved on — closing this avoids cross-cycle leaks where
   // an old handshake completes after a re-subscribe and orphans its sub.
   private systemEventsGeneration = 0;
+  // Bumped per NewAggregationReceipt subscription so the settle handlers of a
+  // subscription replaced by unsubscribe()/subscribe() leave the new one alone.
+  private receiptSubscriptionGeneration = 0;
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
@@ -96,8 +101,9 @@ export class EventManager {
       }
 
       switch (event) {
-        case ZkVerifyEvents.NewAggregationReceipt:
+        case ZkVerifyEvents.NewAggregationReceipt: {
           this.subscribedEvents.add(event);
+          const generation = ++this.receiptSubscriptionGeneration;
           subscribeToNewAggregationReceipts(
             api,
             (data) => {
@@ -106,8 +112,19 @@ export class EventManager {
             },
             options as NewAggregationEventSubscriptionOptions,
             this.emitter,
-          );
+          )
+            .catch((error: unknown) => {
+              if (error instanceof SubscriptionCancelledError) return;
+              emitError(this.emitter, error);
+            })
+            .finally(() => {
+              // Subscription ended (matched, timed out or failed); allow a new one.
+              if (generation === this.receiptSubscriptionGeneration) {
+                this.subscribedEvents.delete(event);
+              }
+            });
           break;
+        }
 
         case ZkVerifyEvents.ProofVerified:
         case ZkVerifyEvents.NewProof:
@@ -182,7 +199,7 @@ export class EventManager {
           try {
             handler(records);
           } catch (err) {
-            this.emitter.emit(ZkVerifyEvents.ErrorEvent, err);
+            emitError(this.emitter, err);
           }
         }
       },
@@ -210,7 +227,7 @@ export class EventManager {
         handleUnsubscribeFn(subscriptionResult);
       } else if (typeof subscriptionResult.then === 'function') {
         subscriptionResult.then(handleUnsubscribeFn).catch((error: unknown) => {
-          this.emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+          emitError(this.emitter, error);
         });
       }
     }

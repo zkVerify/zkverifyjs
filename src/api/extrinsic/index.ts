@@ -1,7 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ProofType } from '../../config/index.js';
-import { getProofPallet } from '../../utils/helpers/index.js';
+import { getProofPallet, safeSnippet } from '../../utils/helpers/index.js';
 import { FormattedProofData } from '../format/types.js';
 
 /**
@@ -103,5 +103,8 @@ const formatError = (
 ): string => {
   const errorMessage =
     error instanceof Error ? error.message : 'An unknown error occurred';
-  return `Error creating submittable extrinsic: ${proofType} Params: ${JSON.stringify(params, null, 2)} ${errorMessage}`;
+
+  // Bounded: `params` carries the full verification key, proof, and public signals, so
+  // interpolating it whole made the message grow with the proof size.
+  return `Error creating submittable extrinsic: ${proofType} Params: ${safeSnippet(params, 200)} ${errorMessage}`;
 };

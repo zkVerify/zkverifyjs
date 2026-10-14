@@ -1,2 +1,2 @@
-npx lint-staged
+npx --no-install lint-staged
 npm run generate-readme-for-docs && git add DOCS.md

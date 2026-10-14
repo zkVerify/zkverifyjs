@@ -5,6 +5,7 @@ target/
 node_modules
 dist/
 .env
+.secrets
 coverage/
 *.d.ts
 *.*.map

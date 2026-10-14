@@ -13,7 +13,10 @@ import {
   unstringifyBigInts,
 } from '../utils.js';
 import { ProofOptions } from '../../../../config/index.js';
-import { isGroth16Config } from '../../../../utils/helpers/index.js';
+import {
+  isGroth16Config,
+  safeSnippet,
+} from '../../../../utils/helpers/index.js';
 
 /**
  * Formats zk-SNARK proof data for Groth16 using Gnark.
@@ -66,11 +69,10 @@ export const formatProof = (
       },
     };
   } catch (error) {
-    const proofSnippet = JSON.stringify(proof).slice(0, 50);
     throw new Error(
       `Failed to format ${options.proofType} proof: ${
         error instanceof Error ? error.message : 'Unknown error'
-      }. Proof snippet: "${proofSnippet}..."`,
+      }. Proof snippet: "${safeSnippet(proof)}..."`,
     );
   }
 };
@@ -144,11 +146,10 @@ export const formatVk = (
       ),
     };
   } catch (error) {
-    const vkSnippet = JSON.stringify(vk).slice(0, 50);
     throw new Error(
       `Failed to format ${options.proofType} verification key: ${
         error instanceof Error ? error.message : 'Unknown error'
-      }. VK snippet: "${vkSnippet}..."`,
+      }. VK snippet: "${safeSnippet(vk)}..."`,
     );
   }
 };
@@ -157,10 +158,14 @@ export const formatVk = (
  * Formats an array of public signals.
  *
  * @param {string[]} pubs - Array of public signals.
+ * @param {ProofOptions} options - Proof options containing curve information.
  * @returns {string[]} - Formatted public signals.
  */
-export const formatPubs = (pubs: string[]): string[] => {
-  return formatPublicSignals(pubs);
+export const formatPubs = (pubs: string[], options: ProofOptions): string[] => {
+  const curve = isGroth16Config(options)
+    ? extractCurve(options.config.curve)
+    : undefined;
+  return formatPublicSignals(pubs, curve);
 };
 
 export default {

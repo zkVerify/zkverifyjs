@@ -19,6 +19,30 @@ import { initializeTransactionInfo } from './transactionInfo/index.js';
 import { handleFinalized, handleInBlock } from './handlers/index.js';
 
 /**
+ * Maps a terminal, failed extrinsic status (the four statuses behind
+ * `SubmittableResult.isError`) to a human-readable reason.
+ *
+ * @returns The failure reason, or `undefined` for a non-terminal status.
+ */
+const describeTerminalStatus = (
+  status: SubmittableResult['status'],
+): string | undefined => {
+  if (status.isInvalid) {
+    return 'Transaction is invalid.';
+  }
+  if (status.isDropped) {
+    return 'Transaction was dropped from the transaction pool.';
+  }
+  if (status.isUsurped) {
+    return 'Transaction was usurped by another transaction with the same nonce.';
+  }
+  if (status.isFinalityTimeout) {
+    return 'Transaction timed out waiting for finality.';
+  }
+  return undefined;
+};
+
+/**
  * Handles transaction execution, signing, and event handling.
  */
 export const handleTransaction = async <T extends TransactionType>(
@@ -146,8 +170,12 @@ export const handleTransaction = async <T extends TransactionType>(
 
           if (result.status.isFinalized) {
             await finalizeTransaction(result);
-          } else if (result.status.isInvalid) {
-            throw new Error('Transaction is invalid.');
+            return;
+          }
+
+          const terminalError = describeTerminalStatus(result.status);
+          if (terminalError) {
+            throw new Error(terminalError);
           }
         } catch (error) {
           try {

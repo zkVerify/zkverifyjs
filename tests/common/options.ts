@@ -5,6 +5,13 @@ export const proofTypeVersionExclusions: Partial<Record<ProofType, string[]>> = 
     [ProofType.risc0]: []
 };
 
+// Proof types whose verifier pallet is currently disabled on the test network.
+// Integration runners skip these; remove entries once the pallet is re-enabled.
+export const disabledProofTypes: ReadonlySet<ProofType> = new Set<ProofType>([
+    ProofType.ezkl,
+    ProofType.plonky2,
+]);
+
 export const testOptions = {
     proofTypes: Object.keys(ProofType).map(
         (key) => ProofType[key as keyof typeof ProofType]

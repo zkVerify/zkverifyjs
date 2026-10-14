@@ -59,5 +59,5 @@ export interface Proof {
 export interface Formatter {
   formatProof(proof: unknown, options: ProofOptions): Proof;
   formatVk(vk: unknown, options: ProofOptions): Groth16VerificationKey;
-  formatPubs(pubs: string[]): string[];
+  formatPubs(pubs: string[], options: ProofOptions): string[];
 }

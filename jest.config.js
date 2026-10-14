@@ -12,10 +12,10 @@ module.exports = {
   globalSetup: '<rootDir>/jest.setup.js',
   globalTeardown: '<rootDir>/jest.teardown.js',
 
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.jest.json'
-    }
+  // ts-jest options live on the transform entry; the `globals['ts-jest']` form
+  // is deprecated and removed in newer majors.
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
   },
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",

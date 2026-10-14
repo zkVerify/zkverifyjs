@@ -80,7 +80,7 @@ class Groth16Processor implements ProofProcessor {
    */
   formatPubs(pubs: string[], options: ProofOptions): string[] {
     const formatter = this.getFormatter(options);
-    return formatter.formatPubs(pubs);
+    return formatter.formatPubs(pubs, options);
   }
 }
 

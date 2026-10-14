@@ -7,7 +7,12 @@ import {
   afterEach,
 } from '@jest/globals';
 import { EventEmitter } from 'events';
-import { subscribeToNewAggregationReceipts, unsubscribe } from './index.js';
+import {
+  SubscriptionCancelledError,
+  subscribeFinalizedEvents,
+  subscribeToNewAggregationReceipts,
+  unsubscribe,
+} from './index.js';
 import { ZkVerifyEvents } from '../../enums.js';
 import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces/system';
@@ -177,8 +182,11 @@ describe('subscribeToNewAggregationReceipts', () => {
     await expect(subscriptionPromise).rejects.toThrow(
       `Timeout exceeded: No event received within ${timeoutDuration} ms`,
     );
-    expect(emitSpy).toHaveBeenCalledWith(ZkVerifyEvents.Unsubscribe);
-    expect(emitter.eventNames().length).toBe(0);
+    // A timeout ends only this wait.
+    expect(emitSpy).not.toHaveBeenCalledWith(ZkVerifyEvents.Unsubscribe);
+    expect(mockApiUnsubscribe).toHaveBeenCalledTimes(1);
+    expect(emitter.listenerCount(ZkVerifyEvents.Unsubscribe)).toBe(0);
+    expect((emitter as any)._cleanups?.length ?? 0).toBe(0);
     jest.useRealTimers();
   });
 
@@ -414,36 +422,32 @@ describe('subscribeToNewAggregationReceipts — bug fixes', () => {
     const emitter = new EventEmitter();
     const callbackA = jest.fn();
     const callbackB = jest.fn();
-    const apiUnsubscribeB = jest.fn();
 
-    let resolveA!: (fn: () => void) => void;
-    let resolveB!: (fn: () => void) => void;
-    let call = 0;
-    (
-      api.rpc.chain.subscribeFinalizedHeads as unknown as jest.Mock
-    ).mockImplementation(() => {
-      call += 1;
-      return new Promise((resolve) => {
-        if (call === 1) resolveA = resolve;
-        else resolveB = resolve;
-      });
-    });
-
-    subscribeToNewAggregationReceipts(api, callbackA, undefined, emitter).catch(
-      () => {},
+    const a = subscribeToNewAggregationReceipts(
+      api,
+      callbackA,
+      undefined,
+      emitter,
     );
-    subscribeToNewAggregationReceipts(api, callbackB, undefined, emitter).catch(
-      () => {},
+    const b = subscribeToNewAggregationReceipts(
+      api,
+      callbackB,
+      undefined,
+      emitter,
     );
 
-    resolveA(mockApiUnsubscribe);
-    resolveB(apiUnsubscribeB);
+    // Both subscriptions share ONE underlying finalized-heads subscription.
+    expect(api.rpc.chain.subscribeFinalizedHeads).toHaveBeenCalledTimes(1);
+
+    resolveSubscribe(mockApiUnsubscribe);
     await new Promise((resolve) => setImmediate(resolve));
 
     unsubscribe(emitter);
 
+    // Released once, when the last subscriber leaves; both waiters settle.
     expect(mockApiUnsubscribe).toHaveBeenCalledTimes(1);
-    expect(apiUnsubscribeB).toHaveBeenCalledTimes(1);
+    await expect(a).rejects.toThrow(/Unsubscribed before/);
+    await expect(b).rejects.toThrow(/Unsubscribed before/);
   });
 
   // Bug 6
@@ -472,5 +476,254 @@ describe('subscribeToNewAggregationReceipts — bug fixes', () => {
     await captured.cb({ hash: { toHex: () => '0xabc' } });
 
     expect(mockEventsAt).toHaveBeenCalledWith('0xabc');
+  });
+});
+
+describe('subscribeToNewAggregationReceipts — shared emitter and feed', () => {
+  type FinalizedCb = (header: any) => Promise<void> | void;
+  let api: ApiPromise;
+  let mockApiUnsubscribe: jest.Mock<() => void>;
+  let mockEventsAt: jest.Mock<(blockHash: any) => Promise<any>>;
+  let finalizedHeadsCallback: FinalizedCb | null;
+
+  const header = (hash: string) => ({ hash: { toHex: () => hash } });
+
+  beforeEach(() => {
+    jest.useRealTimers();
+    mockApiUnsubscribe = jest.fn();
+    finalizedHeadsCallback = null;
+    mockEventsAt = jest
+      .fn<(blockHash: any) => Promise<any>>()
+      .mockImplementation(async () => []);
+
+    api = {
+      rpc: {
+        chain: {
+          subscribeFinalizedHeads: jest.fn(async (cb: FinalizedCb) => {
+            finalizedHeadsCallback = cb;
+            return mockApiUnsubscribe;
+          }) as Mock,
+        },
+      },
+      query: { system: { events: { at: mockEventsAt } } },
+    } as unknown as ApiPromise;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.useRealTimers();
+  });
+
+  it('a timed-out wait leaves sibling waits and consumer listeners intact', async () => {
+    jest.useFakeTimers();
+    const emitter = new EventEmitter();
+    const consumerListener = jest.fn();
+    emitter.on(ZkVerifyEvents.NewAggregationReceipt, consumerListener);
+
+    const shortWait = subscribeToNewAggregationReceipts(
+      api,
+      jest.fn(),
+      { domainId: 1, aggregationId: 10, timeout: 10 },
+      emitter,
+    );
+    const siblingCallback = jest.fn();
+    const longWait = subscribeToNewAggregationReceipts(
+      api,
+      siblingCallback,
+      { domainId: 1, aggregationId: 11, timeout: 10_000 },
+      emitter,
+    );
+    await Promise.resolve();
+
+    jest.advanceTimersByTime(10);
+    await expect(shortWait).rejects.toThrow(/Timeout exceeded/);
+
+    // The consumer's own listener survived, and the shared feed is still open
+    // because the sibling still needs it.
+    expect(emitter.listenerCount(ZkVerifyEvents.NewAggregationReceipt)).toBe(1);
+    expect(mockApiUnsubscribe).not.toHaveBeenCalled();
+
+    // The sibling still receives and resolves on its own receipt.
+    mockEventsAt.mockImplementation(async () => [
+      createMockEventRecord('aggregate', 'NewAggregationReceipt', [
+        '1',
+        '11',
+        '0xB',
+      ]),
+    ]);
+    if (!finalizedHeadsCallback) throw new Error('Callback not captured');
+    await finalizedHeadsCallback(header('0xblock'));
+
+    await expect(longWait).resolves.toBe(emitter);
+    expect(siblingCallback).toHaveBeenCalledTimes(1);
+    expect(consumerListener).toHaveBeenCalledTimes(1);
+    // Last subscriber gone: the underlying subscription is released once.
+    expect(mockApiUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares one finalized-heads subscription and one events query per block across concurrent waits', async () => {
+    const emitter = new EventEmitter();
+    const waits = [10, 11, 12].map((aggregationId) =>
+      subscribeToNewAggregationReceipts(
+        api,
+        jest.fn(),
+        { domainId: 1, aggregationId, timeout: 10_000 },
+        emitter,
+      ),
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(api.rpc.chain.subscribeFinalizedHeads).toHaveBeenCalledTimes(1);
+
+    mockEventsAt.mockImplementation(async () =>
+      ['10', '11', '12'].map((id) =>
+        createMockEventRecord('aggregate', 'NewAggregationReceipt', [
+          '1',
+          id,
+          '0x' + id,
+        ]),
+      ),
+    );
+    if (!finalizedHeadsCallback) throw new Error('Callback not captured');
+    await finalizedHeadsCallback(header('0xblock'));
+
+    expect(mockEventsAt).toHaveBeenCalledTimes(1);
+    await expect(Promise.all(waits)).resolves.toHaveLength(3);
+    expect(mockApiUnsubscribe).toHaveBeenCalledTimes(1);
+
+    // A later subscriber opens a fresh subscription.
+    subscribeToNewAggregationReceipts(api, jest.fn(), undefined, emitter).catch(
+      () => {},
+    );
+    expect(api.rpc.chain.subscribeFinalizedHeads).toHaveBeenCalledTimes(2);
+    unsubscribe(emitter);
+  });
+
+  it('reports an events query failure through the promise, not as an unhandled rejection, and does not require an error listener', async () => {
+    const emitter = new EventEmitter();
+    const wait = subscribeToNewAggregationReceipts(
+      api,
+      jest.fn(),
+      { domainId: 1, aggregationId: 10, timeout: 10_000 },
+      emitter,
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+
+    mockEventsAt.mockImplementation(async () => {
+      throw new Error('rpc down');
+    });
+    if (!finalizedHeadsCallback) throw new Error('Callback not captured');
+    // No 'error' listener is attached: emitting must not throw here.
+    await expect(
+      finalizedHeadsCallback(header('0xblock')),
+    ).resolves.toBeUndefined();
+
+    await expect(wait).rejects.toThrow('rpc down');
+    expect(mockApiUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports failures through the promise only, leaving ErrorEvent to the caller', async () => {
+    const emitter = new EventEmitter();
+    const errors: unknown[] = [];
+    emitter.on(ZkVerifyEvents.ErrorEvent, (e) => errors.push(e));
+
+    const wait = subscribeToNewAggregationReceipts(
+      api,
+      jest.fn(),
+      undefined,
+      emitter,
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+
+    mockEventsAt.mockImplementation(async () => {
+      throw new Error('rpc down');
+    });
+    if (!finalizedHeadsCallback) throw new Error('Callback not captured');
+    await finalizedHeadsCallback(header('0xblock'));
+
+    await expect(wait).rejects.toThrow('rpc down');
+    expect(errors).toHaveLength(0);
+  });
+
+  it('a wait joining an existing feed is handed the latest finalized block', async () => {
+    const emitter = new EventEmitter();
+    // Keeps the feed open.
+    subscribeToNewAggregationReceipts(api, jest.fn(), undefined, emitter).catch(
+      () => {},
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+
+    mockEventsAt.mockImplementation(async () => [
+      createMockEventRecord('aggregate', 'NewAggregationReceipt', [
+        '1',
+        '10',
+        '0xA',
+      ]),
+    ]);
+    if (!finalizedHeadsCallback) throw new Error('Callback not captured');
+    await finalizedHeadsCallback(header('0xlatest'));
+
+    // The receipt is already in the latest finalized block when this wait starts.
+    const lateCallback = jest.fn();
+    const lateWait = subscribeToNewAggregationReceipts(
+      api,
+      lateCallback,
+      { domainId: 1, aggregationId: 10, timeout: 10_000 },
+      emitter,
+    );
+
+    await expect(lateWait).resolves.toBe(emitter);
+    expect(lateCallback).toHaveBeenCalledWith(
+      expect.objectContaining({ blockHash: '0xlatest' }),
+    );
+    expect(mockEventsAt).toHaveBeenCalledTimes(1);
+    expect(api.rpc.chain.subscribeFinalizedHeads).toHaveBeenCalledTimes(1);
+    unsubscribe(emitter);
+  });
+
+  it('replays the latest block once to a late joiner, then continues with new blocks', async () => {
+    const onEvents = jest.fn();
+    const first = subscribeFinalizedEvents(api, {
+      onEvents,
+      onError: jest.fn(),
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    if (!finalizedHeadsCallback) throw new Error('Callback not captured');
+    await finalizedHeadsCallback(header('0xone'));
+    expect(onEvents).toHaveBeenCalledTimes(1);
+
+    const lateEvents = jest.fn();
+    const second = subscribeFinalizedEvents(api, {
+      onEvents: lateEvents,
+      onError: jest.fn(),
+    });
+    await finalizedHeadsCallback(header('0xtwo'));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(onEvents).toHaveBeenCalledTimes(2);
+    expect(lateEvents.mock.calls.map((call) => call[0])).toEqual([
+      '0xone',
+      '0xtwo',
+    ]);
+
+    first();
+    second();
+    expect(mockApiUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a pending wait when the consumer unsubscribes instead of hanging it', async () => {
+    const emitter = new EventEmitter();
+    const wait = subscribeToNewAggregationReceipts(
+      api,
+      jest.fn(),
+      { domainId: 1, aggregationId: 10, timeout: 10_000 },
+      emitter,
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+
+    unsubscribe(emitter);
+
+    await expect(wait).rejects.toBeInstanceOf(SubscriptionCancelledError);
+    expect(mockApiUnsubscribe).toHaveBeenCalledTimes(1);
   });
 });

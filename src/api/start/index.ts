@@ -67,7 +67,7 @@ export async function startWalletSession(
   const { web3Enable, web3Accounts, web3FromSource } =
     await import('@polkadot/extension-dapp');
 
-  const extensions = await web3Enable('zkVerify');
+  const extensions = await web3Enable(wallet.appName?.trim() || 'zkVerify');
   if (extensions.length === 0) {
     throw new Error('No extension installed or access was denied.');
   }

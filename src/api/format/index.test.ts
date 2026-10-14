@@ -5,6 +5,7 @@ import { format, formatVk } from './index.js';
 import { CurveType, Library } from '../../enums.js';
 
 jest.mock('../../utils/helpers', () => ({
+  ...jest.requireActual('../../utils/helpers'),
   getProofProcessor: jest.fn(),
   validateProofVersion: jest.fn(),
 }));
@@ -99,12 +100,21 @@ describe('format', () => {
   });
 
   it('should return formatted values for registered verification key', () => {
-    const result = format(proofOptions, 'proof', 'signals', 'vk', true);
+    const vkHash = '0x' + 'ab'.repeat(32);
+    const result = format(proofOptions, 'proof', 'signals', vkHash, true);
     expect(result).toEqual({
       formattedProof: 'formattedProof',
       formattedPubs: 'formattedPubs',
-      formattedVk: { Hash: 'vk' },
+      formattedVk: { Hash: vkHash },
     });
+  });
+
+  it('rejects a registered verification key reference that is not a 32-byte hash', () => {
+    for (const bad of ['vk', '0xab', '0x' + 'ab'.repeat(31), { hash: 1 }]) {
+      expect(() => format(proofOptions, 'proof', 'signals', bad, true)).toThrow(
+        'Invalid registered VK hash',
+      );
+    }
   });
 
   it('should handle UltraPlonk proof and publicSignals from formatProof', () => {

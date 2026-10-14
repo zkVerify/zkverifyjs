@@ -65,7 +65,7 @@ describe('optimisticVerify functionality', () => {
             session.optimisticVerify()
                 .groth16({ library: Library.snarkjs, curve: CurveType.bn128 })
                 .execute(input)
-        ).rejects.toThrowError('Optimistic verification is only supported on custom networks.');
+        ).rejects.toThrow('Optimistic verification is only supported on custom networks.');
     });
 
     it.skip('should throw an non verification error if optimisticVerify is called and the account has no funds', async () => {

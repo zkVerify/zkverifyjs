@@ -117,6 +117,18 @@ export type NetworkConfig = {
    * Throws if the node still reports `isSyncing` after this deadline.
    */
   syncTimeoutMs?: number;
+  /**
+   * Acknowledge an unencrypted `ws://` endpoint on a non-loopback host, silencing the
+   * warning that is otherwise logged.
+   *
+   * The signing key never leaves the client, so plaintext is not key disclosure — but
+   * on such a connection a network-position attacker controls the chain state this SDK
+   * reports as authoritative, and can forge dry-run results or verification events.
+   * Loopback addresses (`localhost`, `127.0.0.0/8`, `::1`) never warn.
+   *
+   * Set this only for a trusted private network you control.
+   */
+  allowInsecureWebSocket?: boolean;
 };
 
 export type CustomNetworkConfig = Omit<NetworkConfig, 'host'>;
