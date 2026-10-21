@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '24'
+          node-version: '24.22.1'
           package-manager-cache: false
 
       - name: Install dependencies (audited)
@@ -51,7 +51,7 @@ jobs:
       contents: write
       id-token: write
     container:
-      image: node:24-bookworm
+      image: node:24.22.1-bookworm
     defaults:
       run:
         shell: bash
