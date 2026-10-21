@@ -1,6 +1,6 @@
 {
   "name": "zkverifyjs",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "zkVerify <web3-platform@zkverify.io>",
   "license": "GPL-3.0",
@@ -33,7 +33,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">= 24"
+    "node": ">=24.22.1"
   },
   "browser": {
     "buffer": "buffer"
