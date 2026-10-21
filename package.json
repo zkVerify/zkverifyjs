@@ -93,7 +93,7 @@
     "zkp"
   ],
   "dependencies": {
-    "@polkadot/api": "17.0.1",
+    "@polkadot/api": "17.0.2",
     "@polkadot/extension-dapp": "0.64.1",
     "async-mutex": "0.5.0",
     "buffer": "6.0.3"
