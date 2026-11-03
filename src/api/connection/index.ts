@@ -4,8 +4,30 @@ import {
   waitForNodeToSync,
   fetchRuntimeVersionFromProvider,
 } from '../../utils/helpers/index.js';
-import { getZkvTypes, zkvRpc } from '../../config/index.js';
-import { NetworkConfig } from '../../types.js';
+import { getZkvTypesBundle, zkvRpc } from '../../config/index.js';
+import { NetworkConfig, RuntimeSpec } from '../../types.js';
+
+/**
+ * Returns a runtime spec whose `specVersion` follows the connected chain. polkadot.js updates
+ * `api.runtimeVersion` when a runtime upgrade is enacted, so version-dependent defaults and
+ * checks apply to an open session without reconnecting.
+ */
+const liveRuntimeSpec = (
+  api: ApiPromise,
+  initialSpec: RuntimeSpec,
+): RuntimeSpec => ({
+  specName: initialSpec.specName,
+  get specVersion(): number {
+    try {
+      return (
+        api.runtimeVersion?.specVersion?.toNumber() ?? initialSpec.specVersion
+      );
+    } catch {
+      // `api.runtimeVersion` throws until the API has initialised.
+      return initialSpec.specVersion;
+    }
+  },
+});
 
 /**
  * Hosts for which an unencrypted `ws://` connection is always acceptable, since the
@@ -109,17 +131,17 @@ export const establishConnection = async (
             wsOpts.timeout,
           )
         : new WsProvider(websocket);
-    const runtimeSpec = await fetchRuntimeVersionFromProvider(provider);
+    const initialSpec = await fetchRuntimeVersionFromProvider(provider);
 
     const api = await ApiPromise.create({
       provider,
-      types: getZkvTypes(runtimeSpec),
+      typesBundle: getZkvTypesBundle(initialSpec.specName),
       rpc: zkvRpc,
     });
 
     await waitForNodeToSync(api, { timeoutMs: config.syncTimeoutMs });
 
-    return { api, provider, runtimeSpec };
+    return { api, provider, runtimeSpec: liveRuntimeSpec(api, initialSpec) };
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(

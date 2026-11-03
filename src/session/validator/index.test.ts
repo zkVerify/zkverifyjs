@@ -1,12 +1,16 @@
 import { ProofOptions, ProofType } from '../../config/index.js';
 import {
+  Risc0Version,
   RuntimeVersion,
   TeeVariant,
   UltrahonkVariant,
   UltrahonkVersion,
 } from '../../enums.js';
 import { RuntimeSpec } from '../../types.js';
-import { validateProofTypeOptions } from './index.js';
+import {
+  rejectUnsupportedProofVersions,
+  validateProofTypeOptions,
+} from './index.js';
 
 const runtimeSpec = (specVersion: RuntimeVersion): RuntimeSpec => ({
   specName: 'zkverify',
@@ -131,6 +135,87 @@ describe('validateProofTypeOptions', () => {
     });
   });
 
+  describe('ultrahonk V5_0 runtime gate', () => {
+    const v5Options: ProofOptions = {
+      proofType: ProofType.ultrahonk,
+      config: {
+        version: UltrahonkVersion.V5_0,
+        variant: UltrahonkVariant.ZK,
+      },
+    };
+
+    it('rejects V5_0 before runtime version 2.1.0', () => {
+      expect(() =>
+        validateProofTypeOptions(v5Options, runtimeSpec(RuntimeVersion.V2_0_0)),
+      ).toThrow('only available in runtime version 2.1.0 or later');
+    });
+
+    it('allows V5_0 from runtime version 2.1.0', () => {
+      expect(
+        validateProofTypeOptions(v5Options, runtimeSpec(RuntimeVersion.V2_1_0)),
+      ).toEqual(v5Options);
+    });
+
+    it.each([RuntimeVersion.V2_0_0, RuntimeVersion.V2_1_0])(
+      'keeps the Legacy default for Plain on runtime version %i',
+      (specVersion) => {
+        const result = validateProofTypeOptions(
+          {
+            proofType: ProofType.ultrahonk,
+            config: { variant: UltrahonkVariant.Plain },
+          },
+          runtimeSpec(specVersion),
+        );
+
+        expect(result.config).toEqual({
+          version: UltrahonkVersion.Legacy,
+          variant: UltrahonkVariant.Plain,
+        });
+        expect(() =>
+          rejectUnsupportedProofVersions(result, runtimeSpec(specVersion)),
+        ).not.toThrow();
+      },
+    );
+
+    it('rejects version-less ZK on runtime version 2.1.0, naming the Legacy default', () => {
+      const result = validateProofTypeOptions(
+        {
+          proofType: ProofType.ultrahonk,
+          config: { variant: UltrahonkVariant.ZK },
+        },
+        runtimeSpec(RuntimeVersion.V2_1_0),
+      );
+
+      expect(result.config).toEqual({
+        version: UltrahonkVersion.Legacy,
+        variant: UltrahonkVariant.ZK,
+      });
+      expect(() =>
+        rejectUnsupportedProofVersions(
+          result,
+          runtimeSpec(RuntimeVersion.V2_1_0),
+        ),
+      ).toThrow(
+        `Use version '${UltrahonkVersion.V5_0}' for ZK proofs. A missing 'version' defaults to '${UltrahonkVersion.Legacy}'.`,
+      );
+    });
+
+    it('keeps the Legacy default on runtime version 2.0.0', () => {
+      const result = validateProofTypeOptions(
+        {
+          proofType: ProofType.ultrahonk,
+          config: { variant: UltrahonkVariant.Plain },
+        },
+        runtimeSpec(RuntimeVersion.V2_0_0),
+      );
+
+      expect(result.config).toEqual({
+        version: UltrahonkVersion.Legacy,
+        variant: UltrahonkVariant.Plain,
+      });
+    });
+  });
+
   describe('tee runtime gates', () => {
     it('allows missing variant before runtime version 1.6.0', () => {
       expect(() =>
@@ -180,5 +265,92 @@ describe('validateProofTypeOptions', () => {
       ).not.toThrow();
       expect(warnSpy).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('rejectUnsupportedProofVersions', () => {
+  const ultrahonk = (
+    version: UltrahonkVersion,
+    variant: UltrahonkVariant,
+  ): ProofOptions => ({
+    proofType: ProofType.ultrahonk,
+    config: { version, variant },
+  });
+
+  const risc0 = (version: Risc0Version): ProofOptions => ({
+    proofType: ProofType.risc0,
+    config: { version },
+  });
+
+  it.each([
+    UltrahonkVersion.V0_84,
+    UltrahonkVersion.V3_0,
+    UltrahonkVersion.Legacy,
+  ])('rejects ultrahonk %s ZK from runtime version 2.1.0', (version) => {
+    expect(() =>
+      rejectUnsupportedProofVersions(
+        ultrahonk(version, UltrahonkVariant.ZK),
+        runtimeSpec(RuntimeVersion.V2_1_0),
+      ),
+    ).toThrow(`Use version '${UltrahonkVersion.V5_0}' for ZK proofs`);
+  });
+
+  it.each([
+    UltrahonkVersion.V0_84,
+    UltrahonkVersion.V3_0,
+    UltrahonkVersion.Legacy,
+    UltrahonkVersion.V5_0,
+  ])('allows ultrahonk %s Plain from runtime version 2.1.0', (version) => {
+    expect(() =>
+      rejectUnsupportedProofVersions(
+        ultrahonk(version, UltrahonkVariant.Plain),
+        runtimeSpec(RuntimeVersion.V2_1_0),
+      ),
+    ).not.toThrow();
+  });
+
+  it('allows ultrahonk V5_0 ZK from runtime version 2.1.0', () => {
+    expect(() =>
+      rejectUnsupportedProofVersions(
+        ultrahonk(UltrahonkVersion.V5_0, UltrahonkVariant.ZK),
+        runtimeSpec(RuntimeVersion.V2_1_0),
+      ),
+    ).not.toThrow();
+  });
+
+  it('allows ultrahonk V3_0 ZK before runtime version 2.1.0', () => {
+    expect(() =>
+      rejectUnsupportedProofVersions(
+        ultrahonk(UltrahonkVersion.V3_0, UltrahonkVariant.ZK),
+        runtimeSpec(RuntimeVersion.V2_0_0),
+      ),
+    ).not.toThrow();
+  });
+
+  it('rejects risc0 V2_1 from runtime version 2.1.0', () => {
+    expect(() =>
+      rejectUnsupportedProofVersions(
+        risc0(Risc0Version.V2_1),
+        runtimeSpec(RuntimeVersion.V2_1_0),
+      ),
+    ).toThrow(`Use '${Risc0Version.V2_2}' or later`);
+  });
+
+  it('allows risc0 V2_1 before runtime version 2.1.0', () => {
+    expect(() =>
+      rejectUnsupportedProofVersions(
+        risc0(Risc0Version.V2_1),
+        runtimeSpec(RuntimeVersion.V2_0_0),
+      ),
+    ).not.toThrow();
+  });
+
+  it('allows risc0 V2_2 from runtime version 2.1.0', () => {
+    expect(() =>
+      rejectUnsupportedProofVersions(
+        risc0(Risc0Version.V2_2),
+        runtimeSpec(RuntimeVersion.V2_1_0),
+      ),
+    ).not.toThrow();
   });
 });

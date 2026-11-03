@@ -61,4 +61,37 @@ describe('UltraHonkProcessor', () => {
       }),
     ).toThrow('expected UltrahonkConfig with version and variant');
   });
+
+  describe('formatPubs', () => {
+    const pub = (hex: string) => '0x' + hex.padStart(64, '0');
+
+    it('accepts canonical 32-byte public inputs', () => {
+      expect(processor.formatPubs([pub('01'), pub('02')])).toEqual([
+        pub('01'),
+        pub('02'),
+      ]);
+    });
+
+    it('accepts the largest canonical public input', () => {
+      const max =
+        '0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000';
+      expect(processor.formatPubs([max])).toEqual([max]);
+    });
+
+    it('rejects public inputs equal to the BN254 Fr modulus', () => {
+      expect(() =>
+        processor.formatPubs([
+          '0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001',
+        ]),
+      ).toThrow('not a canonical field element');
+    });
+
+    it('rejects public inputs that are not 32 bytes', () => {
+      expect(() => processor.formatPubs(['0x01'])).toThrow('exactly 32 bytes');
+    });
+
+    it('rejects non-hex public inputs', () => {
+      expect(() => processor.formatPubs(['1'])).toThrow('Invalid format');
+    });
+  });
 });

@@ -1,0 +1,34 @@
+# OSV-Scanner exceptions. Each entry is scoped to one package version, so a newer
+# vulnerable version of the same package is still reported. Revisit before the
+# effectiveUntil date; remove an entry once the upstream dependency moves on.
+
+# GHSA-gcqx-w48m-w2h4: no fixed deepmerge release exists. Dev-only, pulled in by
+# jest to merge test config objects from this repository, not untrusted input.
+[[PackageOverrides]]
+name = "deepmerge"
+version = "4.3.1"
+ecosystem = "npm"
+vulnerability.ignore = true
+effectiveUntil = 2027-02-01T00:00:00Z
+reason = "No fix released; dev-only (jest config merging of repository-controlled input)."
+
+# GHSA-g3hv-75wg-m249: fixed only in minimatch 11, which drops the default function
+# export that eslint 9 calls (`require("minimatch")(...)`). Dev-only; patterns come
+# from repository lint config. minimatch 9/10 are overridden to 11.0.1 in package.json.
+[[PackageOverrides]]
+name = "minimatch"
+version = "3.1.5"
+ecosystem = "npm"
+vulnerability.ignore = true
+effectiveUntil = 2027-02-01T00:00:00Z
+reason = "Fix needs minimatch 11, incompatible with eslint 9; dev-only, repository-controlled patterns."
+
+# GHSA-g3hv-75wg-m249: as above, used as a function by filelist (snarkjs -> ejs ->
+# jake -> filelist). snarkjs is a dev dependency used to generate test fixtures.
+[[PackageOverrides]]
+name = "minimatch"
+version = "5.1.9"
+ecosystem = "npm"
+vulnerability.ignore = true
+effectiveUntil = 2027-02-01T00:00:00Z
+reason = "Fix needs minimatch 11, incompatible with filelist; dev-only via snarkjs, repository-controlled patterns."

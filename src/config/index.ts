@@ -20,7 +20,7 @@ import {
   UltraPlonkProcessor,
 } from '../proofTypes/index.js';
 import { NetworkConfig, ProofProcessor, RuntimeSpec } from '../types.js';
-import { RegistryTypes } from '@polkadot/types/types';
+import { OverrideBundleType, RegistryTypes } from '@polkadot/types/types';
 
 export const VOLTA_CHAIN_SS58_PREFIX = 251; // zkVerify specific address format
 export const ZKVERIFY_CHAIN_SS58_PREFIX = 8741;
@@ -240,9 +240,28 @@ export const v1_6_1ZkvTypes: ZkvTypes = {
   },
 };
 
+export const v2_1ZkvTypes: ZkvTypes = {
+  ...v1_6_1ZkvTypes,
+  UltraHonkVk: {
+    _enum: {
+      V0_84: 'Bytes',
+      V3_0: 'Bytes',
+      Legacy: 'Bytes',
+      V5_0: 'Bytes',
+    },
+  },
+};
+
 export const zkvTypes = legacyZkvTypes;
 
 export function getZkvTypes(runtimeSpec?: RuntimeSpec): ZkvTypes {
+  if (
+    runtimeSpec !== undefined &&
+    runtimeSpec.specVersion >= RuntimeVersion.V2_1_0
+  ) {
+    return v2_1ZkvTypes;
+  }
+
   if (
     runtimeSpec !== undefined &&
     runtimeSpec.specVersion >= RuntimeVersion.V1_6_1
@@ -258,6 +277,42 @@ export function getZkvTypes(runtimeSpec?: RuntimeSpec): ZkvTypes {
   }
 
   return legacyZkvTypes;
+}
+
+/**
+ * Builds a polkadot.js types bundle that selects the zkVerify type set by spec version.
+ *
+ * Unlike a fixed `types` option, polkadot.js re-evaluates the bundle when the runtime is
+ * upgraded on a live connection, so an open session picks up the new type set (for example
+ * the V5_0 UltraHonk VK used by the vk_hash RPC) without reconnecting.
+ *
+ * @param specName - The runtime spec name, which is stable across runtime upgrades.
+ */
+export function getZkvTypesBundle(specName: string): OverrideBundleType {
+  return {
+    spec: {
+      [specName]: {
+        types: [
+          {
+            minmax: [0, RuntimeVersion.V1_6_0 - 1],
+            types: legacyZkvTypes,
+          },
+          {
+            minmax: [RuntimeVersion.V1_6_0, RuntimeVersion.V1_6_1 - 1],
+            types: v1_6ZkvTypes,
+          },
+          {
+            minmax: [RuntimeVersion.V1_6_1, RuntimeVersion.V2_1_0 - 1],
+            types: v1_6_1ZkvTypes,
+          },
+          {
+            minmax: [RuntimeVersion.V2_1_0, undefined],
+            types: v2_1ZkvTypes,
+          },
+        ],
+      },
+    },
+  };
 }
 
 export const zkvRpc = {

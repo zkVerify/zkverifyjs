@@ -16,7 +16,10 @@ import {
 } from '../../../config/index.js';
 import { VerificationBuilder } from '../../builders/verify/index.js';
 import { OptimisticVerificationBuilder } from '../../builders/optimisticVerify/index.js';
-import { validateProofTypeOptions } from '../../validator/index.js';
+import {
+  rejectUnsupportedProofVersions,
+  validateProofTypeOptions,
+} from '../../validator/index.js';
 import { VerifyInput } from '../../../api/verify/types.js';
 import { EventEmitter } from 'events';
 import {
@@ -64,6 +67,10 @@ export class VerificationManager {
               proofType: proofType as ProofType,
               config: proofConfig ?? undefined,
             },
+            this.connectionManager.connectionDetails.runtimeSpec,
+          );
+          rejectUnsupportedProofVersions(
+            validatedOptions,
             this.connectionManager.connectionDetails.runtimeSpec,
           );
 

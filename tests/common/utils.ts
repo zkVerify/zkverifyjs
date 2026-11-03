@@ -30,6 +30,8 @@ import {
 
 import fs from 'fs';
 import { isRisc0Config } from '../../src/utils/helpers';
+import { defaultUltrahonkVersion } from '../../src/session/validator';
+import { RuntimeSpec } from '../../src/types';
 import path from 'path';
 import { UltraplonkConfig } from '../../src/config';
 
@@ -41,6 +43,7 @@ export interface ProofData {
 
 export function getProofFilenameComponents(
   proofOptions: ProofOptions,
+  runtimeSpec?: RuntimeSpec,
 ): string[] {
   const { proofType, config } = proofOptions;
   const components: string[] = [proofType];
@@ -75,14 +78,16 @@ export function getProofFilenameComponents(
       if (!variant) {
         throw new Error('Ultrahonk fixture lookup requires a variant.');
       }
-      // Legacy fallback test path: SDK defaults missing Ultrahonk version to V0_84 on runtime v1.6.0
-      // and to Legacy on runtime v1.6.1+.
-      // Fixtures still reuse V0_84 bytes because Legacy wraps the same proof/VK format,
-      // so Legacy maps to the v0_84 fixture files rather than duplicating them.
+      // Legacy fallback test path: a missing version resolves to the SDK default for the
+      // runtime (Legacy on v1.6.1+, V0_84 on v1.6.0), or to Legacy without a runtime spec.
+      // Legacy reuses the V0_84 fixture files because it wraps the same proof/VK format.
+      const resolvedVersion =
+        version ??
+        (runtimeSpec ? defaultUltrahonkVersion(runtimeSpec) : UltrahonkVersion.Legacy);
       const fixtureVersion =
-        version === undefined || version === UltrahonkVersion.Legacy
+        resolvedVersion === UltrahonkVersion.Legacy
           ? UltrahonkVersion.V0_84
-          : version;
+          : resolvedVersion;
       components.push(fixtureVersion.toLowerCase(), variant.toLowerCase());
       break;
     }
@@ -104,16 +109,25 @@ export function getProofFilenameComponents(
   return components.filter(Boolean).map(String);
 }
 
-export const loadProofData = (proofOptions: ProofOptions): ProofData => {
-  const fileName = getProofFilenameComponents(proofOptions).join('_') + '.json';
+export const loadProofData = (
+  proofOptions: ProofOptions,
+  runtimeSpec?: RuntimeSpec,
+): ProofData => {
+  const fileName =
+    getProofFilenameComponents(proofOptions, runtimeSpec).join('_') + '.json';
   const dataPath = path.join(__dirname, 'data', fileName);
 
   return JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 };
 
-export const loadVerificationKey = (proofOptions: ProofOptions): string => {
+export const loadVerificationKey = (
+  proofOptions: ProofOptions,
+  runtimeSpec?: RuntimeSpec,
+): string => {
   const fileName =
-    getProofFilenameComponents(proofOptions).join('_').toLowerCase() + '.json';
+    getProofFilenameComponents(proofOptions, runtimeSpec)
+      .join('_')
+      .toLowerCase() + '.json';
   const dataPath = path.join(__dirname, 'data', fileName);
   const proofData: ProofData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
@@ -348,10 +362,13 @@ export const validateBatchVerifyTransactionInfo = (
   validateTransactionInfo(transactionInfo);
 };
 
-export const loadProofAndVK = (proofOptions: ProofOptions) => {
+export const loadProofAndVK = (
+  proofOptions: ProofOptions,
+  runtimeSpec?: RuntimeSpec,
+) => {
   return {
-    proof: loadProofData(proofOptions),
-    vk: loadVerificationKey(proofOptions),
+    proof: loadProofData(proofOptions, runtimeSpec),
+    vk: loadVerificationKey(proofOptions, runtimeSpec),
   };
 };
 

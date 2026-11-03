@@ -15,7 +15,13 @@ import {
   requireVersionAtLeast,
 } from '../../utils/helpers/index.js';
 import { RuntimeSpec } from '../../types.js';
-import { RuntimeVersion, TeeVariant, UltrahonkVersion } from '../../enums.js';
+import {
+  RuntimeVersion,
+  Risc0Version,
+  TeeVariant,
+  UltrahonkVariant,
+  UltrahonkVersion,
+} from '../../enums.js';
 
 /**
  * Validates the options provided for a given proof type.
@@ -75,6 +81,14 @@ export function validateProofTypeOptions(
         if (!isVersionedUltrahonkConfig(defaulted)) {
           throw new Error(
             `Proof type '${proofType}' requires 'version' and 'variant' options for runtime version 1.6.0 or later.`,
+          );
+        }
+        if (
+          defaulted.config.version === UltrahonkVersion.V5_0 &&
+          !isVersionAtLeast(runtimeSpec, RuntimeVersion.V2_1_0)
+        ) {
+          throw new Error(
+            `Proof type '${proofType}' version '${UltrahonkVersion.V5_0}' is only available in runtime version 2.1.0 or later.`,
           );
         }
         return defaulted;
@@ -141,6 +155,111 @@ export function validateProofTypeOptions(
   }
 }
 
+/**
+ * Applies runtime-version defaults for verification-key-only operations (`formatVk`,
+ * `getVkHash`). Unlike `validateProofTypeOptions`, it does not require options that only
+ * proof formatting needs (e.g. a RISC0 `version` or UltraPlonk `numberOfPublicInputs`),
+ * so VK calls that work without them keep working.
+ *
+ * @param options - The proof options to validate.
+ * @param runtimeSpec - Runtime spec for version-dependent validation.
+ * @returns The options, with the defaults that change the VK encoding applied.
+ * @throws {Error} - If the proof type is missing or the UltraHonk version is unavailable.
+ */
+export function validateVkOptions(
+  options: ProofOptions,
+  runtimeSpec: RuntimeSpec,
+): ProofOptions {
+  if (!options.proofType) {
+    throw new Error('Proof type is required.');
+  }
+
+  switch (options.proofType) {
+    case ProofType.ultrahonk: {
+      if (!isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_0)) {
+        return options;
+      }
+      const defaulted = withDefaultedUltrahonkVersion(options, runtimeSpec);
+      const config = defaulted.config as UltrahonkConfig | undefined;
+      if (
+        config?.version === UltrahonkVersion.V5_0 &&
+        !isVersionAtLeast(runtimeSpec, RuntimeVersion.V2_1_0)
+      ) {
+        throw new Error(
+          `Proof type '${ProofType.ultrahonk}' version '${UltrahonkVersion.V5_0}' is only available in runtime version 2.1.0 or later.`,
+        );
+      }
+      return defaulted;
+    }
+
+    case ProofType.tee:
+      return isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_0)
+        ? withDefaultedTeeVariant(options)
+        : options;
+
+    default:
+      return options;
+  }
+}
+
+/** UltraHonk versions whose ZK variant the verifier rejects from runtime version 2.1.0. */
+const DEPRECATED_ULTRAHONK_ZK_VERSIONS: ReadonlySet<UltrahonkVersion> = new Set(
+  [UltrahonkVersion.V0_84, UltrahonkVersion.V3_0, UltrahonkVersion.Legacy],
+);
+
+/**
+ * Rejects proof versions that the runtime still decodes but refuses to verify, so the
+ * caller gets a clear error instead of paying fees for an `UnsupportedVersion` failure.
+ * Applies to proof submission only: verification keys for these versions can still be
+ * registered.
+ *
+ * @param options - Options already passed through `validateProofTypeOptions`.
+ * @param runtimeSpec - Runtime spec for version-dependent validation.
+ * @throws {Error} - If the runtime no longer verifies proofs of this version.
+ */
+export function rejectUnsupportedProofVersions(
+  options: ProofOptions,
+  runtimeSpec: RuntimeSpec,
+): void {
+  if (!isVersionAtLeast(runtimeSpec, RuntimeVersion.V2_1_0)) {
+    return;
+  }
+
+  if (isRisc0Config(options) && options.config.version === Risc0Version.V2_1) {
+    throw new Error(
+      `Proof type '${ProofType.risc0}' version '${Risc0Version.V2_1}' is not supported from runtime version 2.1.0. Use '${Risc0Version.V2_2}' or later.`,
+    );
+  }
+
+  if (
+    isVersionedUltrahonkConfig(options) &&
+    options.config.variant === UltrahonkVariant.ZK &&
+    DEPRECATED_ULTRAHONK_ZK_VERSIONS.has(options.config.version)
+  ) {
+    // A missing version defaults to Legacy, so say so: the caller may not have passed it.
+    const defaultHint =
+      options.config.version === UltrahonkVersion.Legacy
+        ? ` A missing 'version' defaults to '${UltrahonkVersion.Legacy}'.`
+        : '';
+    throw new Error(
+      `Proof type '${ProofType.ultrahonk}' variant '${UltrahonkVariant.ZK}' is not supported for version '${options.config.version}' from runtime version 2.1.0. Use version '${UltrahonkVersion.V5_0}' for ZK proofs.${defaultHint}`,
+    );
+  }
+}
+
+/**
+ * The UltraHonk version used when `version` is omitted, for backwards compatibility:
+ * `Legacy` from runtime version 1.6.1 and `V0_84` on 1.6.0. From runtime version 2.1.0 the
+ * defaulted `Legacy` version still verifies Plain proofs; ZK proofs need an explicit `V5_0`.
+ */
+export function defaultUltrahonkVersion(
+  runtimeSpec: RuntimeSpec,
+): UltrahonkVersion {
+  return isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_1)
+    ? UltrahonkVersion.Legacy
+    : UltrahonkVersion.V0_84;
+}
+
 function withDefaultedUltrahonkVersion(
   options: ProofOptions,
   runtimeSpec: RuntimeSpec,
@@ -151,9 +270,7 @@ function withDefaultedUltrahonkVersion(
     return options;
   }
 
-  const defaultVersion = isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_1)
-    ? UltrahonkVersion.Legacy
-    : UltrahonkVersion.V0_84;
+  const defaultVersion = defaultUltrahonkVersion(runtimeSpec);
 
   console.warn(
     `zkverifyjs: Proof type '${ProofType.ultrahonk}' now supports versioned proofs on runtime version 1.6.0 or later. Defaulting missing 'version' to '${defaultVersion}' for backwards compatibility. Pass 'version' explicitly to silence this warning.`,
