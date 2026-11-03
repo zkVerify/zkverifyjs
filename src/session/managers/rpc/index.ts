@@ -6,7 +6,7 @@ import {
 } from '../../../api/rpc/index.js';
 import { AggregateStatementPathResult } from '../../../types.js';
 import { ProofOptions } from '../../../config/index.js';
-import { validateProofTypeOptions } from '../../validator/index.js';
+import { validateVkOptions } from '../../validator/index.js';
 
 export class RpcManager {
   private readonly connectionManager: ConnectionManager;
@@ -60,10 +60,6 @@ export class RpcManager {
    */
   async getVkHash(proofOptions: ProofOptions, vk: unknown): Promise<string> {
     const { api, runtimeSpec } = this.connectionManager.connectionDetails;
-    return getVkHash(
-      api,
-      validateProofTypeOptions(proofOptions, runtimeSpec),
-      vk,
-    );
+    return getVkHash(api, validateVkOptions(proofOptions, runtimeSpec), vk);
   }
 }

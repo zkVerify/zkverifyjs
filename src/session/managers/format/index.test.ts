@@ -140,4 +140,16 @@ describe('FormatManager', () => {
       ),
     ).resolves.toEqual({ Legacy: fixture.vk });
   });
+
+  it.each([
+    ['risc0', { proofType: ProofType.risc0 }, `0x${'ab'.repeat(32)}`],
+    ['sp1', { proofType: ProofType.sp1 }, `0x${'00'.repeat(32)}`],
+  ] as [string, ProofOptions, string][])(
+    'formatVk does not require proof-only options for %s',
+    async (_name, options, vk) => {
+      await expect(
+        manager(RuntimeVersion.V2_1_0).formatVk(options, vk),
+      ).resolves.toBeDefined();
+    },
+  );
 });

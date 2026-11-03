@@ -5,13 +5,15 @@ import { ConnectionManager } from '../connection/index.js';
 import {
   rejectUnsupportedProofVersions,
   validateProofTypeOptions,
+  validateVkOptions,
 } from '../../validator/index.js';
 
 /**
  * Manages proof formatting operations.
  *
- * Options are validated against the connected runtime, so formatting applies the same
- * version defaults and checks as `verify()`.
+ * Options are validated against the connected runtime, so `format()` applies the same
+ * version defaults and checks as `verify()`. `formatVk()` applies only the defaults that
+ * change the VK encoding.
  */
 export class FormatManager {
   private readonly connectionManager: ConnectionManager;
@@ -63,7 +65,7 @@ export class FormatManager {
    */
   async formatVk(proofOptions: ProofOptions, vk: unknown): Promise<unknown> {
     return formatVk(
-      validateProofTypeOptions(
+      validateVkOptions(
         proofOptions,
         this.connectionManager.connectionDetails.runtimeSpec,
       ),

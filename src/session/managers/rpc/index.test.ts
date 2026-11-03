@@ -71,4 +71,16 @@ describe('RpcManager.getVkHash', () => {
     ).rejects.toThrow('only available in runtime version 2.1.0 or later');
     expect(getVkHash).not.toHaveBeenCalled();
   });
+
+  it.each([
+    [{ proofType: ProofType.risc0 }],
+    [{ proofType: ProofType.ultraplonk }],
+    [{ proofType: ProofType.ezkl }],
+    [{ proofType: ProofType.sp1 }],
+  ])('does not require proof-only options for %o', async (options) => {
+    await manager(1002000 as RuntimeVersion).getVkHash(options, '0x01');
+    await manager(RuntimeVersion.V2_1_0).getVkHash(options, '0x01');
+
+    expect(getVkHash).toHaveBeenCalledWith(api, options, '0x01');
+  });
 });
