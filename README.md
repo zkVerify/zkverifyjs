@@ -36,8 +36,6 @@ session.verify().groth16({
 ### Plonky2
 Must be an uncompressed proof. Requires hash function specification.
 
-**Note**: the Plonky2 verifier pallet is currently disabled on zkVerify mainnet and Volta, so submissions are rejected until it is re-enabled.
-
 ```typescript
 session.verify().plonky2({
   hashFunction: Plonky2HashFunction.Poseidon
@@ -70,8 +68,6 @@ session.verify().sp1().execute({...})
 ```
 
 ### EZKL
-**Note**: the EZKL verifier pallet is currently disabled on zkVerify mainnet and Volta, so submissions are rejected until it is re-enabled.
-
 ```typescript
 session.verify().ezkl().execute({...})
 ```
