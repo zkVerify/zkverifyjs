@@ -156,32 +156,49 @@ describe('validateProofTypeOptions', () => {
       ).toEqual(v5Options);
     });
 
-    it.each([UltrahonkVariant.Plain, UltrahonkVariant.ZK])(
-      'defaults missing version to V5_0 for %s on runtime version 2.1.0',
-      (variant) => {
+    it.each([RuntimeVersion.V2_0_0, RuntimeVersion.V2_1_0])(
+      'keeps the Legacy default for Plain on runtime version %i',
+      (specVersion) => {
         const result = validateProofTypeOptions(
           {
             proofType: ProofType.ultrahonk,
-            config: { variant },
+            config: { variant: UltrahonkVariant.Plain },
           },
-          runtimeSpec(RuntimeVersion.V2_1_0),
+          runtimeSpec(specVersion),
         );
 
         expect(result.config).toEqual({
-          version: UltrahonkVersion.V5_0,
-          variant,
+          version: UltrahonkVersion.Legacy,
+          variant: UltrahonkVariant.Plain,
         });
-        expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining(`'${UltrahonkVersion.V5_0}'`),
-        );
         expect(() =>
-          rejectUnsupportedProofVersions(
-            result,
-            runtimeSpec(RuntimeVersion.V2_1_0),
-          ),
+          rejectUnsupportedProofVersions(result, runtimeSpec(specVersion)),
         ).not.toThrow();
       },
     );
+
+    it('rejects version-less ZK on runtime version 2.1.0, naming the Legacy default', () => {
+      const result = validateProofTypeOptions(
+        {
+          proofType: ProofType.ultrahonk,
+          config: { variant: UltrahonkVariant.ZK },
+        },
+        runtimeSpec(RuntimeVersion.V2_1_0),
+      );
+
+      expect(result.config).toEqual({
+        version: UltrahonkVersion.Legacy,
+        variant: UltrahonkVariant.ZK,
+      });
+      expect(() =>
+        rejectUnsupportedProofVersions(
+          result,
+          runtimeSpec(RuntimeVersion.V2_1_0),
+        ),
+      ).toThrow(
+        `Use version '${UltrahonkVersion.V5_0}' for ZK proofs. A missing 'version' defaults to '${UltrahonkVersion.Legacy}'.`,
+      );
+    });
 
     it('keeps the Legacy default on runtime version 2.0.0', () => {
       const result = validateProofTypeOptions(

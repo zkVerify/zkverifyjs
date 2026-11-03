@@ -78,9 +78,8 @@ export function getProofFilenameComponents(
       if (!variant) {
         throw new Error('Ultrahonk fixture lookup requires a variant.');
       }
-      // Fallback test path: a missing version resolves to the SDK default for the runtime
-      // (V5_0 on v2.1.0+, Legacy on v1.6.1+, V0_84 on v1.6.0). Without a runtime spec it
-      // resolves to Legacy, matching pre-v2.1.0 behaviour.
+      // Legacy fallback test path: a missing version resolves to the SDK default for the
+      // runtime (Legacy on v1.6.1+, V0_84 on v1.6.0), or to Legacy without a runtime spec.
       // Legacy reuses the V0_84 fixture files because it wraps the same proof/VK format.
       const resolvedVersion =
         version ??

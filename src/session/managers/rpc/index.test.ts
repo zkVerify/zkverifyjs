@@ -48,7 +48,7 @@ describe('RpcManager.getVkHash', () => {
       {
         proofType: ProofType.ultrahonk,
         config: {
-          version: UltrahonkVersion.V5_0,
+          version: UltrahonkVersion.Legacy,
           variant: UltrahonkVariant.Plain,
         },
       },

@@ -189,23 +189,25 @@ export function rejectUnsupportedProofVersions(
     options.config.variant === UltrahonkVariant.ZK &&
     DEPRECATED_ULTRAHONK_ZK_VERSIONS.has(options.config.version)
   ) {
+    // A missing version defaults to Legacy, so say so: the caller may not have passed it.
+    const defaultHint =
+      options.config.version === UltrahonkVersion.Legacy
+        ? ` A missing 'version' defaults to '${UltrahonkVersion.Legacy}'.`
+        : '';
     throw new Error(
-      `Proof type '${ProofType.ultrahonk}' variant '${UltrahonkVariant.ZK}' is not supported for version '${options.config.version}' from runtime version 2.1.0. Use version '${UltrahonkVersion.V5_0}' for ZK proofs.`,
+      `Proof type '${ProofType.ultrahonk}' variant '${UltrahonkVariant.ZK}' is not supported for version '${options.config.version}' from runtime version 2.1.0. Use version '${UltrahonkVersion.V5_0}' for ZK proofs.${defaultHint}`,
     );
   }
 }
 
 /**
- * The UltraHonk version used when `version` is omitted: `V5_0` from runtime version 2.1.0,
- * `Legacy` from 1.6.1 and `V0_84` on 1.6.0. Callers relying on the `Legacy` default must pass
- * `version: UltrahonkVersion.Legacy` explicitly from runtime version 2.1.0.
+ * The UltraHonk version used when `version` is omitted, for backwards compatibility:
+ * `Legacy` from runtime version 1.6.1 and `V0_84` on 1.6.0. From runtime version 2.1.0 the
+ * defaulted `Legacy` version still verifies Plain proofs; ZK proofs need an explicit `V5_0`.
  */
 export function defaultUltrahonkVersion(
   runtimeSpec: RuntimeSpec,
 ): UltrahonkVersion {
-  if (isVersionAtLeast(runtimeSpec, RuntimeVersion.V2_1_0)) {
-    return UltrahonkVersion.V5_0;
-  }
   return isVersionAtLeast(runtimeSpec, RuntimeVersion.V1_6_1)
     ? UltrahonkVersion.Legacy
     : UltrahonkVersion.V0_84;
@@ -224,7 +226,7 @@ function withDefaultedUltrahonkVersion(
   const defaultVersion = defaultUltrahonkVersion(runtimeSpec);
 
   console.warn(
-    `zkverifyjs: Proof type '${ProofType.ultrahonk}' now supports versioned proofs on runtime version 1.6.0 or later. Defaulting missing 'version' to '${defaultVersion}'. Pass 'version' explicitly to silence this warning.`,
+    `zkverifyjs: Proof type '${ProofType.ultrahonk}' now supports versioned proofs on runtime version 1.6.0 or later. Defaulting missing 'version' to '${defaultVersion}' for backwards compatibility. Pass 'version' explicitly to silence this warning.`,
   );
 
   return {

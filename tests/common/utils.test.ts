@@ -25,7 +25,7 @@ describe('getProofFilenameComponents', () => {
   it.each([
     [RuntimeVersion.V1_6_0, UltrahonkVersion.V0_84],
     [RuntimeVersion.V2_0_0, UltrahonkVersion.V0_84],
-    [RuntimeVersion.V2_1_0, UltrahonkVersion.V5_0],
+    [RuntimeVersion.V2_1_0, UltrahonkVersion.V0_84],
   ])(
     'maps version-less Ultrahonk options on runtime %s to %s fixture names',
     (specVersion, fixtureVersion) => {

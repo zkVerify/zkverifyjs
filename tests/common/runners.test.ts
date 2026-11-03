@@ -133,7 +133,7 @@ describe('generateTestPromises', () => {
     );
   });
 
-  it('only generates ZK ultrahonk configs for V5_0 or the defaulted version, and drops risc0 V2_1 from runtime version 2.1.0', async () => {
+  it('only generates ZK ultrahonk configs for V5_0 and drops risc0 V2_1 from runtime version 2.1.0', async () => {
     const proofOptions: ProofOptions[] = [];
 
     generateTestPromises(
@@ -164,19 +164,9 @@ describe('generateTestPromises', () => {
           (c as { variant?: UltrahonkVariant })?.variant ===
           UltrahonkVariant.ZK,
       ),
-    ).toEqual(
-      expect.arrayContaining([
-        { variant: UltrahonkVariant.ZK },
-        { version: UltrahonkVersion.V5_0, variant: UltrahonkVariant.ZK },
-      ]),
-    );
-    expect(
-      ultrahonk.filter(
-        (c) =>
-          (c as { variant?: UltrahonkVariant })?.variant ===
-          UltrahonkVariant.ZK,
-      ),
-    ).toHaveLength(2);
+    ).toEqual([
+      { version: UltrahonkVersion.V5_0, variant: UltrahonkVariant.ZK },
+    ]);
     expect(
       proofOptions.filter((o) => o.proofType === ProofType.risc0),
     ).not.toContainEqual({

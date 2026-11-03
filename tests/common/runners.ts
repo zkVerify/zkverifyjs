@@ -148,15 +148,18 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.ultrahonk:
-                // Fallback coverage: SDK defaults missing version to V0_84 on runtime v1.6.0,
-                // to Legacy on runtime v1.6.1+, and V5_0 on runtime v2.1.0+.
+                // Legacy fallback coverage: SDK defaults missing version to V0_84 on runtime v1.6.0
+                // and to Legacy on runtime v1.6.1+.
                 // Remove these generated cases when support for pre-versioned Ultrahonk calls is dropped.
-                testOptions.ultrahonkVariants.forEach((variant) => {
-                    promises.push(runTest({
-                        proofType,
-                        config: { variant },
-                    }));
-                });
+                // From runtime v2.1.0 the defaulted Legacy ZK case is rejected, so only Plain remains.
+                testOptions.ultrahonkVariants
+                    .filter((variant) => !isDeprecatedUltrahonkZk(runtimeSpec, UltrahonkVersion.Legacy, variant))
+                    .forEach((variant) => {
+                        promises.push(runTest({
+                            proofType,
+                            config: { variant },
+                        }));
+                    });
                 if (!supportsV1_6_0(runtimeSpec)) {
                     break;
                 }

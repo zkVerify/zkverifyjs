@@ -94,14 +94,11 @@ Supports variants: `Plain`, `ZK`
 **Note for zkverifyjs v2.4.0+ and runtime v1.6.0+**: The `version` and `variant` options are required. If `version` is omitted, zkverifyjs defaults to:
 
 * `V0_84` on runtime v1.6.0
-* `Legacy` on runtime v1.6.1 to v2.0.x
-* `V5_0` on runtime v2.1.0+
+* `Legacy` on runtime v1.6.1+
 
 The `Legacy` default preserves pre-versioning Ultrahonk statement hash compatibility.
 
-**Breaking change in zkverifyjs v4.0.0 (runtime v2.1.0+)**: the default for a missing `version` is now `V5_0`, not `Legacy`. If you omit `version` and submit Legacy (pre-v5 Barretenberg) proofs, pass `version: UltrahonkVersion.Legacy` explicitly, or your proofs will fail verification. `V5_0` proofs also produce a different statement hash from `Legacy`.
-
-**Runtime v2.1.0+**: ZK proofs are only accepted for `V5_0` (Barretenberg v5.0.0 or later). The `ZK` variant of `V0_84`, `V3_0` and `Legacy` is rejected by the verifier, and zkverifyjs rejects those combinations before submission. The `Plain` variant of every version is still supported. Public inputs must be 32-byte canonical BN254 field elements (below the scalar field modulus).
+**Runtime v2.1.0+**: ZK proofs are only accepted for `V5_0` (Barretenberg v5.0.0 or later). The `ZK` variant of `V0_84`, `V3_0` and `Legacy` is rejected by the verifier, and zkverifyjs rejects those combinations before submission. Because a missing `version` defaults to `Legacy`, ZK proofs must pass `version: UltrahonkVersion.V5_0` explicitly. The `Plain` variant of every version is still supported. Public inputs must be 32-byte canonical BN254 field elements (below the scalar field modulus).
 
 `getVkHash` for `V5_0` verification keys requires an RPC node running a node binary that includes the `V5_0` vk\_hash type. Nodes that only enacted the runtime upgrade return an error for `V5_0` VKs.
 

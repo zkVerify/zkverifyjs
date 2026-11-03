@@ -51,16 +51,27 @@ describe('FormatManager', () => {
       fixture.vk,
     );
 
-  it('defaults a missing ultrahonk version to V5_0 on runtime version 2.1.0', async () => {
+  it('keeps the Legacy default for Plain on runtime version 2.1.0', async () => {
     const result = await formatWith(
       RuntimeVersion.V2_1_0,
-      ultrahonk({ variant: UltrahonkVariant.ZK }),
+      ultrahonk({ variant: UltrahonkVariant.Plain }),
     );
 
     expect(result.formattedProof).toEqual({
-      V5_0: { ZK: fixture.proof },
+      Legacy: { Plain: fixture.proof },
     });
-    expect(result.formattedVk).toEqual({ Vk: { V5_0: fixture.vk } });
+    expect(result.formattedVk).toEqual({ Vk: { Legacy: fixture.vk } });
+  });
+
+  it('rejects version-less ZK on runtime version 2.1.0', async () => {
+    await expect(
+      formatWith(
+        RuntimeVersion.V2_1_0,
+        ultrahonk({ variant: UltrahonkVariant.ZK }),
+      ),
+    ).rejects.toThrow(
+      `A missing 'version' defaults to '${UltrahonkVersion.Legacy}'.`,
+    );
   });
 
   it('defaults a missing ultrahonk version to Legacy on runtime version 2.0.0', async () => {
@@ -127,6 +138,6 @@ describe('FormatManager', () => {
         ultrahonk({ variant: UltrahonkVariant.Plain }),
         fixture.vk,
       ),
-    ).resolves.toEqual({ V5_0: fixture.vk });
+    ).resolves.toEqual({ Legacy: fixture.vk });
   });
 });
