@@ -1,4 +1,4 @@
-import { ProofOptions, ProofType, RuntimeVersion, UltrahonkVersion } from "../../src";
+import { ProofOptions, ProofType, Risc0Version, RuntimeVersion, UltrahonkVariant, UltrahonkVersion } from "../../src";
 import { RuntimeSpec } from "../../src/types";
 import {
     loadProofAndVK,
@@ -39,7 +39,7 @@ export const runVerifyTest = async (
         logTestDetails(proofOptions, "verification test");
 
         accountAddress = await session.addAccount(seedPhrase);
-        const { proof, vk } = loadProofAndVK(proofOptions);
+        const { proof, vk } = loadProofAndVK(proofOptions, session.connection.runtimeSpec);
 
         await performVerifyTransaction(
             session,
@@ -72,7 +72,7 @@ export const runVKRegistrationTest = async (
         logTestDetails(proofOptions, "VK registration");
 
         accountAddress = await session.addAccount(seedPhrase);
-        const { proof, vk } = loadProofAndVK(proofOptions);
+        const { proof, vk } = loadProofAndVK(proofOptions, session.connection.runtimeSpec);
 
         await performVKRegistrationAndVerification(
             session,
@@ -119,6 +119,8 @@ export const generateTestPromises = (
             case ProofType.risc0:
                 testOptions.risc0Versions
                     .filter((v) => !excludedVersions.includes(v))
+                    // V2_1 is rejected by the verifier from runtime v2.1.0.
+                    .filter((v) => !(supportsV2_1_0(runtimeSpec) && v === Risc0Version.V2_1))
                     .forEach((version) => {
                         promises.push(runTest({
                             proofType,
@@ -146,8 +148,8 @@ export const generateTestPromises = (
                 break;
 
             case ProofType.ultrahonk:
-                // Legacy fallback coverage: SDK defaults missing version to V0_84 on runtime v1.6.0
-                // and to Legacy on runtime v1.6.1+.
+                // Fallback coverage: SDK defaults missing version to V0_84 on runtime v1.6.0,
+                // to Legacy on runtime v1.6.1+, and V5_0 on runtime v2.1.0+.
                 // Remove these generated cases when support for pre-versioned Ultrahonk calls is dropped.
                 testOptions.ultrahonkVariants.forEach((variant) => {
                     promises.push(runTest({
@@ -163,13 +165,18 @@ export const generateTestPromises = (
                     .filter((v) =>
                         supportsV1_6_1(runtimeSpec) ? true : v !== UltrahonkVersion.Legacy
                     )
+                    .filter((v) =>
+                        supportsV2_1_0(runtimeSpec) ? true : v !== UltrahonkVersion.V5_0
+                    )
                     .forEach((version) => {
-                        testOptions.ultrahonkVariants.forEach((variant) => {
-                            promises.push(runTest({
-                                proofType,
-                                config: { version, variant },
-                            }));
-                        });
+                        testOptions.ultrahonkVariants
+                            .filter((variant) => !isDeprecatedUltrahonkZk(runtimeSpec, version, variant))
+                            .forEach((variant) => {
+                                promises.push(runTest({
+                                    proofType,
+                                    config: { version, variant },
+                                }));
+                            });
                     });
                 break;
 
@@ -212,6 +219,19 @@ const supportsV1_6_0 = (runtimeSpec?: RuntimeSpec): boolean =>
 
 const supportsV1_6_1 = (runtimeSpec?: RuntimeSpec): boolean =>
     runtimeSpec === undefined || runtimeSpec.specVersion >= RuntimeVersion.V1_6_1;
+
+const supportsV2_1_0 = (runtimeSpec?: RuntimeSpec): boolean =>
+    runtimeSpec === undefined || runtimeSpec.specVersion >= RuntimeVersion.V2_1_0;
+
+// From runtime v2.1.0 only V5_0 accepts ZK proofs; older versions are Plain-only.
+const isDeprecatedUltrahonkZk = (
+    runtimeSpec: RuntimeSpec | undefined,
+    version: UltrahonkVersion,
+    variant: UltrahonkVariant
+): boolean =>
+    supportsV2_1_0(runtimeSpec) &&
+    variant === UltrahonkVariant.ZK &&
+    version !== UltrahonkVersion.V5_0;
 
 export const runAllProofTests = async (
     withAggregation: boolean

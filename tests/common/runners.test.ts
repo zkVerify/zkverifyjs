@@ -1,6 +1,7 @@
 import {
   ProofOptions,
   ProofType,
+  Risc0Version,
   RuntimeVersion,
   TeeVariant,
   UltrahonkVariant,
@@ -26,12 +27,18 @@ describe('generateTestPromises', () => {
     expect(generated.has(ProofType.groth16)).toBe(true);
   });
 
-  it('includes legacy fallback Ultrahonk and TEE proof options', async () => {
+  it('includes legacy fallback Ultrahonk and TEE proof options on runtime version 2.0.0', async () => {
     const proofOptions: ProofOptions[] = [];
 
-    generateTestPromises(async (options) => {
-      proofOptions.push(options);
-    });
+    generateTestPromises(
+      async (options) => {
+        proofOptions.push(options);
+      },
+      {
+        specName: 'zkverify',
+        specVersion: RuntimeVersion.V2_0_0,
+      },
+    );
 
     expect(proofOptions).toEqual(
       expect.arrayContaining([
@@ -93,5 +100,88 @@ describe('generateTestPromises', () => {
         },
       ]),
     );
+  });
+
+  it('excludes V5_0 ultrahonk configs before runtime version 2.1.0', async () => {
+    const proofOptions: ProofOptions[] = [];
+
+    generateTestPromises(
+      async (options) => {
+        proofOptions.push(options);
+      },
+      {
+        specName: 'zkverify',
+        specVersion: RuntimeVersion.V2_0_0,
+      },
+    );
+
+    expect(
+      proofOptions.some(
+        (o) =>
+          o.proofType === ProofType.ultrahonk &&
+          (o.config as { version?: UltrahonkVersion })?.version ===
+            UltrahonkVersion.V5_0,
+      ),
+    ).toBe(false);
+    expect(proofOptions).toEqual(
+      expect.arrayContaining([
+        {
+          proofType: ProofType.risc0,
+          config: { version: Risc0Version.V2_1 },
+        },
+      ]),
+    );
+  });
+
+  it('only generates ZK ultrahonk configs for V5_0 or the defaulted version, and drops risc0 V2_1 from runtime version 2.1.0', async () => {
+    const proofOptions: ProofOptions[] = [];
+
+    generateTestPromises(
+      async (options) => {
+        proofOptions.push(options);
+      },
+      {
+        specName: 'zkverify',
+        specVersion: RuntimeVersion.V2_1_0,
+      },
+    );
+
+    const ultrahonk = proofOptions
+      .filter((o) => o.proofType === ProofType.ultrahonk)
+      .map((o) => o.config);
+
+    expect(ultrahonk).toEqual(
+      expect.arrayContaining([
+        { variant: UltrahonkVariant.Plain },
+        { version: UltrahonkVersion.V5_0, variant: UltrahonkVariant.Plain },
+        { version: UltrahonkVersion.V5_0, variant: UltrahonkVariant.ZK },
+        { version: UltrahonkVersion.V3_0, variant: UltrahonkVariant.Plain },
+      ]),
+    );
+    expect(
+      ultrahonk.filter(
+        (c) =>
+          (c as { variant?: UltrahonkVariant })?.variant ===
+          UltrahonkVariant.ZK,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        { variant: UltrahonkVariant.ZK },
+        { version: UltrahonkVersion.V5_0, variant: UltrahonkVariant.ZK },
+      ]),
+    );
+    expect(
+      ultrahonk.filter(
+        (c) =>
+          (c as { variant?: UltrahonkVariant })?.variant ===
+          UltrahonkVariant.ZK,
+      ),
+    ).toHaveLength(2);
+    expect(
+      proofOptions.filter((o) => o.proofType === ProofType.risc0),
+    ).not.toContainEqual({
+      proofType: ProofType.risc0,
+      config: { version: Risc0Version.V2_1 },
+    });
   });
 });

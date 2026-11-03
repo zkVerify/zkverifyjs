@@ -6,6 +6,7 @@ import {
 } from '../../../api/rpc/index.js';
 import { AggregateStatementPathResult } from '../../../types.js';
 import { ProofOptions } from '../../../config/index.js';
+import { validateProofTypeOptions } from '../../validator/index.js';
 
 export class RpcManager {
   private readonly connectionManager: ConnectionManager;
@@ -58,7 +59,11 @@ export class RpcManager {
    * @throws {Error} If the proof type is unsupported or the RPC call fails.
    */
   async getVkHash(proofOptions: ProofOptions, vk: unknown): Promise<string> {
-    const api: ApiPromise = this.connectionManager.connectionDetails.api;
-    return getVkHash(api, proofOptions, vk);
+    const { api, runtimeSpec } = this.connectionManager.connectionDetails;
+    return getVkHash(
+      api,
+      validateProofTypeOptions(proofOptions, runtimeSpec),
+      vk,
+    );
   }
 }

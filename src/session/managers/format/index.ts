@@ -1,11 +1,29 @@
 import { FormattedProofData } from '../../../api/format/types.js';
 import { format, formatVk } from '../../../api/format/index.js';
 import { ProofOptions } from '../../../config/index.js';
+import { ConnectionManager } from '../connection/index.js';
+import {
+  rejectUnsupportedProofVersions,
+  validateProofTypeOptions,
+} from '../../validator/index.js';
 
 /**
  * Manages proof formatting operations.
+ *
+ * Options are validated against the connected runtime, so formatting applies the same
+ * version defaults and checks as `verify()`.
  */
 export class FormatManager {
+  private readonly connectionManager: ConnectionManager;
+
+  /**
+   * Creates an instance of FormatManager.
+   * @param {ConnectionManager} connectionManager - The connection manager instance.
+   */
+  constructor(connectionManager: ConnectionManager) {
+    this.connectionManager = connectionManager;
+  }
+
   /**
    * Formats proof details for the specified proof type.
    *
@@ -24,7 +42,15 @@ export class FormatManager {
     vk: unknown,
     registeredVk?: boolean,
   ): Promise<FormattedProofData> {
-    return format(proofOptions, proof, publicSignals, vk, registeredVk);
+    const { runtimeSpec } = this.connectionManager.connectionDetails;
+    const validatedOptions = validateProofTypeOptions(
+      proofOptions,
+      runtimeSpec,
+    );
+    // Formatted proofs are meant for submission, so reject versions the runtime refuses.
+    rejectUnsupportedProofVersions(validatedOptions, runtimeSpec);
+
+    return format(validatedOptions, proof, publicSignals, vk, registeredVk);
   }
 
   /**
@@ -36,6 +62,12 @@ export class FormatManager {
    * @throws Throws an error if formatting fails.
    */
   async formatVk(proofOptions: ProofOptions, vk: unknown): Promise<unknown> {
-    return formatVk(proofOptions, vk);
+    return formatVk(
+      validateProofTypeOptions(
+        proofOptions,
+        this.connectionManager.connectionDetails.runtimeSpec,
+      ),
+      vk,
+    );
   }
 }

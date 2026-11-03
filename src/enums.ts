@@ -39,6 +39,7 @@ export enum ZkVerifyEvents {
 }
 
 export enum Risc0Version {
+  /** @deprecated Rejected by the verifier from runtime version 2.1.0. */
   V2_1 = 'V2_1',
   V2_2 = 'V2_2',
   V2_3 = 'V2_3',
@@ -49,6 +50,8 @@ export enum UltrahonkVersion {
   V0_84 = 'V0_84',
   V3_0 = 'V3_0',
   Legacy = 'Legacy',
+  /** Available from runtime version 2.1.0. */
+  V5_0 = 'V5_0',
 }
 
 export enum UltrahonkVariant {
@@ -99,6 +102,7 @@ export enum RuntimeVersion {
   V1_6_0 = 1006000,
   V1_6_1 = 1006001,
   V2_0_0 = 2000000,
+  V2_1_0 = 2001000,
 }
 
 export const PUBLIC_ZK_VERIFY_EVENTS: ZkVerifyEvents[] = [

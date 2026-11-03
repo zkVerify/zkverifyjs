@@ -39,7 +39,7 @@ export class zkVerifySession {
     this.eventManager = new EventManager(connectionManager);
     this.extrinsicManager = new ExtrinsicManager(connectionManager);
     this.domainManager = new DomainManager(connectionManager);
-    this.formatManager = new FormatManager();
+    this.formatManager = new FormatManager(connectionManager);
     this.rpcManager = new RpcManager(connectionManager);
   }
 
